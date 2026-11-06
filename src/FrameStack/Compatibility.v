@@ -2270,6 +2270,124 @@ Proof.
   now apply Vrel_map_insert.
 Qed.
 
+(** Related Core Erlang lists are either both improper, or both proper with
+    related elements *)
+Lemma Rel_mk_list m v v' :
+  Vrel m v v' ->
+  (mk_list v = None /\ mk_list v' = None) \/
+  (exists l l', mk_list v = Some l /\ mk_list v' = Some l' /\ list_biforall (Vrel m) l l').
+Proof.
+  revert v'. induction v; intros; destruct v'; try (rewrite Vrel_Fix_eq in H; destruct H as [_ [_ H]]; simpl in H; contradiction).
+  all: simpl; try (left; split; reflexivity).
+  * right. exists [], []. repeat split; constructor.
+  * rewrite Vrel_Fix_eq in H. destruct H as [Hc1 [Hc2 [H1 H2]]].
+    rewrite <- Vrel_Fix_eq in H1. rewrite <- Vrel_Fix_eq in H2.
+    apply IHv2 in H2 as [[E1 E2]|[l [l' [E1 [E2 Hl]]]]].
+    - rewrite E1, E2. left. split; reflexivity.
+    - rewrite E1, E2. right. do 2 eexists. repeat split; auto.
+Qed.
+
+(** `map_put` (replaces the value of an existing key) *)
+Lemma Vrel_map_put_rel m l l' k1 v1 k2 v2 :
+  list_biforall (fun '(v1, v2) '(v1', v2') => Vrel m v1 v1' /\ Vrel m v2 v2') l l' ->
+  Vrel m k1 k2 ->
+  Vrel m v1 v2 ->
+  list_biforall (fun '(v1, v2) '(v1', v2') => Vrel m v1 v1' /\ Vrel m v2 v2') (map_put k1 v1 l) (map_put k2 v2 l').
+Proof.
+  revert l l'. induction l using list_length_ind; intros.
+  destruct l, l'; simpl in *; try inv H0.
+  * constructor; auto.
+  * destruct p, p0, H6.
+    do 2 break_match_goal.
+    - do 2 constructor; auto.
+    - break_match_goal.
+      + apply Vrel_Val_eqb in H1, H2, H0, H3.
+        eapply Val_eqb_trans in Heqb1. 2: eassumption.
+        rewrite Val_eqb_sym in H0.
+        eapply Val_eqb_trans in H0. 2: eassumption.
+        apply Val_eqb_ltb in H0. congruence.
+      + apply Vrel_Val_eqb in H1, H2, H0, H3.
+        eapply Val_eqb_ltb_trans in Heqb. 2: rewrite Val_eqb_sym; eassumption.
+        eapply Val_ltb_eqb_trans in Heqb. 2: eassumption. congruence.
+    - break_match_goal.
+      + apply Vrel_Val_eqb in H1, H2, H0, H3.
+        eapply Val_ltb_eqb_trans in Heqb1. 2: rewrite Val_eqb_sym; eassumption.
+        eapply Val_eqb_ltb_trans in Heqb1. 2: eassumption.
+        congruence.
+      + break_match_goal.
+        ** constructor; auto.
+        ** apply Vrel_Val_eqb in H1, H2, H0, H3.
+           eapply Val_eqb_trans in Heqb0. 2: rewrite Val_eqb_sym; exact H1.
+           eapply Val_eqb_trans in H0. 2: eassumption. congruence.
+    - break_match_goal.
+      + apply Vrel_Val_eqb in H1, H2, H0, H3.
+        eapply Val_ltb_eqb_trans in Heqb1. 2: rewrite Val_eqb_sym; eassumption.
+        eapply Val_eqb_ltb_trans in Heqb1. 2: eassumption.
+        congruence.
+      + break_match_goal.
+        ** apply Vrel_Val_eqb in H1, H2, H0, H3.
+           eapply Val_eqb_trans in Heqb2. 2: exact H1.
+           rewrite Val_eqb_sym in H0.
+           eapply Val_eqb_trans in H0. 2: eassumption. congruence.
+        ** constructor; auto.
+Qed.
+
+Lemma Vrel_fold_map_put m keys keys' v v' l l' :
+  list_biforall (Vrel m) keys keys' ->
+  Vrel m v v' ->
+  list_biforall (fun '(v1, v2) '(v1', v2') => Vrel m v1 v1' /\ Vrel m v2 v2') l l' ->
+  list_biforall (fun '(v1, v2) '(v1', v2') => Vrel m v1 v1' /\ Vrel m v2 v2')
+    (fold_left (fun m k => map_put k v m) keys l)
+    (fold_left (fun m k => map_put k v' m) keys' l').
+Proof.
+  intros H. revert v v' l l'. induction H; intros; simpl; auto.
+  apply IHlist_biforall; auto.
+  now apply Vrel_map_put_rel.
+Qed.
+
+(** Related arguments result in related exceptions *)
+Lemma Excrel_badarg_args m (f : string) args args' :
+  list_biforall (Vrel m) args args' ->
+  Excrel m (badarg (VTuple (VLit f :: args))) (badarg (VTuple (VLit f :: args'))).
+Proof.
+  intros. unfold badarg, Excrel, exc_rel. split; auto. intros m0 Hmn. split.
+  * apply Vrel_Lit_compat_closed.
+  * apply Vrel_Tuple_compat_closed. constructor.
+    - apply Vrel_Lit_compat_closed.
+    - eapply Vrel_downclosed_list_biforall; eauto.
+Qed.
+
+Lemma Excrel_badmap m v v' :
+  Vrel m v v' -> Excrel m (badmap v) (badmap v').
+Proof.
+  intros. unfold badmap, Excrel, exc_rel. split; auto. intros m0 Hmn. split.
+  * apply Vrel_Lit_compat_closed.
+  * apply (@Vrel_downclosed m m0 Hmn). assumption.
+Qed.
+
+Lemma Excrel_badfun m v v' :
+  Vrel m v v' -> Excrel m (badfun v) (badfun v').
+Proof.
+  intros. unfold badfun, Excrel, exc_rel. split; auto. intros m0 Hmn. split.
+  * apply Vrel_Tuple_compat_closed. constructor. 2: constructor.
+    - apply Vrel_Lit_compat_closed.
+    - apply (@Vrel_downclosed m m0 Hmn). assumption.
+    - constructor.
+  * apply Vrel_Nil_compat_closed.
+Qed.
+
+Lemma Excrel_badarity m f f' args args' :
+  Vrel m f f' -> Vrel m args args' ->
+  Excrel m (badarity f args) (badarity f' args').
+Proof.
+  intros. unfold badarity, Excrel, exc_rel. split; auto. intros m0 Hmn. split.
+  * apply Vrel_Tuple_compat_closed. constructor. 2: constructor. 3: constructor.
+    - apply Vrel_Lit_compat_closed.
+    - apply Vrel_Tuple_compat_closed. constructor. 2: constructor. 3: constructor.
+      all: apply (@Vrel_downclosed m m0 Hmn); assumption.
+  * apply Vrel_Nil_compat_closed.
+Qed.
+
 (* eval functions *)
 Ltac solve_refl_Vrel_exc :=
   try now (right; do 2 eexists; split;[|split;reflexivity];split;[auto|split;auto]).
@@ -2549,6 +2667,22 @@ Proof.
     - eapply Val_eqb_neqb in Heqb0. 2: eassumption.
       eapply Val_eqb_neqb in H0'. 2: rewrite Val_eqb_sym; eassumption.
       rewrite Val_eqb_sym, H0'. solve_complex_Vrel.
+  (* max *)
+  * eapply Val_eqb_ltb_trans in EQ; [| rewrite Val_eqb_sym; eassumption].
+    eapply Val_ltb_eqb_trans in EQ; [| eassumption].
+    rewrite EQ. solve_complex_Vrel.
+  * eapply Val_geb_eqb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
+    eapply Val_eqb_geb_trans in EQ. 2: eassumption. rewrite EQ.
+    solve_complex_Vrel.
+  (* min *)
+  * eapply Val_eqb_ltb_trans in EQ; [| rewrite Val_eqb_sym; eassumption].
+    eapply Val_ltb_eqb_trans in EQ; [| eassumption].
+    rewrite EQ. solve_complex_Vrel.
+  * eapply Val_geb_eqb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
+    eapply Val_eqb_geb_trans in EQ. 2: eassumption. rewrite EQ.
+    solve_complex_Vrel.
+Unshelve.
+  all: try assumption; lia.
 Qed.
 
 Lemma Vrel_is_shallow_proper_list :
@@ -2814,7 +2948,20 @@ Proof.
   }
   {
     inv H. solve_complex_Excrel.
-    inv H1. 2: solve_complex_Excrel.
+    inv H1.
+    2: {
+      inv H2.
+      all: Vrel_possibilities H0; Vrel_possibilities H.
+      all: try solve_complex_Excrel.
+      all: try (destruct x; solve_complex_Excrel).
+      all: destruct x as [a|z], x0 as [a0|z0]; try solve_complex_Excrel.
+      destruct (negb ((2 <=? z0)%Z && (z0 <=? 36)%Z)) eqn:B.
+      * solve_complex_Excrel.
+      * left. repeat eexists.
+        constructor; auto.
+        remember (string_of_list_ascii (integer_to_digits z0 z)) as s.
+        clear. induction s; simpl; auto.
+    }
     pose proof H0 as H00.
     induction H0 using Vrel_ind.
     1: solve_complex_Excrel.
@@ -2988,11 +3135,30 @@ Lemma Rel_eval_check m mname f l l':
    (eval_check mname f l) = ex /\ (eval_check mname f l') = ex').
 Proof.
   intros. unfold eval_check. break_match_goal; try solve_complex_Excrel.
+  (* is_function: with 1 and 2 arguments *)
+  9: {
+    clear Heqb; inv H; try solve_complex_Excrel.
+    inv H1; try solve_complex_Excrel.
+    2: {
+      inv H2.
+      all: Vrel_possibilities H.
+      all: Vrel_possibilities H0.
+      all: try solve_complex_Excrel.
+      all: destruct x as [a|n]; try solve_complex_Excrel.
+      all: destruct (n <? 0)%Z eqn:E; try solve_complex_Excrel.
+      all: try solve_complex_Vrel.
+      rewrite Vrel_Fix_eq in H0. simpl in H0. destruct_hyps. subst.
+      destruct (Z.of_nat x5 =? n)%Z; solve_complex_Vrel.
+    }
+    apply Vrel_possibilities in H0 as H0'; intuition; destruct_hyps; subst; try solve_complex_Excrel; try solve_complex_Vrel.
+  }
   all: clear Heqb; inv H; try solve_complex_Excrel.
   all: inv H1; try solve_complex_Excrel.
   all: apply Vrel_possibilities in H0 as H0'; intuition; destruct_hyps; subst; try solve_complex_Excrel; try solve_complex_Vrel.
   all: destruct x; try solve_complex_Excrel; try solve_complex_Vrel.
   all: break_match_goal; solve_complex_Vrel.
+Unshelve.
+  all: try assumption; lia.
 Qed.
 
 Lemma Rel_eval_error m mname f l l':
@@ -3148,7 +3314,30 @@ Lemma Rel_eval_map_bifs m mname f l l':
    (eval_map_bifs mname f l) = ex /\ (eval_map_bifs mname f l') = ex').
 Proof.
   intros. unfold eval_map_bifs.
-  break_match_goal; try solve_complex_Excrel; clear Heqb; inv H; try solve_complex_Excrel.
+  break_match_goal; try solve_complex_Excrel.
+  (* map_size *)
+  3: {
+    clear Heqb. inv H. solve_complex_Excrel.
+    Vrel_possibilities H0.
+    all: inv H1.
+    all: try (right; do 2 eexists; split; [apply Excrel_badmap; eassumption | split; reflexivity]; fail).
+    all: try solve_complex_Excrel.
+    apply Vrel_Map_compat_rev in H0. apply biforall_length in H0. simpl. rewrite H0.
+    solve_complex_Vrel.
+  }
+  (* from_keys *)
+  3: {
+    clear Heqb. inv H. solve_complex_Excrel.
+    inv H1. solve_complex_Excrel.
+    inv H2. 2: solve_complex_Excrel.
+    destruct (Rel_mk_list _ _ _ H0) as [[E1 E2]|[k [k' [E1 [E2 Hk]]]]].
+    * rewrite E1, E2. right. do 2 eexists. split; [|split; reflexivity].
+      apply Excrel_badarg_args. repeat constructor; auto.
+    * rewrite E1, E2. left. do 2 eexists. split; [|split; reflexivity].
+      constructor; [|constructor].
+      apply Vrel_Map_compat_closed. apply Vrel_fold_map_put; auto.
+  }
+  all: clear Heqb; inv H; try solve_complex_Excrel.
   all: inv H1; try solve_complex_Excrel.
   2: inv H2; try solve_complex_Excrel.
   {
@@ -3264,6 +3453,412 @@ Proof.
     all: lia.
 Qed.
 
+Lemma biforall_fold_cons m l l' t t' :
+  list_biforall (Vrel m) l l' -> Vrel m t t' ->
+  Vrel m (fold_left (fun acc x => VCons x acc) l t) (fold_left (fun acc x => VCons x acc) l' t').
+Proof.
+  intros H. revert t t'. induction H; intros; simpl; auto.
+Qed.
+
+Lemma existsb_Val_eqb_related m x x' l l' :
+  Vrel m x x' -> list_biforall (Vrel m) l l' ->
+  existsb (Val_eqb x) l = existsb (Val_eqb x') l'.
+Proof.
+  intros Hx H. induction H; simpl; auto.
+  apply Vrel_Val_eqb in Hx, H.
+  rewrite (Val_eqb_congr _ _ _ _ Hx H), IHlist_biforall. reflexivity.
+Qed.
+
+Lemma biforall_nth_error {A B} (P : A -> B -> Prop) l l' k :
+  list_biforall P l l' ->
+  (nth_error l k = None /\ nth_error l' k = None) \/
+  (exists a b, nth_error l k = Some a /\ nth_error l' k = Some b /\ P a b).
+Proof.
+  intros H. revert k. induction H; intros [|k]; simpl.
+  * left. auto.
+  * left. auto.
+  * right. do 2 eexists. repeat split; eauto.
+  * apply IHlist_biforall.
+Qed.
+
+Lemma key_pred_related m key key' n e e' :
+  Vrel m key key' -> Vrel m e e' ->
+  (match e with
+   | VTuple t => match nth_error t (Z.to_nat n - 1) with
+                 | Some k => Val_eqb key k
+                 | None => false
+                 end
+   | _ => false
+   end) =
+  (match e' with
+   | VTuple t => match nth_error t (Z.to_nat n - 1) with
+                 | Some k => Val_eqb key' k
+                 | None => false
+                 end
+   | _ => false
+   end).
+Proof.
+  intros Hk He. Vrel_possibilities He; auto.
+  apply Vrel_Tuple_compat_rev in He.
+  destruct (biforall_nth_error _ _ _ (Z.to_nat n - 1) He) as [[E1 E2]|[a [b [E1 [E2 Hab]]]]].
+  * rewrite E1, E2. reflexivity.
+  * rewrite E1, E2. apply Vrel_Val_eqb in Hk, Hab.
+    apply Val_eqb_congr; auto.
+Qed.
+
+Lemma find_key_related m key key' n items items' :
+  Vrel m key key' -> list_biforall (Vrel m) items items' ->
+  (find_key key n items = None /\ find_key key' n items' = None) \/
+  (exists e e', find_key key n items = Some e /\ find_key key' n items' = Some e' /\ Vrel m e e').
+Proof.
+  intros Hk H. unfold find_key. induction H; simpl.
+  * left. auto.
+  * rewrite (key_pred_related m key key' n _ _ Hk H).
+    destruct (match hd' with
+              | VTuple t => match nth_error t (Z.to_nat n - 1) with
+                            | Some k => Val_eqb key' k
+                            | None => false
+                            end
+              | _ => false
+              end).
+    - right. do 2 eexists. repeat split; eauto.
+    - assumption.
+Qed.
+
+Lemma Rel_eval_lists_bifs m mname f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_lists_bifs mname f l) = RValSeq vl /\ (eval_lists_bifs mname f l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_lists_bifs mname f l) = ex /\ (eval_lists_bifs mname f l') = ex').
+Proof.
+  intros. unfold eval_lists_bifs.
+  break_match_goal; try solve_complex_Excrel; clear Heqb.
+  (* member *)
+  1: {
+    inv H. solve_complex_Excrel.
+    inv H1. solve_complex_Excrel.
+    inv H2. 2: solve_complex_Excrel.
+    destruct (Rel_mk_list _ _ _ H) as [[E1 E2]|[k [k' [E1 [E2 Hk]]]]]; rewrite E1, E2.
+    * right. do 2 eexists. split; [|split; reflexivity]. apply Excrel_badarg_args.
+      constructor; [exact H0 | constructor; [exact H | constructor]].
+    * rewrite (existsb_Val_eqb_related _ _ _ _ _ H0 Hk).
+      destruct existsb; solve_complex_Vrel.
+  }
+  (* keyfind *)
+  1: {
+    inv H. solve_complex_Excrel.
+    inv H1. solve_complex_Excrel.
+    inv H2. solve_complex_Excrel.
+    inv H3. 2: solve_complex_Excrel.
+    Vrel_possibilities H.
+    all: try (right; do 2 eexists; split; [apply Excrel_badarg_args; constructor; [exact H0 | constructor; [exact H | constructor; [exact H1 | constructor]]] | split; reflexivity]; fail).
+    destruct x as [a|n].
+    1: try (right; do 2 eexists; split; [apply Excrel_badarg_args; constructor; [exact H0 | constructor; [exact H | constructor; [exact H1 | constructor]]] | split; reflexivity]; fail).
+    destruct (Rel_mk_list _ _ _ H1) as [[E1 E2]|[k [k' [E1 [E2 Hk]]]]]; rewrite E1, E2.
+    * right. do 2 eexists. split; [|split; reflexivity]. apply Excrel_badarg_args.
+      constructor; [exact H0 | constructor; [exact H | constructor; [exact H1 | constructor]]].
+    * destruct (1 <=? n)%Z eqn:C.
+      - destruct (find_key_related m _ _ n _ _ H0 Hk) as [[F1 F2]|[e [e' [F1 [F2 Hee]]]]]; rewrite F1, F2.
+        + solve_complex_Vrel.
+        + left. do 2 eexists. split; [|split; reflexivity].
+          constructor; [|constructor]. assumption.
+      - right. do 2 eexists. split; [|split; reflexivity]. apply Excrel_badarg_args.
+        constructor; [exact H0 | constructor; [exact H | constructor; [exact H1 | constructor]]].
+  }
+  (* keymember *)
+  1: {
+    inv H. solve_complex_Excrel.
+    inv H1. solve_complex_Excrel.
+    inv H2. solve_complex_Excrel.
+    inv H3. 2: solve_complex_Excrel.
+    Vrel_possibilities H.
+    all: try (right; do 2 eexists; split; [apply Excrel_badarg_args; constructor; [exact H0 | constructor; [exact H | constructor; [exact H1 | constructor]]] | split; reflexivity]; fail).
+    destruct x as [a|n].
+    1: try (right; do 2 eexists; split; [apply Excrel_badarg_args; constructor; [exact H0 | constructor; [exact H | constructor; [exact H1 | constructor]]] | split; reflexivity]; fail).
+    destruct (Rel_mk_list _ _ _ H1) as [[E1 E2]|[k [k' [E1 [E2 Hk]]]]]; rewrite E1, E2.
+    * right. do 2 eexists. split; [|split; reflexivity]. apply Excrel_badarg_args.
+      constructor; [exact H0 | constructor; [exact H | constructor; [exact H1 | constructor]]].
+    * destruct (1 <=? n)%Z eqn:C.
+      - destruct (find_key_related m _ _ n _ _ H0 Hk) as [[F1 F2]|[e [e' [F1 [F2 Hee]]]]]; rewrite F1, F2.
+        + solve_complex_Vrel.
+        + solve_complex_Vrel.
+      - right. do 2 eexists. split; [|split; reflexivity]. apply Excrel_badarg_args.
+        constructor; [exact H0 | constructor; [exact H | constructor; [exact H1 | constructor]]].
+  }
+  (* reverse *)
+  1: {
+    inv H. solve_complex_Excrel.
+    inv H1.
+    * destruct (Rel_mk_list _ _ _ H0) as [[E1 E2]|[k [k' [E1 [E2 Hk]]]]]; rewrite E1, E2.
+      - right. do 2 eexists. split; [|split; reflexivity]. apply Excrel_badarg_args.
+        constructor; [exact H0 | constructor].
+      - left. do 2 eexists. split; [|split; reflexivity].
+        constructor; [|constructor].
+        apply Vrel_meta_to_cons_biforall. apply biforall_rev. assumption.
+    * inv H2.
+      - destruct (Rel_mk_list _ _ _ H0) as [[E1 E2]|[k [k' [E1 [E2 Hk]]]]]; rewrite E1, E2.
+        + right. do 2 eexists. split; [|split; reflexivity]. apply Excrel_badarg_args.
+          constructor; [exact H0 | constructor; [exact H | constructor]].
+        + left. do 2 eexists. split; [|split; reflexivity].
+          constructor; [|constructor].
+          apply biforall_fold_cons; assumption.
+      - solve_complex_Excrel.
+  }
+Unshelve.
+  all: auto.
+Qed.
+
+Lemma Rel_eval_tuple_bifs m mname f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_tuple_bifs mname f l) = RValSeq vl /\ (eval_tuple_bifs mname f l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_tuple_bifs mname f l) = ex /\ (eval_tuple_bifs mname f l') = ex').
+Proof.
+  intros. unfold eval_tuple_bifs.
+  break_match_goal; try solve_complex_Excrel; clear Heqb.
+  (* delete_element *)
+  1: {
+    inv H. solve_complex_Excrel.
+    Vrel_possibilities H0.
+    all: inv H1; try solve_complex_Excrel.
+    all: try Vrel_possibilities H.
+    all: try (inv H2; try solve_complex_Excrel).
+    all: destruct x as [a|i].
+    all: try solve_complex_Excrel.
+    assert (Ht := H).
+    apply Vrel_Tuple_compat_rev in H. apply biforall_length in H as Hlen. rewrite <- Hlen.
+    destruct ((1 <=? i)%Z && (i <=? Z.of_nat (base.length x0))%Z) eqn:C.
+    * left. do 2 eexists. split; [|split; reflexivity].
+      constructor; [|constructor]. apply Vrel_Tuple_compat_closed.
+      apply biforall_app; [apply biforall_take | apply biforall_drop]; assumption.
+    * right. do 2 eexists. split; [|split; reflexivity]. apply Excrel_badarg_args.
+      constructor; [exact H0 | constructor; [exact Ht | constructor]].
+  }
+  (* insert_element *)
+  1: {
+    inv H. solve_complex_Excrel.
+    Vrel_possibilities H0.
+    all: inv H1; try solve_complex_Excrel.
+    all: try Vrel_possibilities H.
+    all: try (inv H2; try solve_complex_Excrel).
+    all: try (inv H3; try solve_complex_Excrel).
+    all: destruct x as [a|i]; try solve_complex_Excrel.
+    assert (Ht := H).
+    apply Vrel_Tuple_compat_rev in H. apply biforall_length in H as Hlen. rewrite <- Hlen.
+    destruct ((1 <=? i)%Z && (i <=? Z.of_nat (base.length x0) + 1)%Z) eqn:C.
+    * left. do 2 eexists. split; [|split; reflexivity].
+      constructor; [|constructor]. apply Vrel_Tuple_compat_closed.
+      apply biforall_app; [apply biforall_take | constructor; [assumption | apply biforall_drop]]; assumption.
+    * right. do 2 eexists. split; [|split; reflexivity]. apply Excrel_badarg_args.
+      constructor; [exact H0 | constructor; [exact Ht | constructor; [assumption | constructor]]].
+  }
+  (* make_tuple *)
+  1: {
+    inv H. solve_complex_Excrel.
+    Vrel_possibilities H0.
+    all: inv H1; try solve_complex_Excrel.
+    all: try (inv H2; try solve_complex_Excrel).
+    all: destruct x as [a|i]; try solve_complex_Excrel.
+    destruct (0 <=? i)%Z eqn:C.
+    * left. do 2 eexists. split; [|split; reflexivity].
+      constructor; [|constructor]. apply Vrel_Tuple_compat_closed.
+      apply biforall_repeat; assumption.
+    * right. do 2 eexists. split; [|split; reflexivity]. apply Excrel_badarg_args.
+      constructor; [exact H0 | constructor; [assumption | constructor]].
+  }
+  (* size *)
+  1: {
+    inv H. solve_complex_Excrel.
+    Vrel_possibilities H0.
+    all: inv H1.
+    all: try (right; do 2 eexists; split; [apply Excrel_badarg_args; constructor; [eassumption | constructor] | split; reflexivity]; fail).
+    all: try solve_complex_Excrel.
+    * apply Vrel_Tuple_compat_rev in H0. apply biforall_length in H0. rewrite H0.
+      solve_complex_Vrel.
+    * solve_complex_Vrel.
+  }
+Unshelve.
+  all: auto.
+Qed.
+
+Lemma Rel_eval_split_binary m mname f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_split_binary mname f l) = RValSeq vl /\ (eval_split_binary mname f l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_split_binary mname f l) = ex /\ (eval_split_binary mname f l') = ex').
+Proof.
+  intros. unfold eval_split_binary.
+  break_match_goal; try solve_complex_Excrel; clear Heqb.
+  inv H. solve_complex_Excrel.
+  Vrel_possibilities H0.
+  all: inv H1; try solve_complex_Excrel.
+  all: try Vrel_possibilities H.
+  all: try (inv H2; try solve_complex_Excrel).
+  all: try (destruct x0 as [a|p]; try solve_complex_Excrel).
+  all: try (right; do 2 eexists; split; [apply Excrel_badarg_args; constructor; [eassumption | constructor; [eassumption | constructor]] | split; reflexivity]; fail).
+  destruct (bvn_aligned x && (0 <=? p)%Z && (p * 8 <=? Z.of_N (bvn_n x))%Z) eqn:C.
+  * left. do 2 eexists. split; [|split; reflexivity].
+    constructor; [|constructor]. apply Vrel_Tuple_compat_closed.
+    constructor; [apply Vrel_Bitstring_compat_closed | constructor; [apply Vrel_Bitstring_compat_closed | constructor]].
+  * right. do 2 eexists. split; [|split; reflexivity]. apply Excrel_badarg_args.
+    constructor; [exact H0 | constructor; [exact H | constructor]].
+Unshelve.
+  all: auto.
+Qed.
+
+(** Relatedness of conversion functions *)
+Lemma Vrel_string_to_vcons m s :
+  Vrel m (string_to_vcons s) (string_to_vcons s).
+Proof.
+  induction s; simpl.
+  * apply Vrel_Nil_compat_closed.
+  * apply Vrel_Cons_compat_closed; auto.
+Qed.
+
+Lemma iolist_bits_related m v v' :
+  Vrel m v v' -> iolist_bits v = iolist_bits v'.
+Proof.
+  revert v'. induction v; intros; destruct v'; try (rewrite Vrel_Fix_eq in H; destruct H as [_ [_ H]]; simpl in H; contradiction).
+  all: simpl; auto.
+  * rewrite Vrel_Fix_eq in H. destruct H as [Hc1 [Hc2 [H1 H2]]].
+    rewrite <- Vrel_Fix_eq in H1. rewrite <- Vrel_Fix_eq in H2.
+    pose proof (IHv1 _ H1) as I1. pose proof (IHv2 _ H2) as I2.
+    Vrel_possibilities H1.
+    all: try (rewrite I2; reflexivity).
+    all: try (rewrite I1, I2; reflexivity).
+    all: try (destruct x as [a|z]; simpl; try reflexivity; try (rewrite I2; reflexivity)).
+  * rewrite Vrel_Fix_eq in H. destruct H as [_ [_ H]]. simpl in H. subst. reflexivity.
+Qed.
+
+Ltac vrel_lit_or_bitstring := first [assumption | apply Vrel_Lit_compat_closed | apply Vrel_Bitstring_compat_closed].
+
+Ltac badarg_1_arg :=
+  right; do 2 eexists; split; [|split; reflexivity];
+  apply Excrel_badarg_args; constructor; [vrel_lit_or_bitstring | constructor].
+Ltac badarg_2_arg :=
+  right; do 2 eexists; split; [|split; reflexivity];
+  apply Excrel_badarg_args; constructor; [vrel_lit_or_bitstring | constructor; [vrel_lit_or_bitstring | constructor]].
+
+Lemma Rel_eval_conversion m mname f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists eff eff' : option SideEffect, exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_conversion mname f l) = (RValSeq vl, eff) /\ (eval_conversion mname f l') = (RValSeq vl', eff')) \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_conversion mname f l) = (RExc ex, None) /\ (eval_conversion mname f l') = (RExc ex', None)).
+Proof.
+  intros. unfold eval_conversion.
+  break_match_goal; clear Heqb.
+  all: try solve_complex_Excrel.
+  (* list_to_integer *)
+  1: {
+    inv H. solve_complex_Excrel.
+    inv H1.
+    * rewrite (Rel_mk_ascii_list _ _ _ H0).
+      destruct (mk_ascii_list hd') as [cs|]; [|badarg_1_arg].
+      destruct (parse_integer 10 cs) as [z|]; [|badarg_1_arg].
+      left. do 4 eexists. split; [|split; reflexivity]. constructor; [apply Vrel_Lit_compat_closed | constructor].
+    * Vrel_possibilities H.
+      all: inv H2.
+      all: try badarg_2_arg.
+      all: try solve_complex_Excrel.
+      all: try (destruct x as [a|base]); try solve_complex_Excrel.
+      rewrite (Rel_mk_ascii_list _ _ _ H0).
+      destruct (mk_ascii_list hd') as [cs|]; [|badarg_2_arg].
+      destruct (parse_integer (Z.to_nat base) cs) as [z|]; [|badarg_2_arg].
+      left. do 4 eexists. split; [|split; reflexivity]. constructor; [apply Vrel_Lit_compat_closed | constructor].
+  }
+  (* binary_to_integer *)
+  1: {
+    inv H. solve_complex_Excrel.
+    Vrel_possibilities H0.
+    all: inv H1.
+    all: try badarg_1_arg.
+    all: try Vrel_possibilities H.
+    all: try (inv H2).
+    all: try badarg_2_arg.
+    all: try solve_complex_Excrel.
+    all: try (destruct x as [a|base]);try solve_complex_Excrel.
+    * destruct (if bvn_aligned x then parse_integer 10 (bvn_to_chars x) else None) as [z|].
+      - left. do 4 eexists. split; [|split; reflexivity]. constructor; [apply Vrel_Lit_compat_closed | constructor].
+      - badarg_1_arg.
+    * destruct x0 as [a|base]; [badarg_2_arg|].
+      destruct (if bvn_aligned x then parse_integer (Z.to_nat base) (bvn_to_chars x) else None) as [z|].
+      - left. do 4 eexists. split; [|split; reflexivity]. constructor; [apply Vrel_Lit_compat_closed | constructor].
+      - badarg_2_arg.
+    * destruct x0; solve_complex_Excrel.
+  }
+  (* atom_to_list *)
+  1: {
+    inv H. solve_complex_Excrel.
+    Vrel_possibilities H0.
+    all: inv H1.
+    all: try badarg_1_arg.
+    all: try solve_complex_Excrel.
+    * destruct x as [a|z].
+      - left. do 4 eexists. split; [|split; reflexivity]. constructor; [apply Vrel_string_to_vcons | constructor].
+      - badarg_1_arg.
+    * destruct x; solve_complex_Excrel.
+  }
+  (* binary_to_atom *)
+  1: {
+    inv H. solve_complex_Excrel.
+    Vrel_possibilities H0.
+    all: inv H1.
+    all: try solve_complex_Excrel.
+    all: try Vrel_possibilities H.
+    all: try (inv H2).
+    all: try badarg_2_arg.
+    all: try solve_complex_Excrel.
+    all: destruct x0 as [a|n]; try solve_complex_Excrel.
+    destruct (bvn_aligned x && ((a =? "utf8")%string || (a =? "latin1")%string || (a =? "unicode")%string)).
+    * left. do 4 eexists. split; [|split; reflexivity]. constructor; [apply Vrel_Lit_compat_closed | constructor].
+    * badarg_2_arg.
+  }
+  (* list_to_binary *)
+  1: {
+    inv H. solve_complex_Excrel.
+    Vrel_possibilities H0.
+    all: inv H1.
+    all: try solve_complex_Excrel.
+    all: try badarg_1_arg.
+    all: try rewrite (iolist_bits_related _ _ _ H0).
+    all: match goal with |- context [iolist_bits ?t] => destruct (iolist_bits t) as [b|] end.
+    all: try (left; do 4 eexists; split; [|split; reflexivity]; constructor; [apply Vrel_Bitstring_compat_closed | constructor]).
+    all: try badarg_1_arg.
+  }
+  (* iolist_to_binary *)
+  1: {
+    inv H. solve_complex_Excrel.
+    inv H1; try solve_complex_Excrel.
+    rewrite (iolist_bits_related _ _ _ H0).
+    destruct (iolist_bits hd') as [b|].
+    * left. do 4 eexists. split; [|split; reflexivity]. constructor; [apply Vrel_Bitstring_compat_closed | constructor].
+    * badarg_1_arg.
+  }
+  (* iolist_size *)
+  1: {
+    inv H. solve_complex_Excrel.
+    inv H1; try solve_complex_Excrel.
+    rewrite (iolist_bits_related _ _ _ H0).
+    destruct (iolist_bits hd') as [b|].
+    * left. do 4 eexists. split; [|split; reflexivity]. constructor; [apply Vrel_Lit_compat_closed | constructor].
+    * badarg_1_arg.
+  }
+Unshelve.
+  all: auto.
+Qed.
+
 (* Ltac Rel_solver :=
   try apply Rel_eval_io;
   try apply Rel_eval_arith;
@@ -3305,20 +3900,26 @@ Proof.
   1-4: pose proof (Rel_eval_logical m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-4: pose proof (Rel_eval_equality m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-3: pose proof (Rel_eval_transform_list m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-4: pose proof (Rel_eval_lists_bifs m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_list_tuple m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_convert m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-7: pose proof (Rel_eval_conversion m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-4: pose proof (Rel_eval_cmp m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1: pose proof (Rel_eval_length _ _ _ H1); Rel_eval_macro H0 H2.
   1: pose proof (Rel_eval_tuple_size _ _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_hd_tl m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_elem_tuple m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-8: pose proof (Rel_eval_check m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-12: pose proof (Rel_eval_check m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-10: shelve.
   1: left; do 2 eexists; solve_complex_Excrel.
   1: pose proof (Rel_eval_funinfo m _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_map_bifs m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_bin_size m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_bin_to_list m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-4: pose proof (Rel_eval_tuple_bifs m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-2: pose proof (Rel_eval_map_bifs m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-2: pose proof (Rel_eval_cmp m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1: pose proof (Rel_eval_split_binary m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   Unshelve.
   * left. pose proof (Rel_eval_io m mname0 f0 _ _ H1).
     destruct eval_io, eval_io. simpl in *; subst.
@@ -3392,11 +3993,33 @@ Proof.
   3: left; do 2 eexists; solve_complex_Excrel.
   all: unfold eval_primop_error; try rewrite Heqp; inv H0; [|inv H1].
   all: try now right.
-  left. do 2 eexists. solve_complex_Excrel. downclose_Vrel.
-  inv H2. 2: now right.
-  left. do 2 eexists. solve_complex_Excrel; downclose_Vrel.
+  (* match_fail with one argument: function_clause is converted *)
+  * left. exists None, None. right.
+    apply Vrel_possibilities in H as H'; intuition; destruct_hyps; subst.
+    all: try (do 2 eexists; split; [|split; reflexivity];
+              split; [reflexivity|]; intros; split; [downclose_Vrel|auto]; fail).
+    apply Vrel_Tuple_compat_rev in H as HL.
+    inversion HL as [|hv hv' tv tv' Hxy Ht]; subst.
+    1: do 2 eexists; split; [|split; reflexivity];
+       split; [reflexivity|]; intros; split; [downclose_Vrel|auto].
+    apply Vrel_possibilities in Hxy as Hxy'; intuition; destruct_hyps; subst.
+    all: try (do 2 eexists; split; [|split; reflexivity];
+              split; [reflexivity|]; intros; split; [downclose_Vrel|auto]; fail).
+    destruct x.
+    2: do 2 eexists; split; [|split; reflexivity];
+       split; [reflexivity|]; intros; split; [downclose_Vrel|auto].
+    destruct (s =? "function_clause")%string.
+    - do 2 eexists; split; [|split; reflexivity];
+        split; [reflexivity|]; intros; split; [auto|].
+      apply Vrel_Tuple_compat_closed. eapply Vrel_downclosed_list_biforall; eauto.
+    - do 2 eexists; split; [|split; reflexivity];
+        split; [reflexivity|]; intros; split; [downclose_Vrel|auto].
+  (* match_fail with more arguments: compilation error *)
+  * right. split; repeat case_match; first [reflexivity | congruence].
+  * inv H2. 2: now right.
+    left. do 2 eexists. solve_complex_Excrel; downclose_Vrel.
 Unshelve.
-  all: assumption.
+  all: try assumption; try lia.
 Qed.
 
 Lemma Rel_construct_bitstring m l l' :
@@ -3410,6 +4033,15 @@ Proof.
   by rewrite IHlist_biforall.
 Qed.
 
+
+(** Non-callable values: both sides raise related badfun exceptions *)
+Local Ltac solve_badfun :=
+  left; do 2 eexists; right; right; do 2 eexists; split; [|split; reflexivity];
+  apply Excrel_badfun;
+  first [ apply Vrel_Tuple_compat_closed; constructor;
+            [eapply Vrel_downclosed; eassumption
+            |constructor; [eapply Vrel_downclosed; eassumption | constructor]]
+        | eapply Vrel_downclosed; eassumption ].
 
 Lemma Rel_create_result_relaxed m l l' ident ident' :
   list_biforall (Vrel m) l l' ->
@@ -3444,13 +4076,13 @@ Proof.
       by eapply Vrel_downclosed_list_biforall.
   * destruct H0.
     apply Vrel_possibilities in H0 as Hvrel; intuition; destruct_hyps; subst.
-    1,3-8: left; do 2 eexists;right; solve_complex_Excrel.
+    1,3-8: solve_badfun.
     destruct x.
-    2: left; do 2 eexists; right; solve_complex_Excrel.
+    2: solve_badfun.
     apply Vrel_possibilities in H1 as Hvrel; intuition; destruct_hyps; subst.
-    1,3-8: left; do 2 eexists; right; solve_complex_Excrel.
+    1,3-8: solve_badfun.
     destruct x.
-    2: left; do 2 eexists; right; solve_complex_Excrel.
+    2: solve_badfun.
     pose proof (Rel_eval m s s s0 s0 _ _ eq_refl eq_refl H).
     intuition; destruct_hyps; subst.
     destruct H2; destruct_hyps; subst; rewrite H3, H4; left; do 2 eexists; right.
@@ -3462,38 +4094,12 @@ Proof.
     destruct H1; destruct_hyps; subst; rewrite H1, H2; left; do 2 eexists; right.
     now solve_complex_Vrel.
     solve_complex_Excrel.
-  * destruct v.
-    1-8,10: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
-    - do 2 eexists; split; [|split;reflexivity].
-      split; [|split]; auto.
-    - subst. do 2 eexists; split; [|split;reflexivity].
-      split; [|split]; auto.
-    - subst. do 2 eexists; split; [|split;reflexivity].
-      split; [|split]; auto.
-    - do 2 eexists; split; [|split;reflexivity].
-      split; [|split]; auto.
-      eapply Vrel_downclosed, Vrel_Cons_compat_closed.
-      1-2: rewrite Vrel_Fix_eq; apply H0.
-    - do 2 eexists; split; [|split;reflexivity].
-      split; [|split]; auto.
-      eapply Vrel_downclosed.
-      apply Vrel_Tuple_compat_closed.
-      apply go_is_biforall in H0.
-      eapply biforall_impl. 2: exact H0.
-      intros. rewrite Vrel_Fix_eq. exact H1.
-    - do 2 eexists; split; [|split;reflexivity].
-      split; [|split]; auto.
-      eapply Vrel_downclosed.
-      apply Vrel_Map_compat_closed.
-      clear Hcl1 Hcl2 Hcl3 Hcl4 H l l'.
-      generalize dependent l1.
-      induction l0; destruct l1; try contradiction; auto.
-      destruct a; contradiction.
-      constructor.
-      + destruct a, p. do 2 rewrite Vrel_Fix_eq; split; apply H0.
-      + apply IHl0. destruct a, p. apply H0.
-    - subst. do 2 eexists; split; [|split;reflexivity].
-      split; [|split]; auto.
+  * pose proof H0 as HV.
+    destruct v.
+    (* not a closure: badfun on both sides *)
+    1-8,10: rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
+    all: try solve_badfun.
+    (* closure *)
     - break_match_goal.
       + rewrite Vrel_Fix_eq in H0.
         destruct v0, H0 as [Hcl3 [Hcl4 H0]]; try contradiction.
@@ -3510,16 +4116,11 @@ Proof.
         destruct H0. subst.
         apply biforall_length in H as Hlen. rewrite Hlen in Heqb.
         rewrite Heqb. do 2 eexists; split; [|split;reflexivity].
-        split; [|split]; auto.
-        eapply Vrel_downclosed. rewrite Vrel_Fix_eq. split. 2: split.
-        3: {
-          split; auto. apply H1.
-        }
-        now inv Hcl1.
-        now inv Hcl2.
-        Unshelve.
-          all: try lia.
-          1-4: exact None. (* was []*)
+        apply Excrel_badarity.
+        2: now apply Vrel_meta_to_cons_biforall.
+        eapply Vrel_downclosed; exact HV.
+  Unshelve.
+    all: try lia.
 Qed.
 
 Lemma Rel_create_result m l l' ident ident' :
@@ -3557,13 +4158,13 @@ Proof.
       by eapply Vrel_downclosed_list_biforall.
   * destruct H0.
     apply Vrel_possibilities in H0 as Hvrel; intuition; destruct_hyps; subst.
-    1,3-8: left; do 2 eexists;right; solve_complex_Excrel.
+    1,3-8: solve_badfun.
     destruct x.
-    2: left; do 2 eexists; right; solve_complex_Excrel.
+    2: solve_badfun.
     apply Vrel_possibilities in H1 as Hvrel; intuition; destruct_hyps; subst.
-    1,3-8: left; do 2 eexists; right; solve_complex_Excrel.
+    1,3-8: solve_badfun.
     destruct x.
-    2: left; do 2 eexists; right; solve_complex_Excrel.
+    2: solve_badfun.
     pose proof (Rel_eval m s s s0 s0 _ _ eq_refl eq_refl H).
     intuition; destruct_hyps; subst.
     destruct H2; destruct_hyps; subst; rewrite H3, H4; left; do 2 eexists; right.
@@ -3575,38 +4176,12 @@ Proof.
     destruct H1; destruct_hyps; subst; rewrite H1, H2; left; do 2 eexists; right.
     now solve_complex_Vrel.
     solve_complex_Excrel.
-  * destruct v.
-    1-8,10: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
-    - do 2 eexists; split; [|split;reflexivity].
-      split; [|split]; auto.
-    - subst. do 2 eexists; split; [|split;reflexivity].
-      split; [|split]; auto.
-    - subst. do 2 eexists; split; [|split;reflexivity].
-      split; [|split]; auto.
-    - do 2 eexists; split; [|split;reflexivity].
-      split; [|split]; auto.
-      eapply Vrel_downclosed, Vrel_Cons_compat_closed.
-      1-2: rewrite Vrel_Fix_eq; apply H0.
-    - do 2 eexists; split; [|split;reflexivity].
-      split; [|split]; auto.
-      eapply Vrel_downclosed.
-      apply Vrel_Tuple_compat_closed.
-      apply go_is_biforall in H0.
-      eapply biforall_impl. 2: exact H0.
-      intros. rewrite Vrel_Fix_eq. exact H1.
-    - do 2 eexists; split; [|split;reflexivity].
-      split; [|split]; auto.
-      eapply Vrel_downclosed.
-      apply Vrel_Map_compat_closed.
-      clear Hcl1 Hcl2 Hcl3 Hcl4 H l l'.
-      generalize dependent l1.
-      induction l0; destruct l1; try contradiction; auto.
-      destruct a; contradiction.
-      constructor.
-      + destruct a, p. do 2 rewrite Vrel_Fix_eq; split; apply H0.
-      + apply IHl0. destruct a, p. apply H0.
-    - subst. do 2 eexists; split; [|split;reflexivity].
-      split; [|split]; auto.
+  * pose proof H0 as HV.
+    destruct v.
+    (* not a closure: badfun on both sides *)
+    1-8,10: rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
+    all: try solve_badfun.
+    (* closure *)
     - break_match_goal.
       + rewrite Vrel_Fix_eq in H0.
         destruct v0, H0 as [Hcl3 [Hcl4 H0]]; try contradiction.
@@ -3623,16 +4198,11 @@ Proof.
         destruct H0. subst.
         apply biforall_length in H as Hlen. rewrite Hlen in Heqb.
         rewrite Heqb. do 2 eexists; split; [|split;reflexivity].
-        split; [|split]; auto.
-        eapply Vrel_downclosed. rewrite Vrel_Fix_eq. split. 2: split.
-        3: {
-          split; auto. apply H1.
-        }
-        now inv Hcl1.
-        now inv Hcl2.
-        Unshelve.
-          all: try lia.
-          1-4: exact None (* was [] *).
+        apply Excrel_badarity.
+        2: now apply Vrel_meta_to_cons_biforall.
+        eapply Vrel_downclosed; exact HV.
+  Unshelve.
+    all: try lia.
 Qed.
 
 Lemma Erel_Params_compat_closed :
@@ -4002,10 +4572,7 @@ Proof.
     intuition; destruct_hyps; subst; try congruence.
   all: apply Vrel_possibilities in H0 as H0';
     intuition; destruct_hyps; subst; try congruence.
-  all: case_match; try congruence.
-  all: case_match; try congruence.
-  all: case_match; try congruence.
-  all: case_match; try congruence.
+  all: repeat case_match; simpl in *; try congruence.
 Qed.
 
 Lemma Rel_segment_to_bitstring_exc {m v v' vsize vsize' unit type endian exc} :
@@ -4023,19 +4590,10 @@ Proof.
   all: try (by eexists; split; [ reflexivity | split; [reflexivity| split; choose_compat_lemma;
       repeat apply biforall_cons; auto; choose_compat_lemma;
       repeat apply biforall_cons; auto; downclose_Vrel ]]).
-  all: case_match; try congruence.
-  all: try case_match; try congruence.
-  all: try case_match; try congruence.
-  all: try case_match; try congruence.
-  all: try invSome.
+  all: repeat case_match; simpl in *; try congruence; try invSome.
   all: try (by eexists; split; [ reflexivity | split; [reflexivity| split; choose_compat_lemma;
       repeat apply biforall_cons; auto; choose_compat_lemma;
       repeat apply biforall_cons; auto; downclose_Vrel ]]).
-  * case_match; invSome.
-  * case_match; invSome.
-    by eexists; split; [ reflexivity | split; [reflexivity| split; choose_compat_lemma;
-      repeat apply biforall_cons; auto; choose_compat_lemma;
-      repeat apply biforall_cons; auto; downclose_Vrel ]].
 Unshelve.
   all: lia.
 Qed.

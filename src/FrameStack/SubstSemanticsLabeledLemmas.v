@@ -8,6 +8,35 @@ From CoreErlang.FrameStack Require Export
 From stdpp Require Export list option.
 Import ListNotations.
 
+(** The only BIFs that create atoms are `list_to_atom` and `binary_to_atom`,
+    and both of them have a single atom as the side effect's argument *)
+Lemma eval_convert_ac : forall m f vl r l0,
+  eval_convert m f vl = (r, Some ((AtomCreation, l0) : SideEffect)) ->
+  exists av, l0 = [VLit (Atom av)].
+Proof.
+  intros. unfold eval_convert in H.
+  repeat break_match_hyp; inv H; try (by eexists).
+Qed.
+
+Lemma eval_conversion_ac : forall m f vl r l0,
+  eval_conversion m f vl = (r, Some ((AtomCreation, l0) : SideEffect)) ->
+  exists av, l0 = [VLit (Atom av)].
+Proof.
+  intros. unfold eval_conversion in H.
+  repeat break_match_hyp; inv H; try (by eexists).
+Qed.
+
+Lemma eval_ac : forall m f vl r l0,
+  eval m f vl = Some (r, Some ((AtomCreation, l0) : SideEffect)) ->
+  exists av, l0 = [VLit (Atom av)].
+Proof.
+  intros. unfold eval in H.
+  destruct (convert_string_to_code (m, f)); try (inv H; fail).
+  all: first [ (unfold eval_io in H; repeat break_match_hyp; inv H; fail)
+             | (inv H; eapply eval_convert_ac; eassumption)
+             | (inv H; eapply eval_conversion_ac; eassumption) ].
+Qed.
+
 Lemma side_effect_ac_value : forall fs r fs' r' l0,
   ⟨ fs, r ⟩ -⌊ Some ((AtomCreation, l0):SideEffect) ⌋->ₗ ⟨ fs', r' ⟩ ->
   exists av, l0 = [VLit (Atom av)].
@@ -20,35 +49,7 @@ Proof.
       destruct l; try discriminate.
       destruct f; try discriminate.
       destruct l; try discriminate.
-      unfold eval in H1.
-      destruct (convert_string_to_code (s, s0)); try discriminate.
-      1-2: inversion H1; unfold eval_io in H3;
-           destruct (convert_string_to_code (s, s0)); try discriminate;
-           repeat (destruct vl; simpl in H3; try discriminate).
-      {
-        inversion H1. unfold eval_convert in H3.
-        destruct (convert_string_to_code (s, s0)); try discriminate.
-        * repeat (destruct vl; simpl in H3; try discriminate).
-          destruct (mk_ascii_list v); try discriminate.
-          inversion H3. exists (string_of_list_ascii l).
-          reflexivity.
-        * repeat (destruct vl; simpl in H3; try discriminate).
-          destruct v; try discriminate.
-          destruct l; discriminate.
-      }
-      {
-        inversion H1. unfold eval_convert in H3.
-        destruct (convert_string_to_code (s, s0)); try discriminate.
-        * repeat (destruct vl; simpl in H3; try discriminate).
-          destruct (mk_ascii_list v); try discriminate.
-          inversion H3. exists (string_of_list_ascii l).
-          reflexivity.
-        * repeat (destruct vl; simpl in H3; try discriminate).
-          destruct v; try discriminate.
-          destruct l; discriminate.
-      }
-      1-3: destruct (eval_error s s0 vl); try discriminate.
-      all: destruct (eval_concurrent s s0 vl); try discriminate.
+      eapply eval_ac. symmetry. exact H1.
     + unfold primop_eval in H1.
       destruct (convert_primop_to_code f); try discriminate.
       all: destruct (eval_primop_error f vl); try discriminate.
@@ -60,35 +61,7 @@ Proof.
       destruct l; try discriminate.
       destruct f; try discriminate.
       destruct l; try discriminate.
-      unfold eval in H0.
-      destruct (convert_string_to_code (s, s0)); try discriminate.
-      1-2: inversion H0; unfold eval_io in H2;
-           destruct (convert_string_to_code (s, s0)); try discriminate;
-           repeat (destruct vl; simpl in H2; try discriminate).
-      {
-        inversion H0. unfold eval_convert in H2.
-        destruct (convert_string_to_code (s, s0)); try discriminate.
-        - repeat (destruct vl; simpl in H2; try discriminate).
-          destruct (mk_ascii_list v); try discriminate.
-          inversion H2. exists (string_of_list_ascii l).
-          reflexivity.
-        - repeat (destruct vl; simpl in H2; try discriminate).
-          destruct v; try discriminate.
-          destruct l; discriminate.
-      }
-      {
-        inversion H0. unfold eval_convert in H2.
-        destruct (convert_string_to_code (s, s0)); try discriminate.
-        - repeat (destruct vl; simpl in H2; try discriminate).
-          destruct (mk_ascii_list v); try discriminate.
-          inversion H2. exists (string_of_list_ascii l).
-          reflexivity.
-        - repeat (destruct vl; simpl in H2; try discriminate).
-          destruct v; try discriminate.
-          destruct l; discriminate.
-      }
-      1-3: destruct (eval_error s s0 (vl ++ [v])); try discriminate.
-      all: destruct (eval_concurrent s s0 (vl ++ [v])); try discriminate.
+      eapply eval_ac. symmetry. exact H0.
     + unfold primop_eval in H0.
       destruct (convert_primop_to_code f); try discriminate.
       all: destruct (eval_primop_error f (vl ++ [v])); try discriminate.
@@ -187,7 +160,7 @@ Proof.
       assumption.
     - inv Heq.
   * inversion Hi; subst; clear Hi. destruct v; unfold badfun; try invSome.
-    1-8: constructor; auto; constructor.
+    1-8, 10: scope_solver.
     break_match_hyp; invSome.
     - constructor. destruct_scopes.
       apply -> subst_preserves_scope_exp. exact H6.
@@ -199,8 +172,8 @@ Proof.
       }
       apply scoped_list_idsubst. apply Forall_app; split; auto.
       now apply closlist_scope.
-    - unfold badarity. constructor. constructor. auto.
-    - unfold badfun. constructor. constructor. auto.
+    - unfold badarity. constructor. scope_solver.
+      by apply meta_to_cons_closed. scope_solver.
 Qed.
 
 Lemma segment_to_bitstring_scope Γ v vsize unit type endian r:
@@ -593,7 +566,7 @@ Proof.
   * destruct (primop_eval f vl) eqn: pe.
     - inv H1. eapply primop_eval_is_closed_result; eassumption.
     - inv H1.
-  * inv H. destruct v; try invSome; try now (constructor; auto).
+  * inv H. destruct v; try invSome; try now (scope_solver).
     break_match_hyp; invSome; auto.
     all: constructor; auto.
     inv H3.
@@ -606,6 +579,8 @@ Proof.
       split; auto.
       now apply closlist_scope.
     }
+    scope_solver.
+    apply meta_to_cons_closed. assumption.
 Qed.
 
 Lemma create_result_is_not_box :

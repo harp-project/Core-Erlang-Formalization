@@ -1079,10 +1079,25 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   all: destruct v; try reflexivity.
   all: simpl in *; try destruct l; try reflexivity.
-  all: try destruct (Nat.eqb from p); try reflexivity.
-  destruct Lit_beq; simpl in *. reflexivity.
-  destruct string_dec; reflexivity.
-  by case_match; simpl.
+  all: try destruct (Nat.eqb from p) eqn:E1; try reflexivity.
+  1-2: case_match; reflexivity.
+  all: destruct v0; try (destruct l); simpl.
+  all: destruct vs; simpl; try reflexivity.
+  all: repeat (simpl; match goal with
+       | |- context [if ?a =? ?q then _ else _] =>
+           let E := fresh "E" in destruct (a =? q) eqn:E; try rewrite E
+       | |- context [if (?x <? 0)%Z then _ else _] =>
+           let E := fresh "E" in destruct (x <? 0)%Z eqn:E; try rewrite E
+       end).
+  all: simpl; try reflexivity.
+  all: try discriminate.
+  all: try congruence.
+  all: try (destruct l0; simpl).
+  all: repeat (simpl; match goal with
+       | |- context [if (?x <? 0)%Z then _ else _] => destruct (x <? 0)%Z
+       | |- context [if (?x =? ?y)%Z then _ else _] => destruct (x =? y)%Z
+       end).
+  all: simpl; try reflexivity.
 Qed.
 
 Lemma renamePID_eval_funinfo :
@@ -1260,13 +1275,25 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   1,3: inv H1; cbn; reflexivity.
   all: destruct vs; simpl; try reflexivity.
-  2,4: inv H1; cbn; reflexivity.
+  2: inv H1; cbn; reflexivity.
   * rewrite <- renamePID_mk_ascii_list.
     case_match; inv H1; cbn; reflexivity.
   * destruct v; simpl; inv H1; try reflexivity.
     - destruct l; simpl; inv H0; try reflexivity.
       simpl. by rewrite renamePID_string_to_vcons.
     - simpl. destruct (from =? p) eqn:P; try reflexivity.
+  * destruct v; try (destruct l); simpl in H1 |- *.
+    all: destruct v0; try (destruct l); simpl in H1 |- *.
+    all: destruct vs; simpl in H1 |- *; try (inv H1; reflexivity).
+    all: repeat (simpl; match goal with
+         | |- context [if ?a =? ?q then _ else _] => destruct (a =? q) eqn:?
+         | |- context [if negb ?c then _ else _] =>
+             let E := fresh "E" in destruct c eqn:E; try rewrite E in H1
+         end).
+    all: simpl in H1; inv H1; simpl; try reflexivity.
+    all: try rewrite renamePID_string_to_vcons.
+    all: repeat match goal with H : (_ =? _)%nat = _ |- _ => rewrite ?H; clear H end.
+    all: simpl; try reflexivity.
 Qed.
 
 Lemma renamePID_convert_2 :
@@ -1281,13 +1308,25 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   1,3: inv H1; cbn; reflexivity.
   all: destruct vs; simpl; try reflexivity.
-  2,4: inv H1; cbn; reflexivity.
+  2: inv H1; cbn; reflexivity.
   * rewrite <- renamePID_mk_ascii_list.
     case_match; inv H1; cbn; reflexivity.
   * destruct v; simpl; inv H1; try reflexivity.
     - destruct l; simpl; inv H0; try reflexivity.
       simpl. by rewrite renamePID_string_to_vcons.
     - simpl. destruct (from =? p) eqn:P; try reflexivity.
+  * destruct v; try (destruct l); simpl in H1 |- *.
+    all: destruct v0; try (destruct l); simpl in H1 |- *.
+    all: destruct vs; simpl in H1 |- *; try (inv H1; reflexivity).
+    all: repeat (simpl; match goal with
+         | |- context [if ?a =? ?q then _ else _] => destruct (a =? q) eqn:?
+         | |- context [if negb ?c then _ else _] =>
+             let E := fresh "E" in destruct c eqn:E; try rewrite E in H1
+         end).
+    all: simpl in H1; inv H1; simpl; try reflexivity.
+    all: try rewrite renamePID_string_to_vcons.
+    all: repeat match goal with H : (_ =? _)%nat = _ |- _ => rewrite ?H; clear H end.
+    all: simpl; try reflexivity.
 Qed.
 
 Lemma renamePID_eval_length :
@@ -1365,6 +1404,46 @@ Proof.
   all: destruct vs; inv H0; simpl; try reflexivity.
 Qed.
 
+Lemma renamePID_map_put : forall l k v from to,
+  map (λ '(x, y), (x .⟦ from ↦ to ⟧ᵥ, y .⟦ from ↦ to ⟧ᵥ)) (map_put k v l) =
+  map_put k.⟦ from ↦ to ⟧ᵥ v.⟦ from ↦ to ⟧ᵥ
+          (map (λ '(x, y), (x .⟦ from ↦ to ⟧ᵥ, y .⟦ from ↦ to ⟧ᵥ)) l).
+Proof.
+  induction l as [|[k' v'] l IH]; intros; simpl; auto.
+  rewrite <- renamePID_Val_ltb, <- renamePID_Val_eqb_alt.
+  destruct (k <ᵥ k'); simpl; auto.
+  destruct (k =ᵥ k'); simpl; auto.
+  now rewrite IH.
+Qed.
+
+Lemma renamePID_map_get : forall l k from to,
+  map_get k.⟦ from ↦ to ⟧ᵥ (map (λ '(x, y), (x .⟦ from ↦ to ⟧ᵥ, y .⟦ from ↦ to ⟧ᵥ)) l) =
+  option_map (renamePIDVal from to) (map_get k l).
+Proof.
+  induction l as [|[k' v'] l IH]; intros; simpl; auto.
+  rewrite <- renamePID_Val_ltb, <- renamePID_Val_eqb_alt.
+  destruct (k' <ᵥ k); simpl; auto.
+  destruct (k =ᵥ k'); simpl; auto.
+Qed.
+
+Lemma renamePID_mk_list : forall v from to,
+  mk_list (renamePIDVal from to v) = option_map (map (renamePIDVal from to)) (mk_list v).
+Proof.
+  induction v; intros; simpl; try reflexivity.
+  * now destruct Nat.eqb.
+  * rewrite IHv2. destruct (mk_list v2); reflexivity.
+Qed.
+
+Lemma renamePID_fold_map_put : forall l value from to m,
+  map (λ '(x, y), (x .⟦ from ↦ to ⟧ᵥ, y .⟦ from ↦ to ⟧ᵥ))
+      (fold_left (λ m0 k, map_put k value m0) l m) =
+  fold_left (λ m0 k, map_put k value.⟦ from ↦ to ⟧ᵥ m0) (map (renamePIDVal from to) l)
+            (map (λ '(x, y), (x .⟦ from ↦ to ⟧ᵥ, y .⟦ from ↦ to ⟧ᵥ)) m).
+Proof.
+  induction l; intros; simpl; auto.
+  rewrite IHl. now rewrite renamePID_map_put.
+Qed.
+
 Lemma renamePID_eval_map_bifs :
   forall m f vs r,
     eval_map_bifs m f vs = r ->
@@ -1374,39 +1453,212 @@ Proof.
   intros. unfold eval_map_bifs in *.
   rewrite <- H. clear H.
   case_match; try reflexivity.
-  all: destruct vs; simpl; try reflexivity.
-  all: destruct vs; simpl; try reflexivity.
-  all: destruct vs; simpl; try reflexivity.
-  2-3: destruct vs; simpl; try reflexivity.
-  * destruct v0; try reflexivity.
-    cbn. by destruct Nat.eqb eqn:P.
-    simpl. induction l; simpl; try reflexivity.
-    destruct a; simpl.
-    repeat rewrite <- renamePID_Val_ltb. simpl.
-    repeat rewrite <- renamePID_Val_eqb_alt.
-    destruct (Val_ltb v0) eqn:P.
-    - assumption.
-    - destruct (Val_eqb v) eqn:P2; reflexivity.
-  * destruct v0; try reflexivity.
-    cbn. by destruct Nat.eqb eqn:P.
-    simpl. induction l; simpl; try reflexivity.
-    destruct a; simpl.
-    repeat rewrite <- renamePID_Val_ltb. simpl.
-    repeat rewrite <- renamePID_Val_eqb_alt.
-    destruct (Val_ltb v0) eqn:P.
-    - assumption.
-    - destruct (Val_eqb v) eqn:P2; reflexivity.
-  * destruct v1; try reflexivity.
-    cbn. by destruct Nat.eqb eqn:P.
-    simpl. repeat f_equal.
-    induction l; simpl; try reflexivity.
-    destruct a; simpl.
-    repeat rewrite <- renamePID_Val_ltb. simpl.
-    repeat rewrite <- renamePID_Val_eqb_alt.
-    destruct (Val_ltb v) eqn:P.
-    - repeat f_equal.
-    - destruct (Val_eqb v) eqn:P2; repeat f_equal.
-      cbn. f_equal. apply IHl.
+  1: { destruct vs as [|k [|mp [|d [|d2 ds]]]]; simpl; try reflexivity.
+    - destruct mp; simpl; try reflexivity; try (destruct Nat.eqb; reflexivity).
+      rewrite renamePID_map_get. destruct map_get; reflexivity.
+    - destruct mp; simpl; try reflexivity; try (destruct Nat.eqb; reflexivity).
+      rewrite renamePID_map_get. destruct map_get; reflexivity. }
+  1: { destruct vs as [|k [|v [|mp [|d ds]]]]; simpl; try reflexivity.
+    destruct mp; simpl; try reflexivity; try (destruct Nat.eqb; reflexivity).
+    now rewrite renamePID_map_put. }
+  1: { destruct vs as [|mp [|d ds]]; simpl; try reflexivity.
+    - destruct mp; simpl; try reflexivity; try (destruct Nat.eqb; reflexivity).
+      now rewrite length_map.
+    - destruct mp; simpl; try reflexivity; try (destruct Nat.eqb; reflexivity). }
+  1: { destruct vs as [|ks [|v [|d ds]]]; simpl; try reflexivity.
+    rewrite renamePID_mk_list. destruct (mk_list ks); simpl; try reflexivity.
+    rewrite renamePID_fold_map_put. reflexivity. }
+Qed.
+
+Lemma renamePID_iolist_bits : forall v from to,
+  iolist_bits (renamePIDVal from to v) = iolist_bits v.
+Proof.
+  induction v; intros; simpl; try reflexivity.
+  * now destruct Nat.eqb.
+  * pose proof (IHv1 from to) as H1. rewrite IHv2.
+    destruct v1; simpl in H1 |- *; try rewrite ?H1; try reflexivity.
+    destruct Nat.eqb; reflexivity.
+Qed.
+
+Lemma renamePID_find_key : forall items key n from to,
+  find_key key.⟦ from ↦ to ⟧ᵥ n (map (renamePIDVal from to) items) =
+  option_map (renamePIDVal from to) (find_key key n items).
+Proof.
+  induction items; intros; simpl; auto.
+  unfold find_key in *. simpl.
+  destruct a; simpl; try (apply IHitems; fail).
+  * destruct Nat.eqb; apply IHitems.
+  * rewrite nth_error_map.
+    destruct (nth_error l (Z.to_nat n - 1)) eqn:E; simpl.
+    - rewrite <- renamePID_Val_eqb_alt.
+      destruct (key =ᵥ v); simpl; auto.
+    - apply IHitems.
+Qed.
+
+Lemma renamePID_existsb : forall items x from to,
+  existsb (Val_eqb x.⟦ from ↦ to ⟧ᵥ) (map (renamePIDVal from to) items) =
+  existsb (Val_eqb x) items.
+Proof.
+  induction items; intros; simpl; auto.
+  rewrite <- renamePID_Val_eqb_alt, IHitems. reflexivity.
+Qed.
+
+Lemma renamePID_fold_cons : forall items tail from to,
+  renamePIDVal from to (fold_left (λ acc x, VCons x acc) items tail) =
+  fold_left (λ acc x, VCons x acc) (map (renamePIDVal from to) items) tail.⟦ from ↦ to ⟧ᵥ.
+Proof.
+  induction items; intros; simpl; auto.
+Qed.
+
+Lemma renamePID_eval_lists_bifs :
+  forall m f vs r,
+    eval_lists_bifs m f vs = r ->
+    forall from to,
+      eval_lists_bifs m f (map (renamePIDVal from to) vs) = renamePIDRed from to r.
+Proof.
+  intros. unfold eval_lists_bifs in *.
+  rewrite <- H. clear H.
+  case_match; try reflexivity.
+  1: { destruct vs as [|x [|l [|d ds]]]; simpl; try reflexivity.
+    rewrite renamePID_mk_list. destruct (mk_list l); simpl; try reflexivity.
+    rewrite renamePID_existsb. destruct existsb; reflexivity. }
+  1: { destruct vs as [|key [|pos [|l [|d ds]]]]; simpl; try reflexivity.
+    rewrite renamePID_mk_list.
+    destruct pos as [|[s|x]|p|?|?|?|?|?|?|?]; simpl; try reflexivity.
+    - destruct (mk_list l); simpl; try reflexivity.
+      destruct (1 <=? x)%Z; simpl; try reflexivity.
+      rewrite renamePID_find_key. destruct find_key; reflexivity.
+    - destruct Nat.eqb; reflexivity. }
+  1: { destruct vs as [|key [|pos [|l [|d ds]]]]; simpl; try reflexivity.
+    rewrite renamePID_mk_list.
+    destruct pos as [|[s|x]|p|?|?|?|?|?|?|?]; simpl; try reflexivity.
+    - destruct (mk_list l); simpl; try reflexivity.
+      destruct (1 <=? x)%Z; simpl; try reflexivity.
+      rewrite renamePID_find_key. destruct find_key; reflexivity.
+    - destruct Nat.eqb; reflexivity. }
+  1: { destruct vs as [|l [|tail [|d ds]]]; simpl; try reflexivity.
+    - rewrite renamePID_mk_list. destruct (mk_list l); simpl; try reflexivity.
+      rewrite renamePID_meta_to_cons, map_rev. reflexivity.
+    - rewrite renamePID_mk_list. destruct (mk_list l); simpl; try reflexivity.
+      rewrite renamePID_fold_cons. reflexivity. }
+Qed.
+
+Lemma renamePID_eval_tuple_bifs :
+  forall m f vs r,
+    eval_tuple_bifs m f vs = r ->
+    forall from to,
+      eval_tuple_bifs m f (map (renamePIDVal from to) vs) = renamePIDRed from to r.
+Proof.
+  intros. unfold eval_tuple_bifs in *.
+  rewrite <- H. clear H.
+  case_match; try reflexivity.
+  all: destruct vs as [|v1 [|v2 [|v3 [|v4 vs]]]]; simpl; try reflexivity.
+  all: destruct v1; simpl; try reflexivity.
+  all: try (destruct v2; simpl; try reflexivity).
+  all: repeat (simpl; match goal with
+        | |- context [if ?a =? ?q then _ else _] => destruct (a =? q) eqn:?
+        end).
+  all: try reflexivity.
+  all: try (destruct l; simpl; try reflexivity).
+  all: rewrite ?length_map.
+  all: repeat (simpl; match goal with
+        | |- context [if ?c then _ else _] => destruct c eqn:?
+        end).
+  all: try reflexivity.
+  all: try discriminate.
+  all: simpl; try rewrite map_app, firstn_map, skipn_map; try reflexivity.
+  all: try rewrite map_repeat.
+  all: simpl; try rewrite Heqb; try reflexivity.
+Qed.
+
+Lemma renamePID_eval_split_binary :
+  forall m f vs r,
+    eval_split_binary m f vs = r ->
+    forall from to,
+      eval_split_binary m f (map (renamePIDVal from to) vs) = renamePIDRed from to r.
+Proof.
+  intros. unfold eval_split_binary in *.
+  rewrite <- H. clear H.
+  case_match; try reflexivity.
+  destruct vs as [|v1 [|v2 [|v3 vs]]]; simpl; try reflexivity.
+  all: destruct v1; simpl; try reflexivity.
+  all: try (destruct v2; simpl; try reflexivity).
+  all: repeat (simpl; match goal with
+        | |- context [if ?a =? ?q then _ else _] => destruct (a =? q) eqn:?
+        end).
+  all: try reflexivity.
+  all: try (destruct l; simpl; try reflexivity).
+  all: try reflexivity.
+  all: destruct (bvn_aligned bits && (0 <=? x)%Z && (x * 8 <=? Z.of_N (bvn_n bits))%Z); reflexivity.
+Qed.
+
+Ltac destruct_pid_equality := match goal with
+  | |- context [if ?a =? ?b then _ else _] => destruct (a =? b)
+  end.
+
+Lemma renamePID_eval_conversion :
+  forall m f vs from to,
+    eval_conversion m f (map (renamePIDVal from to) vs) =
+    (renamePIDRed from to (fst (eval_conversion m f vs)),
+     fmap (fun e => (fst e, map (renamePIDVal from to) (snd e))) (snd (eval_conversion m f vs))).
+Proof.
+  intros. unfold eval_conversion.
+  destruct convert_string_to_code; simpl; try reflexivity.
+  (* list_to_integer *)
+  1: { destruct vs as [|v1 [|v2 [|v3 vs]]]; simpl; try reflexivity.
+    all: try rewrite <- (renamePID_mk_ascii_list v1 from to).
+    all: try (destruct v2 as [|[s|base]|p|?|?|?|?|?|?|?]; simpl; try destruct_pid_equality).
+    all: try (destruct (mk_ascii_list v1) as [cs|]; simpl; try reflexivity).
+    all: try (match goal with |- context [parse_integer ?b ?cs] =>
+                destruct (parse_integer b cs) end).
+    all: try reflexivity. }
+  (* binary_to_integer *)
+  1: { destruct vs as [|v1 [|v2 [|v3 vs]]]; simpl; try reflexivity.
+    all: destruct v1 as [|[?|?]|p|?|?|?|?|?|?|b]; simpl; try reflexivity;
+         try (destruct_pid_equality; reflexivity).
+    all: try (destruct v2 as [|[s|base]|p|?|?|?|?|?|?|?]; simpl; try destruct_pid_equality).
+    all: try (match goal with |- context [if bvn_aligned ?b then _ else _] =>
+                destruct (bvn_aligned b) end).
+    all: try (match goal with |- context [parse_integer ?b ?cs] =>
+                destruct (parse_integer b cs) end).
+    all: try reflexivity. }
+  (* atom_to_list *)
+  1: { destruct vs as [|v1 [|v2 vs]]; simpl; try reflexivity.
+    all: destruct v1 as [|[a|?]|p|?|?|?|?|?|?|?]; simpl; try reflexivity;
+      try (destruct_pid_equality; reflexivity).
+    all: try (rewrite renamePID_string_to_vcons; reflexivity).
+    all: try reflexivity. }
+  (* binary_to_atom *)
+  1: { destruct vs as [|v1 [|v2 [|v3 vs]]]; simpl; try reflexivity.
+    all: destruct v1 as [|[?|?]|p|?|?|?|?|?|?|b]; simpl; try reflexivity;
+         try (destruct_pid_equality; reflexivity).
+    all: destruct v2 as [|[s|?]|p|?|?|?|?|?|?|?]; simpl; try reflexivity;
+         try (destruct_pid_equality; reflexivity).
+    all: try (match goal with |- context [if ?c then _ else _] => destruct c end).
+    all: try reflexivity. }
+  (* list_to_binary *)
+  1: { destruct vs as [|v1 [|v2 vs]]; simpl; try reflexivity.
+    all: rewrite ?renamePID_iolist_bits.
+    all: destruct v1; simpl; try reflexivity;
+      try (destruct_pid_equality; reflexivity).
+    all: try (match goal with |- context [match iolist_bits ?v with _ => _ end] =>
+                destruct (iolist_bits v) end).
+    all: try reflexivity.
+    all: destruct v1_1 as [|[?|z]|p|?|?|?|?|?|?|?]; simpl; try reflexivity.
+    all: repeat (simpl; match goal with
+           | |- context [if ?a =? ?q then _ else _] => destruct (a =? q) eqn:?
+           | |- context [if ?c then _ else _] => destruct c eqn:?
+           | |- context [match iolist_bits ?v with _ => _ end] => destruct (iolist_bits v)
+           | |- context [option_map _ (iolist_bits ?v)] => destruct (iolist_bits v)
+           end).
+    all: try discriminate.
+    all: try reflexivity. }
+  (* iolist_to_binary *)
+  1: { destruct vs as [|v1 [|v2 vs]]; simpl; try reflexivity.
+    rewrite renamePID_iolist_bits. destruct iolist_bits; reflexivity. }
+  (* iolist_size *)
+  1: { destruct vs as [|v1 [|v2 vs]]; simpl; try reflexivity.
+    rewrite renamePID_iolist_bits. destruct iolist_bits; reflexivity. }
 Qed.
 
 Proposition renamePID_eval :
@@ -1433,15 +1685,19 @@ Proof.
     try (erewrite renamePID_eval_tuple_size; reflexivity);
     try (erewrite renamePID_eval_check; reflexivity);
     try (erewrite renamePID_eval_bin_size; reflexivity);
-    try (erewrite renamePID_eval_bin_to_list; reflexivity).
+    try (erewrite renamePID_eval_bin_to_list; reflexivity);
+    try (erewrite renamePID_eval_lists_bifs; reflexivity);
+    try (erewrite renamePID_eval_tuple_bifs; reflexivity);
+    try (erewrite renamePID_eval_split_binary; reflexivity).
   1-2: erewrite renamePID_eval_io; try eassumption; reflexivity.
   1-2: erewrite renamePID_convert_2; try eassumption; reflexivity.
+  1-7: rewrite renamePID_eval_conversion, H1; reflexivity.
   1-3: break_match_hyp; try congruence; destruct e, p;
        eapply renamePID_eval_error in Heqo; rewrite Heqo; inv H1; reflexivity.
   1-7: break_match_hyp; try congruence; destruct e, p;
        eapply renamePID_eval_concurrent in Heqo; rewrite Heqo; inv H1; reflexivity.
   reflexivity.
-  1-2: erewrite renamePID_eval_map_bifs; try eassumption; reflexivity.
+  1-4: erewrite renamePID_eval_map_bifs; try eassumption; reflexivity.
 Qed.
 
 Proposition renamePID_primop_eval :
@@ -1456,8 +1712,17 @@ Proof.
   all: unfold eval_primop_error in *; rewrite EQ in *; destruct vs; cbn in *.
   all: try congruence.
   all: destruct vs; cbn in *; try congruence.
-  1: now inv H.
+  (* match_fail: function_clause is converted *)
+  1: { destruct v; cbn in *; try (inv H; reflexivity).
+       1: inv H; cbn; destruct_pid_equality; reflexivity.
+       destruct l as [|v l]; cbn in *; try (inv H; reflexivity).
+       destruct v; cbn in *; try (inv H; reflexivity);
+         try (inv H; cbn; destruct_pid_equality; reflexivity).
+       destruct l0; cbn in *; try (inv H; reflexivity).
+       destruct (s =? "function_clause")%string; inv H; reflexivity. }
   all: destruct vs; cbn in *; try congruence.
+  (* match_fail with more arguments: no result *)
+  1-2: repeat case_match; congruence.
   1: now inv H.
 Qed.
 
@@ -1497,6 +1762,14 @@ Proof.
       unfold convert_to_closlist. repeat f_equal.
       rewrite map_map, map_app. f_equal. rewrite map_map.
       f_equal. extensionality x. destruct x, p. cbn. f_equal.
+      (* arity mismatch: badarity carries the arguments *)
+      inv H. cbn. now rewrite renamePID_meta_to_cons.
+Qed.
+
+Lemma renamePID_get_bin_size : forall v unit default from to,
+  get_bin_size (renamePIDVal from to v) unit default = get_bin_size v unit default.
+Proof.
+  intros. destruct v; cbn; try destruct_pid_equality; reflexivity.
 Qed.
 
 Lemma renamePID_segment_to_bitstring : forall v vsize unit type endian r from to,
@@ -1506,16 +1779,26 @@ Lemma renamePID_segment_to_bitstring : forall v vsize unit type endian r from to
 Proof.
   intros v vsize unit type endian r from to H.
   unfold segment_to_bitstring in *.
-  destruct vsize; simpl in *; try (inv H; reflexivity).
-  * destruct l as [a|z]; [inv H; reflexivity|].
+  destruct type; try discriminate.
+  (* IntType *)
+  * destruct vsize; simpl in *; try (inv H; reflexivity);
+      try (inv H; simpl; destruct_pid_equality; reflexivity).
+    destruct l as [a|z]; [inv H; reflexivity|].
     destruct (z <? 0)%Z; [inv H; reflexivity|].
-    destruct type; try (inv H; reflexivity); try discriminate.
-    all: destruct v; simpl in *; repeat case_match; try congruence; inv H; simpl;
-         repeat match goal with |- context [Nat.eqb ?a ?b] => destruct (Nat.eqb a b) end;
-         first [reflexivity | congruence].
-  * inv H. simpl.
-    repeat match goal with |- context [Nat.eqb ?a ?b] => destruct (Nat.eqb a b) end.
-    all: reflexivity.
+    destruct v; simpl in *; repeat case_match; try congruence; inv H; simpl;
+      repeat match goal with |- context [Nat.eqb ?a ?b] => destruct (Nat.eqb a b) end;
+      first [reflexivity | congruence].
+  (* BinaryType *)
+  * destruct v; simpl in *; try (inv H; reflexivity);
+      try (inv H; simpl; destruct_pid_equality; reflexivity).
+    rewrite renamePID_get_bin_size.
+    repeat case_match; inv H; reflexivity.
+  (* BitstringType *)
+  * destruct (Nat.eqb unit 1); [|inv H; reflexivity].
+    destruct v; simpl in *; try (inv H; reflexivity);
+      try (inv H; simpl; destruct_pid_equality; reflexivity).
+    rewrite renamePID_get_bin_size.
+    repeat case_match; inv H; reflexivity.
 Qed.
 
 Theorem renamePID_is_preserved :

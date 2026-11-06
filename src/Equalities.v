@@ -1377,3 +1377,17 @@ Proof.
   intros. intro.
   rewrite H0 in H. rewrite Val_eqb_refl in H. discriminate.
 Qed.
+
+Lemma Val_eqb_congr x x' y y' :
+  x =ᵥ x' = true -> y =ᵥ y' = true ->
+  x =ᵥ y = (x' =ᵥ y').
+Proof.
+  intros H1 H2. destruct (x =ᵥ y) eqn:E.
+  * assert (x' =ᵥ x = true) as A by (rewrite Val_eqb_sym; exact H1).
+    pose proof (Val_eqb_trans _ _ _ A E) as A2.
+    pose proof (Val_eqb_trans _ _ _ A2 H2) as A3. symmetry. exact A3.
+  * destruct (x' =ᵥ y') eqn:E'; auto.
+    assert (y' =ᵥ y = true) as B by (rewrite Val_eqb_sym; exact H2).
+    pose proof (Val_eqb_trans _ _ _ E' B) as B2.
+    pose proof (Val_eqb_trans _ _ _ H1 B2). congruence.
+Qed.

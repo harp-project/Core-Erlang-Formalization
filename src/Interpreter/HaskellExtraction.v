@@ -13,9 +13,14 @@ Extract Inductive comparison => "Prelude.Ordering" ["Prelude.EQ" "Prelude.LT" "P
 
 Extract Inlined Constant app => "(Prelude.++)".
 Extract Inlined Constant length => "(Data.List.genericLength)".
+(* otherwise the extracted [find] clashes with Data.List.find in the handwritten modules *)
+Extract Inlined Constant find => "Data.List.find".
 
 Extract Inlined Constant PosDef.Pos.succ => "(Prelude.+ 1)".
 Extract Inlined Constant PosDef.Pos.of_succ_nat => "(Prelude.+ 1)".
+(* Z.log2 would otherwise unfold to Pos.size, which depends on the removed Pos.succ *)
+Extract Inlined Constant Z.log2 =>
+  "(\z -> let go n acc = if n Prelude.<= 1 then acc else go (n `Prelude.div` 2) (acc Prelude.+ 1) in go z 0)".
 Extract Inlined Constant Pos.mul => "(Prelude.*)".
 Extract Inlined Constant Z.of_nat => "(Prelude.id)".
 Extract Inlined Constant Z.to_nat => "(Prelude.id)".
@@ -143,6 +148,7 @@ Extract Inlined Constant PosDef.Pos.iter_op => "removed_PosDef_Pos_iter_op".
 Extract Inlined Constant Pos.iter_op => "removed_Pos_iter_op".
 Extract Inlined Constant Pos.pred_double => "removed_Pos_pred_double".
 Extract Inlined Constant Pos.succ => "removed_Pos_succ".
+Extract Inlined Constant Pos.size => "removed_Pos_size".
 
 Extract Inlined Constant mapM => "removed_mapM".
 Extract Inlined Constant mret => "removed_mret".
@@ -173,7 +179,8 @@ Extract Constant subst =>
         in e' `deepseq` EExp e'})
 ".
 
-Set Extraction Output Directory "HaskellSrc/exe/".
+(* relative to the project root: use "make extract" *)
+Set Extraction Output Directory "src/Interpreter/HaskellSrc/exe/".
 Extraction "RocqExtraction.hs"
   substVal substNonVal
   nodeTauFirstStep makeInitialNode makeInitialConfig currentProcessList

@@ -2155,7 +2155,8 @@ Proof.
       }
     - cbn. destruct v1; try now inv H13.
       case_match; inv H13; simpl; rewrite length_map, H.
-      2: reflexivity.
+      (* arity mismatch: badarity carries the arguments *)
+      2: by rewrite renamePID_meta_to_cons.
       do 2 f_equal. rewrite split_renamePID_subst_exp.
       assert (list_subst
                    (convert_to_closlist
@@ -2728,7 +2729,8 @@ Proof.
   unfold eval_convert. intros.
   case_match; inv H; simpl.
   1-28: set_solver.
-  3-38: set_solver.
+  1-4: set_solver.
+  3-58: set_solver.
   * case_match.
     1:inv H2; simpl; try set_solver.
     subst. case_match.
@@ -2736,13 +2738,12 @@ Proof.
     case_match.
     2:inv H2; simpl; try set_solver.
     inv H2. simpl; try set_solver.
-  * case_match.
-    1:inv H2; simpl; try set_solver.
-    subst. case_match.
-    2:inv H2; simpl; try set_solver.
-    case_match; inv H2; simpl; try set_solver.
-    case_match; inv H4; simpl; try set_solver.
-    rewrite string_to_vcons_usedPIDs. set_solver.
+  * destruct vl as [|v1 [|v2 [|v3 vl]]]; simpl in H2.
+    all: try (destruct v1; try (destruct l); try simpl in H2).
+    all: try (destruct v2; try (destruct l); try simpl in H2).
+    all: try (match goal with H : context [if ?c then _ else _] |- _ => destruct c end).
+    all: match goal with H : _ = (_, _) |- _ => inv H end; simpl; try set_solver.
+    all: try (rewrite string_to_vcons_usedPIDs; set_solver).
 Qed.
 
 Lemma eval_cmp_usedPIDs :
@@ -2847,32 +2848,65 @@ Proof.
   intros. unfold eval_funinfo. repeat case_match; try set_solver.
 Qed.
 
+Lemma map_get_usedPIDs : forall l k v,
+  map_get k l = Some v -> usedPIDsVal v ⊆ usedPIDsVal (VMap l).
+Proof.
+  induction l as [|[k' v'] l IH]; intros; simpl in *. 1: discriminate.
+  destruct (Val_ltb k' k).
+  - apply IH in H. set_solver.
+  - destruct (Val_eqb k k'); inv H; set_solver.
+Qed.
+
+Lemma map_put_usedPIDs : forall l k v,
+  usedPIDsVal (VMap (map_put k v l)) ⊆ usedPIDsVal k ∪ usedPIDsVal v ∪ usedPIDsVal (VMap l).
+Proof.
+  induction l as [|[k' v'] l IH]; intros; simpl in *. 1: set_solver.
+  destruct (Val_ltb k k'); simpl; [set_solver|].
+  destruct (Val_eqb k k'); simpl; [set_solver|].
+  specialize (IH k v). simpl in IH. set_solver.
+Qed.
+
+Lemma mk_list_flat_union_usedPIDs : forall v l,
+  mk_list v = Some l -> flat_union usedPIDsVal l ⊆ usedPIDsVal v.
+Proof.
+  induction v; intros; simpl in *; try discriminate.
+  - inv H. set_solver.
+  - destruct (mk_list v2) eqn:E; inv H. specialize (IHv2 l0 eq_refl). simpl. set_solver.
+Qed.
+
+Lemma fold_map_put_usedPIDs : forall items value m,
+  usedPIDsVal (VMap (fold_left (λ m0 k, map_put k value m0) items m)) ⊆
+  flat_union usedPIDsVal items ∪ usedPIDsVal value ∪ usedPIDsVal (VMap m).
+Proof.
+  induction items; intros; simpl. 1: set_solver.
+  etrans. apply IHitems.
+  pose proof (map_put_usedPIDs m a value). set_solver.
+Qed.
+
 Lemma eval_map_bifs_usedPIDs :
   forall vl m f,
     usedPIDsRed (eval_map_bifs m f vl) ⊆ flat_union usedPIDsVal vl.
 Proof.
   intros. unfold eval_map_bifs.
   case_match; simpl.
-  1-53, 56-59: rewrite union_empty_r_L; apply empty_subseteq.
-  all: destruct vl; [|destruct vl; [|destruct vl;[|destruct vl]]]; simpl.
-  all: try by rewrite union_empty_r_L; apply empty_subseteq.
-  1-2: destruct v0. 19: destruct v1.
-  all: cbn; try by rewrite union_empty_r_L; apply empty_subseteq.
-  1-3, 5-8, 10-19: set_solver.
-  * clear. induction l; simpl. set_solver.
-    destruct a. destruct Val_ltb.
-    - set_solver.
-    - destruct Val_eqb; simpl; set_solver.
-  * clear. induction l; simpl. set_solver.
-    destruct a. destruct Val_ltb.
-    - set_solver.
-    - destruct Val_eqb; simpl; set_solver.
-  * clear. destruct v1; simpl.
-    1-5, 7-10: set_solver.
-    induction l; simpl. set_solver.
-    destruct a. destruct Val_ltb.
-    - set_solver.
-    - destruct Val_eqb; simpl; set_solver.
+  1-75, 78-85, 88-90: rewrite union_empty_r_L; apply empty_subseteq.
+  * destruct vl as [|key [|mp [|d [|d2 ds]]]]; simpl; try (rewrite union_empty_r_L; apply empty_subseteq).
+    - destruct mp; simpl; try set_solver.
+      destruct (map_get key l) eqn:E; simpl; try set_solver.
+      apply map_get_usedPIDs in E. simpl in E. set_solver.
+    - destruct mp; simpl; try set_solver.
+      destruct (map_get key l) eqn:E; simpl; try set_solver.
+      apply map_get_usedPIDs in E. simpl in E. set_solver.
+  * destruct vl as [|key [|v [|mp [|d ds]]]]; simpl; try (rewrite union_empty_r_L; apply empty_subseteq).
+    destruct mp; simpl; try set_solver.
+    pose proof (map_put_usedPIDs l key v). simpl in *. set_solver.
+  * destruct vl as [|mp [|d ds]]; simpl; try (rewrite union_empty_r_L; apply empty_subseteq).
+    - destruct mp; simpl; try set_solver.
+    - destruct mp; simpl; try set_solver.
+  * destruct vl as [|ks [|v [|d ds]]]; simpl; try (rewrite union_empty_r_L; apply empty_subseteq).
+    destruct (mk_list ks) eqn:E; simpl; try set_solver.
+    apply mk_list_flat_union_usedPIDs in E.
+    pose proof (fold_map_put_usedPIDs l v []). simpl in *. set_solver.
 Qed.
 
 Lemma eval_bin_size_usedPIDs :
@@ -2907,6 +2941,134 @@ Proof.
     + case_match; repeat constructor; reflexivity.
 Qed.
 
+Lemma meta_to_cons_usedPIDs : forall l,
+  usedPIDsVal (meta_to_cons l) = flat_union usedPIDsVal l.
+Proof.
+  induction l; simpl; auto. now rewrite IHl.
+Qed.
+
+Lemma flat_union_rev : forall l : list Val,
+  flat_union usedPIDsVal (List.rev l) = flat_union usedPIDsVal l.
+Proof.
+  induction l; simpl. 1: reflexivity.
+  rewrite flat_union_app, IHl. simpl. set_solver.
+Qed.
+
+Lemma flat_union_take_drop : forall n (l : list Val),
+  flat_union usedPIDsVal (take n l) ∪ flat_union usedPIDsVal (drop n l) =
+  flat_union usedPIDsVal l.
+Proof.
+  intros. rewrite <- flat_union_app, take_drop. reflexivity.
+Qed.
+
+Lemma flat_union_repeat : forall n (v : Val),
+  flat_union usedPIDsVal (repeat v n) ⊆ usedPIDsVal v.
+Proof.
+  induction n; intros; simpl. 1: set_solver.
+  specialize (IHn v). set_solver.
+Qed.
+
+Lemma flat_union_fold_cons : forall (items : list Val) tail,
+  usedPIDsVal (fold_left (λ acc x, VCons x acc) items tail) ⊆
+  flat_union usedPIDsVal items ∪ usedPIDsVal tail.
+Proof.
+  induction items; intros; simpl. 1: set_solver.
+  specialize (IHitems (VCons a tail)). simpl in IHitems. set_solver.
+Qed.
+
+Lemma find_key_usedPIDs : forall items key n e,
+  find_key key n items = Some e -> usedPIDsVal e ⊆ flat_union usedPIDsVal items.
+Proof.
+  induction items; intros; unfold find_key in *; simpl in *. 1: discriminate.
+  destruct (match a with VTuple t => _ | _ => false end) eqn:E.
+  - inv H. set_solver.
+  - apply IHitems in H. set_solver.
+Qed.
+
+Lemma eval_lists_bifs_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_lists_bifs m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_lists_bifs.
+  case_match; simpl; try (rewrite union_empty_r_L; apply empty_subseteq).
+  * destruct vl as [|x [|l [|d ds]]]; simpl; try set_solver.
+    destruct (mk_list l); simpl; try set_solver.
+    destruct existsb; simpl; set_solver.
+  * destruct vl as [|key [|pos [|l [|d ds]]]]; simpl; try set_solver.
+    destruct pos as [|[s|z]|?|?|?|?|?|?|?|?]; simpl; try set_solver.
+    destruct (mk_list l) as [items|] eqn:E; simpl; try set_solver.
+    apply mk_list_flat_union_usedPIDs in E.
+    destruct (1 <=? z)%Z; simpl; try set_solver.
+    destruct (find_key key z items) eqn:E2; simpl; try set_solver.
+    apply find_key_usedPIDs in E2. set_solver.
+  * destruct vl as [|key [|pos [|l [|d ds]]]]; simpl; try set_solver.
+    destruct pos as [|[s|z]|?|?|?|?|?|?|?|?]; simpl; try set_solver.
+    destruct (mk_list l) as [items|] eqn:E; simpl; try set_solver.
+    apply mk_list_flat_union_usedPIDs in E.
+    destruct (1 <=? z)%Z; simpl; try set_solver.
+    destruct (find_key key z items) eqn:E2; simpl; try set_solver.
+  * destruct vl as [|l [|tail [|d ds]]]; simpl; try set_solver.
+    - destruct (mk_list l) eqn:E; simpl; try set_solver.
+      apply mk_list_flat_union_usedPIDs in E.
+      rewrite meta_to_cons_usedPIDs, flat_union_rev. set_solver.
+    - destruct (mk_list l) eqn:E; simpl; try set_solver.
+      apply mk_list_flat_union_usedPIDs in E.
+      pose proof (flat_union_fold_cons l0 tail). set_solver.
+Qed.
+
+Lemma flat_union_drop_le : forall n m (l : list Val), n <= m ->
+  flat_union usedPIDsVal (drop m l) ⊆ flat_union usedPIDsVal (drop n l).
+Proof.
+  intros. replace m with (n + (m - n)) by lia.
+  rewrite <- (drop_drop l (m - n) n).
+  pose proof (flat_union_take_drop (m - n) (drop n l)). set_solver.
+Qed.
+
+Lemma eval_tuple_bifs_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_tuple_bifs m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_tuple_bifs.
+  case_match; simpl; try (rewrite union_empty_r_L; apply empty_subseteq).
+  all: destruct vl as [|v1 [|v2 [|v3 [|v4 vs]]]]; simpl; try set_solver.
+  all: destruct v1; simpl; try set_solver.
+  all: try (destruct v2; simpl; try set_solver).
+  all: try (destruct l; simpl; try set_solver).
+  all: try (match goal with |- context [if ?c then _ else _] => destruct c eqn:?E end); simpl; try set_solver.
+  all: try (match goal with |- context [flat_union usedPIDsVal (take ?n ?l)] =>
+              pose proof (flat_union_take_drop n l) end).
+  all: try (match goal with |- context [flat_union usedPIDsVal (repeat ?v ?n)] =>
+              pose proof (flat_union_repeat n v) end).
+  all: simpl; rewrite ?flat_union_app; simpl; try set_solver.
+  1: { pose proof (flat_union_take_drop (Z.to_nat x - 1) l0).
+       pose proof (flat_union_drop_le (Z.to_nat x - 1) (Z.to_nat x) l0 ltac:(lia)). set_solver. }
+  1: { pose proof (flat_union_take_drop (Z.to_nat x - 1) l0). set_solver. }
+Qed.
+
+Lemma eval_split_binary_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_split_binary m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_split_binary.
+  case_match; simpl; try (rewrite union_empty_r_L; apply empty_subseteq).
+  destruct vl as [|v1 [|v2 [|v3 vs]]]; simpl; try set_solver.
+  all: destruct v1; simpl; try set_solver.
+  all: try (destruct v2; simpl; try set_solver).
+  all: try (destruct l; simpl; try set_solver).
+  all: try (match goal with |- context [if ?c then _ else _] => destruct c end); simpl; try set_solver.
+Qed.
+
+Lemma eval_conversion_usedPIDs :
+  forall vl m f r eff,
+    eval_conversion m f vl = (r, eff) ->
+    usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
+Proof.
+  unfold eval_conversion. intros.
+  destruct convert_string_to_code; simpl in H; try (inv H; simpl; set_solver).
+  all: repeat case_match; inv H; simpl; try set_solver.
+  all: try (rewrite string_to_vcons_usedPIDs; set_solver).
+Qed.
+
 Lemma eval_usedPIDs :
   forall vl m f r eff',
     eval m f vl = Some (r, eff') ->
@@ -2932,12 +3094,23 @@ Proof.
   pose proof eval_map_bifs_usedPIDs vl m f.
   pose proof eval_bin_size_usedPIDs vl m f.
   pose proof eval_bin_to_list_usedPIDs vl m f.
+  pose proof eval_lists_bifs_usedPIDs vl m f.
+  pose proof eval_tuple_bifs_usedPIDs vl m f.
+  pose proof eval_split_binary_usedPIDs vl m f.
+  pose proof eval_conversion_usedPIDs vl m f.
   case_match; try invSome; try assumption; try by auto.
   all: try case_match; try invSome; try assumption; try by auto.
   * by eapply H0; eassumption.
   * by eapply H0; eassumption.
   * by eapply H5; eassumption.
   * by eapply H5; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
 Qed.
 
 Lemma primop_eval_usedPIDs :
@@ -2945,12 +3118,8 @@ Lemma primop_eval_usedPIDs :
     primop_eval f vl = Some (r, eff') ->
     usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
 Proof.
-  intros. unfold primop_eval in H. case_match; try invSome.
-  3: simpl; try set_solver.
-  1-2: case_match; try invSome; try set_solver.
-  1-2: unfold eval_primop_error in H1; rewrite H0 in *; destruct vl; cbn in *; try invSome.
-  1-2: destruct vl; cbn in *; try invSome; try set_solver.
-  destruct vl; cbn in *; try invSome; try set_solver.
+  intros. unfold primop_eval, eval_primop_error in H.
+  repeat case_match; try invSome; cbn in *; try congruence; set_solver.
 Qed.
 
 Lemma create_result_usedPIDs :
@@ -2973,6 +3142,8 @@ Proof.
   * apply primop_eval_usedPIDs in H; try set_solver.
   * break_match_hyp; try invSome; try set_solver.
     break_match_hyp; try invSome; try set_solver.
+    (* arity mismatch: badarity carries the arguments *)
+    2: cbn; rewrite meta_to_cons_usedPIDs; set_solver.
     simpl. apply elem_of_subseteq. intros.
     apply (proj1 subst_usedPIDs e x) in H as [|]; try set_solver.
     destruct_hyps. apply list_subst_idsubst_inl in H.

@@ -12,6 +12,12 @@ import qualified GHC.Base
 import Control.DeepSeq
 
 
+option_map :: (a1 -> a2) -> (Prelude.Maybe a1) -> Prelude.Maybe a2
+option_map f o =
+  case o of {
+   Prelude.Just a -> Prelude.Just (f a);
+   Prelude.Nothing -> Prelude.Nothing}
+
 data Uint =
    Nil
  | D0 Uint
@@ -80,6 +86,9 @@ succ_double d =
 
 pred :: Prelude.Integer -> Prelude.Integer
 pred = (\n -> Prelude.max 0 (Prelude.pred n))
+
+sub :: Prelude.Integer -> Prelude.Integer -> Prelude.Integer
+sub = (\n m -> Prelude.max 0 (n Prelude.- m))
 
 data N =
    N0
@@ -305,6 +314,41 @@ ldiff p q =
       q)
     p
 
+lxor :: Prelude.Integer -> Prelude.Integer -> N
+lxor p q =
+  (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+    (\p0 ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\q0 -> ndouble (lxor p0 q0))
+      (\q0 -> nsucc_double (lxor p0 q0))
+      (\_ -> Npos ((\x -> 2 Prelude.* x) p0))
+      q)
+    (\p0 ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\q0 -> nsucc_double (lxor p0 q0))
+      (\q0 -> ndouble (lxor p0 q0))
+      (\_ -> Npos ((\x -> 2 Prelude.* x Prelude.+ 1) p0))
+      q)
+    (\_ ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\q0 -> Npos ((\x -> 2 Prelude.* x) q0))
+      (\q0 -> Npos ((\x -> 2 Prelude.* x Prelude.+ 1) q0))
+      (\_ -> N0)
+      q)
+    p
+
 iter0 :: (a1 -> a1) -> a1 -> Prelude.Integer -> a1
 iter0 f x n =
   (\fI fO fH n -> if n Prelude.== 1 then fH () else
@@ -360,6 +404,14 @@ ldiff0 n m =
    Npos p -> case m of {
               N0 -> n;
               Npos q -> ldiff p q}}
+
+lxor0 :: N -> N -> N
+lxor0 n m =
+  case n of {
+   N0 -> m;
+   Npos p -> case m of {
+              N0 -> n;
+              Npos q -> lxor p q}}
 
 succ_double0 :: N -> N
 succ_double0 x =
@@ -612,6 +664,30 @@ land1 a b =
       b)
     a
 
+lxor1 :: Prelude.Integer -> Prelude.Integer -> Prelude.Integer
+lxor1 a b =
+  (\fO fP fN n -> if n Prelude.== 0 then fO () else
+                   if n Prelude.> 0 then fP n else
+                   fN (Prelude.negate n))
+    (\_ -> b)
+    (\a0 ->
+    (\fO fP fN n -> if n Prelude.== 0 then fO () else
+                   if n Prelude.> 0 then fP n else
+                   fN (Prelude.negate n))
+      (\_ -> a)
+      (\b0 -> of_N (lxor a0 b0))
+      (\b0 -> Prelude.negate (succ_pos (lxor0 (Npos a0) (pred_N b0))))
+      b)
+    (\a0 ->
+    (\fO fP fN n -> if n Prelude.== 0 then fO () else
+                   if n Prelude.> 0 then fP n else
+                   fN (Prelude.negate n))
+      (\_ -> a)
+      (\b0 -> Prelude.negate (succ_pos (lxor0 (pred_N a0) (Npos b0))))
+      (\b0 -> of_N (lxor0 (pred_N a0) (pred_N b0)))
+      b)
+    a
+
 pred0 :: Prelude.Integer -> Prelude.Integer
 pred0 x =
   (Prelude.+) x (Prelude.negate 1)
@@ -656,9 +732,20 @@ iter1 n f x =
     (\_ -> x)
     n
 
+lnot :: Prelude.Integer -> Prelude.Integer
+lnot a =
+  pred0 (opp a)
+
 ones :: Prelude.Integer -> Prelude.Integer
 ones n =
   pred0 (shiftl ((\x -> x) 1) n)
+
+repeat :: a1 -> Prelude.Integer -> ([]) a1
+repeat x n =
+  (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
+    (\_ -> ([]))
+    (\k -> (:) x (repeat x k))
+    n
 
 nth :: Prelude.Integer -> (([]) a1) -> a1 -> a1
 nth n l default0 =
@@ -669,6 +756,24 @@ nth n l default0 =
     (\m -> case l of {
             ([]) -> default0;
             (:) _ l' -> nth m l' default0})
+    n
+
+firstn :: Prelude.Integer -> (([]) a1) -> ([]) a1
+firstn n l =
+  (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
+    (\_ -> ([]))
+    (\n0 -> case l of {
+             ([]) -> ([]);
+             (:) a l0 -> (:) a (firstn n0 l0)})
+    n
+
+skipn :: Prelude.Integer -> (([]) a1) -> ([]) a1
+skipn n l =
+  (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
+    (\_ -> l)
+    (\n0 -> case l of {
+             ([]) -> ([]);
+             (:) _ l0 -> skipn n0 l0})
     n
 
 nth_error :: (([]) a1) -> Prelude.Integer -> Prelude.Maybe a1
@@ -684,11 +789,29 @@ nth_error l n =
      (:) _ l' -> nth_error l' n0})
     n
 
+rev0 :: (([]) a1) -> ([]) a1
+rev0 l =
+  case l of {
+   ([]) -> ([]);
+   (:) x l' -> (Prelude.++) (rev0 l') ((:) x ([]))}
+
 rev_append :: (([]) a1) -> (([]) a1) -> ([]) a1
 rev_append l l' =
   case l of {
    ([]) -> l';
    (:) a l0 -> rev_append l0 ((:) a l')}
+
+fold_left :: (a1 -> a2 -> a1) -> (([]) a2) -> a1 -> a1
+fold_left f l a0 =
+  case l of {
+   ([]) -> a0;
+   (:) b l0 -> fold_left f l0 (f a0 b)}
+
+existsb :: (a1 -> Prelude.Bool) -> (([]) a1) -> Prelude.Bool
+existsb f l =
+  case l of {
+   ([]) -> Prelude.False;
+   (:) a l0 -> (Prelude.||) (f a) (existsb f l0)}
 
 zero :: Prelude.Char
 zero =
@@ -1937,11 +2060,16 @@ data BIFCode =
  | BSl
  | BSr
  | BAbs
+ | BBXor
+ | BBNot
+ | BBOr
+ | BBAnd
  | BFwrite
  | BFread
  | BAnd
  | BOr
  | BNot
+ | BXor
  | BEq
  | BTypeEq
  | BNeq
@@ -1949,10 +2077,21 @@ data BIFCode =
  | BApp
  | BMinusMinus
  | BSplit
+ | BMember
+ | BKeyfind
+ | BKeymember
+ | BReverse
  | BTupleToList
  | BListToTuple
  | BListToAtom
  | BIntegerToList
+ | BListToInteger
+ | BBinaryToInteger
+ | BAtomToList
+ | BBinaryToAtom
+ | BListToBinary
+ | BIolistToBinary
+ | BIolistSize
  | BLt
  | BLe
  | BGt
@@ -1969,6 +2108,12 @@ data BIFCode =
  | BIsBoolean
  | BIsBinary
  | BIsBitstring
+ | BIsList
+ | BIsTuple
+ | BIsFunction
+ | BIsMap
+ | BIsPid
+ | BIsPort
  | BError
  | BExit
  | BThrow
@@ -1987,6 +2132,15 @@ data BIFCode =
  | BBitSize
  | BBinaryToList
  | BBitstringToList
+ | BDeleteElement
+ | BInsertElement
+ | BMakeTuple
+ | BSize
+ | BMapSize
+ | BFromKeys
+ | BMax
+ | BMin
+ | BSplitBinary
 
 is_shallow_proper_list :: Val -> Prelude.Bool
 is_shallow_proper_list v =
@@ -2120,6 +2274,323 @@ string_to_vcons s =
    ([]) -> VNil;
    (:) x xs -> VCons (VLit (Integer ((Prelude.id) (nat_of_ascii x))))
     (string_to_vcons xs)}
+
+digit_value :: Prelude.Char -> Prelude.Maybe Prelude.Integer
+digit_value c =
+  let {n = nat_of_ascii c} in
+  case (Prelude.&&)
+         ((Prelude.<=) (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ 0)))))))))))))))))))))))))))))))))))))))))))))))) n)
+         ((Prelude.<=) n (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+           (Prelude.succ (Prelude.succ
+           0)))))))))))))))))))))))))))))))))))))))))))))))))))))))))) of {
+   Prelude.True -> Prelude.Just
+    (sub n (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+      (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+      (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+      (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+      (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+      (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+      (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+      (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+      (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+      (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+      0)))))))))))))))))))))))))))))))))))))))))))))))));
+   Prelude.False ->
+    case (Prelude.&&)
+           ((Prelude.<=) (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ
+             0)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+             n)
+           ((Prelude.<=) n (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ
+             0))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) of {
+     Prelude.True -> Prelude.Just
+      ((Prelude.+)
+        (sub n (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ
+          0))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        0)))))))))));
+     Prelude.False ->
+      case (Prelude.&&)
+             ((Prelude.<=) (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ
+               0)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+               n)
+             ((Prelude.<=) n (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+               (Prelude.succ (Prelude.succ (Prelude.succ
+               0))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) of {
+       Prelude.True -> Prelude.Just
+        ((Prelude.+)
+          (sub n (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+            (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+            (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+            (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+            (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+            (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+            (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+            (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+            (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+            (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+            (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+            (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+            (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+            (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+            (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+            (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+            (Prelude.succ
+            0))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+          (Prelude.succ (Prelude.succ 0)))))))))));
+       Prelude.False -> Prelude.Nothing}}}
+
+parse_digits :: Prelude.Integer -> (([]) Prelude.Char) -> Prelude.Integer ->
+                Prelude.Maybe Prelude.Integer
+parse_digits base l acc =
+  case l of {
+   ([]) -> Prelude.Just acc;
+   (:) c cs ->
+    case digit_value c of {
+     Prelude.Just d ->
+      case ltb d base of {
+       Prelude.True ->
+        parse_digits base cs
+          ((Prelude.+) ((Prelude.*) acc ((Prelude.id) base))
+            ((Prelude.id) d));
+       Prelude.False -> Prelude.Nothing};
+     Prelude.Nothing -> Prelude.Nothing}}
+
+parse_integer :: Prelude.Integer -> (([]) Prelude.Char) -> Prelude.Maybe
+                 Prelude.Integer
+parse_integer base l =
+  case Prelude.not
+         ((Prelude.&&) ((Prelude.<=) (Prelude.succ (Prelude.succ 0)) base)
+           ((Prelude.<=) base (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+             (Prelude.succ 0)))))))))))))))))))))))))))))))))))))) of {
+   Prelude.True -> Prelude.Nothing;
+   Prelude.False ->
+    case l of {
+     ([]) -> Prelude.Nothing;
+     (:) c cs ->
+      case ((Prelude.==) :: Prelude.Char -> Prelude.Char -> Prelude.Bool) c
+             '-' of {
+       Prelude.True ->
+        case cs of {
+         ([]) -> Prelude.Nothing;
+         (:) _ _ -> option_map opp (parse_digits base cs 0)};
+       Prelude.False ->
+        case ((Prelude.==) :: Prelude.Char -> Prelude.Char -> Prelude.Bool) c
+               '+' of {
+         Prelude.True ->
+          case cs of {
+           ([]) -> Prelude.Nothing;
+           (:) _ _ -> parse_digits base cs 0};
+         Prelude.False -> parse_digits base l 0}}}}
+
+digit_char :: Prelude.Integer -> Prelude.Char
+digit_char d =
+  case (Prelude.<) d ((\x -> x) ((\x -> 2 Prelude.* x)
+         ((\x -> 2 Prelude.* x Prelude.+ 1) ((\x -> 2 Prelude.* x) 1)))) of {
+   Prelude.True ->
+    ascii_of_nat
+      ((Prelude.+) (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        0)))))))))))))))))))))))))))))))))))))))))))))))) ((Prelude.id) d));
+   Prelude.False ->
+    ascii_of_nat
+      ((Prelude.+) (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+        (Prelude.succ
+        0)))))))))))))))))))))))))))))))))))))))))))))))))))))))
+        ((Prelude.id) d))}
+
+integer_digits :: Prelude.Integer -> Prelude.Integer -> Prelude.Integer ->
+                  (([]) Prelude.Char) -> ([]) Prelude.Char
+integer_digits fuel base n acc =
+  (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
+    (\_ -> acc)
+    (\fuel' ->
+    let {acc' = (:) (digit_char (modulo0 n base)) acc} in
+    case (Prelude.<) n base of {
+     Prelude.True -> acc';
+     Prelude.False -> integer_digits fuel' base (div0 n base) acc'})
+    fuel
+
+integer_to_digits :: Prelude.Integer -> Prelude.Integer -> ([]) Prelude.Char
+integer_to_digits base z =
+  let {
+   digits = integer_digits (Prelude.succ
+              ((Prelude.id)
+                ((\z -> let go n acc = if n Prelude.<= 1 then acc else go (n `Prelude.div` 2) (acc Prelude.+ 1) in go z 0)
+                  ((Prelude.abs) z))))
+              base ((Prelude.abs) z) ([])}
+  in
+  case (Prelude.<) z 0 of {
+   Prelude.True -> (:) '-' digits;
+   Prelude.False -> digits}
 
 len :: Val -> Prelude.Maybe Prelude.Integer
 len l =
@@ -2317,6 +2788,84 @@ bvn_to_bytes b =
       ((\x -> 2 Prelude.* x) ((\x -> 2 Prelude.* x) 1))))
       (shiftr (bvn_unsigned b) (of_N r))))
   (Bv_to_bvn r (bv_extract (bvn_n b) N0 r (bvn_val b)))
+
+bvn_empty :: Bvn
+bvn_empty =
+  Bv_to_bvn N0 (z_to_bv N0 0)
+
+bvn_app :: Bvn -> Bvn -> Bvn
+bvn_app a b =
+  Bv_to_bvn (add (bvn_n a) (bvn_n b))
+    (bv_concat (add (bvn_n a) (bvn_n b)) (bvn_n a) (bvn_n b) (bvn_val a)
+      (bvn_val b))
+
+bvn_byte :: Prelude.Integer -> Bvn
+bvn_byte z =
+  Bv_to_bvn (Npos ((\x -> 2 Prelude.* x) ((\x -> 2 Prelude.* x)
+    ((\x -> 2 Prelude.* x) 1))))
+    (z_to_bv (Npos ((\x -> 2 Prelude.* x) ((\x -> 2 Prelude.* x)
+      ((\x -> 2 Prelude.* x) 1)))) z)
+
+bvn_aligned :: Bvn -> Prelude.Bool
+bvn_aligned b =
+  eqb
+    (modulo (bvn_n b) (Npos ((\x -> 2 Prelude.* x) ((\x -> 2 Prelude.* x)
+      ((\x -> 2 Prelude.* x) 1)))))
+    N0
+
+bvn_to_chars :: Bvn -> ([]) Prelude.Char
+bvn_to_chars b =
+  (Prelude.map) (\z -> ascii_of_nat ((Prelude.id) z))
+    (Prelude.fst (bvn_to_bytes b))
+
+iolist_bits :: Val -> Prelude.Maybe Bvn
+iolist_bits v =
+  case v of {
+   VNil -> Prelude.Just bvn_empty;
+   VCons h t ->
+    case h of {
+     VLit l ->
+      case l of {
+       Atom _ ->
+        case iolist_bits h of {
+         Prelude.Just a ->
+          case iolist_bits t of {
+           Prelude.Just b -> Prelude.Just (bvn_app a b);
+           Prelude.Nothing -> Prelude.Nothing};
+         Prelude.Nothing -> Prelude.Nothing};
+       Integer z ->
+        case (Prelude.&&) ((Prelude.<=) 0 z)
+               ((Prelude.<=) z ((\x -> x) ((\x -> 2 Prelude.* x Prelude.+ 1)
+                 ((\x -> 2 Prelude.* x Prelude.+ 1)
+                 ((\x -> 2 Prelude.* x Prelude.+ 1)
+                 ((\x -> 2 Prelude.* x Prelude.+ 1)
+                 ((\x -> 2 Prelude.* x Prelude.+ 1)
+                 ((\x -> 2 Prelude.* x Prelude.+ 1)
+                 ((\x -> 2 Prelude.* x Prelude.+ 1) 1))))))))) of {
+         Prelude.True -> option_map (bvn_app (bvn_byte z)) (iolist_bits t);
+         Prelude.False -> Prelude.Nothing}};
+     _ ->
+      case iolist_bits h of {
+       Prelude.Just a ->
+        case iolist_bits t of {
+         Prelude.Just b -> Prelude.Just (bvn_app a b);
+         Prelude.Nothing -> Prelude.Nothing};
+       Prelude.Nothing -> Prelude.Nothing}};
+   VBitstring b ->
+    case bvn_aligned b of {
+     Prelude.True -> Prelude.Just b;
+     Prelude.False -> Prelude.Nothing};
+   _ -> Prelude.Nothing}
+
+find_key :: Val -> Prelude.Integer -> (([]) Val) -> Prelude.Maybe Val
+find_key key n items =
+  Data.List.find (\e ->
+    case e of {
+     VTuple t ->
+      case nth_error t (sub ((Prelude.id) n) (Prelude.succ 0)) of {
+       Prelude.Just k -> val_eqb key k;
+       Prelude.Nothing -> Prelude.False};
+     _ -> Prelude.False}) items
 
 data FrameIdent =
    IValues
@@ -2803,103 +3352,140 @@ convert_string_to_code_Interp pat =
                        Prelude.True -> BAbs;
                        Prelude.False ->
                         case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                               sn "and" of {
-                         Prelude.True -> BAnd;
+                               sn "bxor" of {
+                         Prelude.True -> BBXor;
                          Prelude.False ->
                           case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                 sn "or" of {
-                           Prelude.True -> BOr;
+                                 sn "bnot" of {
+                           Prelude.True -> BBNot;
                            Prelude.False ->
                             case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                   sn "not" of {
-                             Prelude.True -> BNot;
+                                   sn "band" of {
+                             Prelude.True -> BBAnd;
                              Prelude.False ->
                               case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                     sn "==" of {
-                               Prelude.True -> BEq;
+                                     sn "bor" of {
+                               Prelude.True -> BBOr;
                                Prelude.False ->
                                 case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                       sn "=:=" of {
-                                 Prelude.True -> BTypeEq;
+                                       sn "and" of {
+                                 Prelude.True -> BAnd;
                                  Prelude.False ->
                                   case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                         sn "/=" of {
-                                   Prelude.True -> BNeq;
+                                         sn "or" of {
+                                   Prelude.True -> BOr;
                                    Prelude.False ->
                                     case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                           sn "=/=" of {
-                                     Prelude.True -> BTypeNeq;
+                                           sn "not" of {
+                                     Prelude.True -> BNot;
                                      Prelude.False ->
                                       case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                             sn "++" of {
-                                       Prelude.True -> BApp;
+                                             sn "xor" of {
+                                       Prelude.True -> BXor;
                                        Prelude.False ->
                                         case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                               sn "--" of {
-                                         Prelude.True -> BMinusMinus;
+                                               sn "==" of {
+                                         Prelude.True -> BEq;
                                          Prelude.False ->
                                           case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                 sn "tuple_to_list" of {
-                                           Prelude.True -> BTupleToList;
+                                                 sn "=:=" of {
+                                           Prelude.True -> BTypeEq;
                                            Prelude.False ->
                                             case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                   sn "list_to_tuple" of {
-                                             Prelude.True -> BListToTuple;
+                                                   sn "/=" of {
+                                             Prelude.True -> BNeq;
                                              Prelude.False ->
                                               case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                     sn "list_to_atom" of {
-                                               Prelude.True -> BListToAtom;
+                                                     sn "=/=" of {
+                                               Prelude.True -> BTypeNeq;
                                                Prelude.False ->
                                                 case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                       sn "integer_to_list" of {
-                                                 Prelude.True ->
-                                                  BIntegerToList;
+                                                       sn "++" of {
+                                                 Prelude.True -> BApp;
                                                  Prelude.False ->
                                                   case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                         sn "<" of {
-                                                   Prelude.True -> BLt;
+                                                         sn "--" of {
+                                                   Prelude.True ->
+                                                    BMinusMinus;
                                                    Prelude.False ->
                                                     case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                           sn ">" of {
-                                                     Prelude.True -> BGt;
+                                                           sn "tuple_to_list" of {
+                                                     Prelude.True ->
+                                                      BTupleToList;
                                                      Prelude.False ->
                                                       case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                             sn "=<" of {
-                                                       Prelude.True -> BLe;
+                                                             sn
+                                                             "list_to_tuple" of {
+                                                       Prelude.True ->
+                                                        BListToTuple;
                                                        Prelude.False ->
                                                         case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                               sn ">=" of {
-                                                         Prelude.True -> BGe;
+                                                               sn
+                                                               "list_to_atom" of {
+                                                         Prelude.True ->
+                                                          BListToAtom;
                                                          Prelude.False ->
                                                           case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                                 sn "length" of {
+                                                                 sn
+                                                                 "integer_to_list" of {
                                                            Prelude.True ->
-                                                            BLength;
+                                                            BIntegerToList;
                                                            Prelude.False ->
                                                             case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                                   sn
-                                                                   "tuple_size" of {
+                                                                   sn "<" of {
                                                              Prelude.True ->
-                                                              BTupleSize;
+                                                              BLt;
                                                              Prelude.False ->
                                                               case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                                    sn "hd" of {
+                                                                    sn ">" of {
                                                                Prelude.True ->
-                                                                BHd;
+                                                                BGt;
                                                                Prelude.False ->
                                                                 case 
                                                                 ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                                  sn "tl" of {
+                                                                  sn "=<" of {
                                                                  Prelude.True ->
-                                                                  BTl;
+                                                                  BLe;
                                                                  Prelude.False ->
                                                                   case 
                                                                   ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn ">=" of {
+                                                                   Prelude.True ->
+                                                                    BGe;
+                                                                   Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "length" of {
+                                                                     Prelude.True ->
+                                                                    BLength;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "tuple_size" of {
+                                                                     Prelude.True ->
+                                                                    BTupleSize;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn "hd" of {
+                                                                     Prelude.True ->
+                                                                    BHd;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn "tl" of {
+                                                                     Prelude.True ->
+                                                                    BTl;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
                                                                     sn
                                                                     "element" of {
-                                                                   Prelude.True ->
+                                                                     Prelude.True ->
                                                                     BElement;
-                                                                   Prelude.False ->
+                                                                     Prelude.False ->
                                                                     case 
                                                                     ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
                                                                     sn
@@ -2934,6 +3520,20 @@ convert_string_to_code_Interp pat =
                                                                     "is_boolean" of {
                                                                      Prelude.True ->
                                                                     BIsBoolean;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "is_list" of {
+                                                                     Prelude.True ->
+                                                                    BIsList;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "is_tuple" of {
+                                                                     Prelude.True ->
+                                                                    BIsTuple;
                                                                      Prelude.False ->
                                                                     case 
                                                                     ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
@@ -3050,7 +3650,137 @@ convert_string_to_code_Interp pat =
                                                                      Prelude.True ->
                                                                     BBitstringToList;
                                                                      Prelude.False ->
-                                                                    BNothing}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}};
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "split_binary" of {
+                                                                     Prelude.True ->
+                                                                    BSplitBinary;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "iolist_to_binary" of {
+                                                                     Prelude.True ->
+                                                                    BIolistToBinary;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "iolist_size" of {
+                                                                     Prelude.True ->
+                                                                    BIolistSize;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "list_to_binary" of {
+                                                                     Prelude.True ->
+                                                                    BListToBinary;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "list_to_integer" of {
+                                                                     Prelude.True ->
+                                                                    BListToInteger;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "binary_to_integer" of {
+                                                                     Prelude.True ->
+                                                                    BBinaryToInteger;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "atom_to_list" of {
+                                                                     Prelude.True ->
+                                                                    BAtomToList;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "binary_to_atom" of {
+                                                                     Prelude.True ->
+                                                                    BBinaryToAtom;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "is_function" of {
+                                                                     Prelude.True ->
+                                                                    BIsFunction;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "is_map" of {
+                                                                     Prelude.True ->
+                                                                    BIsMap;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "is_pid" of {
+                                                                     Prelude.True ->
+                                                                    BIsPid;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "is_port" of {
+                                                                     Prelude.True ->
+                                                                    BIsPort;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "delete_element" of {
+                                                                     Prelude.True ->
+                                                                    BDeleteElement;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "insert_element" of {
+                                                                     Prelude.True ->
+                                                                    BInsertElement;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "make_tuple" of {
+                                                                     Prelude.True ->
+                                                                    BMakeTuple;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn "size" of {
+                                                                     Prelude.True ->
+                                                                    BSize;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "map_size" of {
+                                                                     Prelude.True ->
+                                                                    BMapSize;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn "max" of {
+                                                                     Prelude.True ->
+                                                                    BMax;
+                                                                     Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn "min" of {
+                                                                     Prelude.True ->
+                                                                    BMin;
+                                                                     Prelude.False ->
+                                                                    BNothing}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}};
      Prelude.False ->
       case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
              sf "io" of {
@@ -3070,7 +3800,23 @@ convert_string_to_code_Interp pat =
           case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
                  sn "split" of {
            Prelude.True -> BSplit;
-           Prelude.False -> BNothing};
+           Prelude.False ->
+            case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                   sn "member" of {
+             Prelude.True -> BMember;
+             Prelude.False ->
+              case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                     sn "keyfind" of {
+               Prelude.True -> BKeyfind;
+               Prelude.False ->
+                case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                       sn "keymember" of {
+                 Prelude.True -> BKeymember;
+                 Prelude.False ->
+                  case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                         sn "reverse" of {
+                   Prelude.True -> BReverse;
+                   Prelude.False -> BNothing}}}}};
          Prelude.False ->
           case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
                  sf "maps" of {
@@ -3082,7 +3828,11 @@ convert_string_to_code_Interp pat =
               case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
                      sn "put" of {
                Prelude.True -> BPut;
-               Prelude.False -> BNothing}};
+               Prelude.False ->
+                case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                       sn "from_keys" of {
+                 Prelude.True -> BFromKeys;
+                 Prelude.False -> BNothing}}};
            Prelude.False -> BNothing}}}}}
 
 eval_arith_Interp :: Prelude.String -> Prelude.String -> (([]) Val) -> Redex
@@ -3799,6 +4549,271 @@ eval_arith_Interp mname fname params =
          ([]) -> RExc
           (badarg (VTuple ((:) (VLit (Atom fname)) ((:) a ([])))));
          (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+   BBXor ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) a l ->
+      case a of {
+       VLit l0 ->
+        case l0 of {
+         Atom _ ->
+          case l of {
+           ([]) -> RExc (undef (VLit (Atom fname)));
+           (:) b l1 ->
+            case l1 of {
+             ([]) -> RExc
+              (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+         Integer a0 ->
+          case l of {
+           ([]) -> RExc (undef (VLit (Atom fname)));
+           (:) b l1 ->
+            case b of {
+             VLit l2 ->
+              case l2 of {
+               Atom _ ->
+                case l1 of {
+                 ([]) -> RExc
+                  (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                    ([]))))));
+                 (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+               Integer b0 ->
+                case l1 of {
+                 ([]) -> RValSeq ((:) (VLit (Integer (lxor1 a0 b0))) ([]));
+                 (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+             VTuple _ ->
+              case l1 of {
+               ([]) -> RExc
+                (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+             VMap _ ->
+              case l1 of {
+               ([]) -> RExc
+                (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+             _ ->
+              case l1 of {
+               ([]) -> RExc
+                (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}};
+       VTuple _ ->
+        case l of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) b l1 ->
+          case l1 of {
+           ([]) -> RExc
+            (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+       VMap _ ->
+        case l of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) b l1 ->
+          case l1 of {
+           ([]) -> RExc
+            (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+       _ ->
+        case l of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) b l0 ->
+          case l0 of {
+           ([]) -> RExc
+            (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}};
+   BBNot ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) a l ->
+      case a of {
+       VLit l0 ->
+        case l0 of {
+         Atom _ ->
+          case l of {
+           ([]) -> RExc
+            (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ([])))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+         Integer a0 ->
+          case l of {
+           ([]) -> RValSeq ((:) (VLit (Integer (lnot a0))) ([]));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+       VTuple _ ->
+        case l of {
+         ([]) -> RExc
+          (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ([])))));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       VMap _ ->
+        case l of {
+         ([]) -> RExc
+          (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ([])))));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       _ ->
+        case l of {
+         ([]) -> RExc
+          (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ([])))));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+   BBOr ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) a l ->
+      case a of {
+       VLit l0 ->
+        case l0 of {
+         Atom _ ->
+          case l of {
+           ([]) -> RExc (undef (VLit (Atom fname)));
+           (:) b l1 ->
+            case l1 of {
+             ([]) -> RExc
+              (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+         Integer a0 ->
+          case l of {
+           ([]) -> RExc (undef (VLit (Atom fname)));
+           (:) b l1 ->
+            case b of {
+             VLit l2 ->
+              case l2 of {
+               Atom _ ->
+                case l1 of {
+                 ([]) -> RExc
+                  (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                    ([]))))));
+                 (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+               Integer b0 ->
+                case l1 of {
+                 ([]) -> RValSeq ((:) (VLit (Integer (lor1 a0 b0))) ([]));
+                 (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+             VTuple _ ->
+              case l1 of {
+               ([]) -> RExc
+                (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+             VMap _ ->
+              case l1 of {
+               ([]) -> RExc
+                (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+             _ ->
+              case l1 of {
+               ([]) -> RExc
+                (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}};
+       VTuple _ ->
+        case l of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) b l1 ->
+          case l1 of {
+           ([]) -> RExc
+            (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+       VMap _ ->
+        case l of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) b l1 ->
+          case l1 of {
+           ([]) -> RExc
+            (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+       _ ->
+        case l of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) b l0 ->
+          case l0 of {
+           ([]) -> RExc
+            (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}};
+   BBAnd ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) a l ->
+      case a of {
+       VLit l0 ->
+        case l0 of {
+         Atom _ ->
+          case l of {
+           ([]) -> RExc (undef (VLit (Atom fname)));
+           (:) b l1 ->
+            case l1 of {
+             ([]) -> RExc
+              (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+         Integer a0 ->
+          case l of {
+           ([]) -> RExc (undef (VLit (Atom fname)));
+           (:) b l1 ->
+            case b of {
+             VLit l2 ->
+              case l2 of {
+               Atom _ ->
+                case l1 of {
+                 ([]) -> RExc
+                  (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                    ([]))))));
+                 (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+               Integer b0 ->
+                case l1 of {
+                 ([]) -> RValSeq ((:) (VLit (Integer (land1 a0 b0))) ([]));
+                 (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+             VTuple _ ->
+              case l1 of {
+               ([]) -> RExc
+                (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+             VMap _ ->
+              case l1 of {
+               ([]) -> RExc
+                (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+             _ ->
+              case l1 of {
+               ([]) -> RExc
+                (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}};
+       VTuple _ ->
+        case l of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) b l1 ->
+          case l1 of {
+           ([]) -> RExc
+            (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+       VMap _ ->
+        case l of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) b l1 ->
+          case l1 of {
+           ([]) -> RExc
+            (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+       _ ->
+        case l of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) b l0 ->
+          case l0 of {
+           ([]) -> RExc
+            (badarith (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}};
    _ -> RExc (undef (VLit (Atom fname)))}
 
 eval_io_Interp :: Prelude.String -> Prelude.String -> (([]) Val) -> (,) 
@@ -3918,6 +4933,40 @@ eval_logical_Interp mname fname params =
            Prelude.False -> RExc
             (badarg (VTuple ((:) (VLit (Atom fname)) ((:) a ([])))))}};
        (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+   BXor ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) a l ->
+      case l of {
+       ([]) -> RExc (undef (VLit (Atom fname)));
+       (:) b l0 ->
+        case l0 of {
+         ([]) ->
+          case (Prelude.==) a (VLit (Atom "true")) of {
+           Prelude.True ->
+            case (Prelude.==) b (VLit (Atom "true")) of {
+             Prelude.True -> RValSeq ((:) (VLit (Atom "false")) ([]));
+             Prelude.False ->
+              case (Prelude.==) b (VLit (Atom "false")) of {
+               Prelude.True -> RValSeq ((:) (VLit (Atom "true")) ([]));
+               Prelude.False -> RExc
+                (badarg (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                  ([]))))))}};
+           Prelude.False ->
+            case (Prelude.==) a (VLit (Atom "false")) of {
+             Prelude.True ->
+              case (Prelude.==) b (VLit (Atom "true")) of {
+               Prelude.True -> RValSeq ((:) (VLit (Atom "true")) ([]));
+               Prelude.False ->
+                case (Prelude.==) b (VLit (Atom "false")) of {
+                 Prelude.True -> RValSeq ((:) (VLit (Atom "false")) ([]));
+                 Prelude.False -> RExc
+                  (badarg (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                    ([]))))))}};
+             Prelude.False -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
+                ([]))))))}};
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
    _ -> RExc (undef (VLit (Atom fname)))}
 
 eval_equality_Interp :: Prelude.String -> Prelude.String -> (([]) Val) ->
@@ -4059,24 +5108,182 @@ eval_convert_Interp mname fname params =
    BIntegerToList ->
     case params of {
      ([]) -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing;
-     (:) v l ->
-      case l of {
-       ([]) ->
-        case v of {
-         VLit l0 ->
-          case l0 of {
-           Atom _ -> (,) (RExc
-            (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v
+     (:) v1 l ->
+      case v1 of {
+       VLit l0 ->
+        case l0 of {
+         Atom _ ->
+          case l of {
+           ([]) ->
+            case v1 of {
+             VLit l1 ->
+              case l1 of {
+               Atom _ -> (,) (RExc
+                (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v1
+                  ([]))))))
+                Prelude.Nothing;
+               Integer z -> (,) (RValSeq ((:)
+                (string_to_vcons (string_of_int (to_int z))) ([])))
+                Prelude.Nothing};
+             _ -> (,) (RExc
+              (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v1
+                ([]))))))
+              Prelude.Nothing};
+           (:) v2 l1 ->
+            case l1 of {
+             ([]) -> (,) (RExc
+              (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v1
+                ((:) v2 ([])))))))
+              Prelude.Nothing;
+             (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+              Prelude.Nothing}};
+         Integer z ->
+          case l of {
+           ([]) ->
+            case v1 of {
+             VLit l1 ->
+              case l1 of {
+               Atom _ -> (,) (RExc
+                (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v1
+                  ([]))))))
+                Prelude.Nothing;
+               Integer z0 -> (,) (RValSeq ((:)
+                (string_to_vcons (string_of_int (to_int z0))) ([])))
+                Prelude.Nothing};
+             _ -> (,) (RExc
+              (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v1
+                ([]))))))
+              Prelude.Nothing};
+           (:) v2 l1 ->
+            case v2 of {
+             VLit l2 ->
+              case l2 of {
+               Atom _ ->
+                case l1 of {
+                 ([]) -> (,) (RExc
+                  (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:)
+                    v1 ((:) v2 ([])))))))
+                  Prelude.Nothing;
+                 (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+                  Prelude.Nothing};
+               Integer base ->
+                case l1 of {
+                 ([]) ->
+                  case Prelude.not
+                         ((Prelude.&&)
+                           ((Prelude.<=) ((\x -> x) ((\x -> 2 Prelude.* x)
+                             1)) base)
+                           ((Prelude.<=) base ((\x -> x)
+                             ((\x -> 2 Prelude.* x) ((\x -> 2 Prelude.* x)
+                             ((\x -> 2 Prelude.* x Prelude.+ 1)
+                             ((\x -> 2 Prelude.* x) ((\x -> 2 Prelude.* x)
+                             1)))))))) of {
+                   Prelude.True -> (,) (RExc
+                    (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:)
+                      (VLit (Integer z)) ((:) (VLit (Integer base)) ([])))))))
+                    Prelude.Nothing;
+                   Prelude.False -> (,) (RValSeq ((:)
+                    (string_to_vcons
+                      (string_of_list_ascii (integer_to_digits base z)))
+                    ([]))) Prelude.Nothing};
+                 (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+                  Prelude.Nothing}};
+             VTuple _ ->
+              case l1 of {
+               ([]) -> (,) (RExc
+                (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v1
+                  ((:) v2 ([])))))))
+                Prelude.Nothing;
+               (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+                Prelude.Nothing};
+             VMap _ ->
+              case l1 of {
+               ([]) -> (,) (RExc
+                (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v1
+                  ((:) v2 ([])))))))
+                Prelude.Nothing;
+               (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+                Prelude.Nothing};
+             _ ->
+              case l1 of {
+               ([]) -> (,) (RExc
+                (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v1
+                  ((:) v2 ([])))))))
+                Prelude.Nothing;
+               (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+                Prelude.Nothing}}}};
+       VTuple _ ->
+        case l of {
+         ([]) ->
+          case v1 of {
+           VLit l0 ->
+            case l0 of {
+             Atom _ -> (,) (RExc
+              (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v1
+                ([]))))))
+              Prelude.Nothing;
+             Integer z -> (,) (RValSeq ((:)
+              (string_to_vcons (string_of_int (to_int z))) ([])))
+              Prelude.Nothing};
+           _ -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v1
               ([]))))))
-            Prelude.Nothing;
-           Integer z -> (,) (RValSeq ((:)
-            (string_to_vcons (string_of_int (to_int z))) ([])))
             Prelude.Nothing};
-         _ -> (,) (RExc
-          (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v
-            ([]))))))
-          Prelude.Nothing};
-       (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}};
+         (:) v2 l1 ->
+          case l1 of {
+           ([]) -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v1 ((:)
+              v2 ([])))))))
+            Prelude.Nothing;
+           (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}};
+       VMap _ ->
+        case l of {
+         ([]) ->
+          case v1 of {
+           VLit l0 ->
+            case l0 of {
+             Atom _ -> (,) (RExc
+              (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v1
+                ([]))))))
+              Prelude.Nothing;
+             Integer z -> (,) (RValSeq ((:)
+              (string_to_vcons (string_of_int (to_int z))) ([])))
+              Prelude.Nothing};
+           _ -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v1
+              ([]))))))
+            Prelude.Nothing};
+         (:) v2 l1 ->
+          case l1 of {
+           ([]) -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v1 ((:)
+              v2 ([])))))))
+            Prelude.Nothing;
+           (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}};
+       _ ->
+        case l of {
+         ([]) ->
+          case v1 of {
+           VLit l0 ->
+            case l0 of {
+             Atom _ -> (,) (RExc
+              (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v1
+                ([]))))))
+              Prelude.Nothing;
+             Integer z -> (,) (RValSeq ((:)
+              (string_to_vcons (string_of_int (to_int z))) ([])))
+              Prelude.Nothing};
+           _ -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v1
+              ([]))))))
+            Prelude.Nothing};
+         (:) v2 l0 ->
+          case l0 of {
+           ([]) -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v1 ((:)
+              v2 ([])))))))
+            Prelude.Nothing;
+           (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}}}};
    _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}
 
 eval_cmp_Interp :: Prelude.String -> Prelude.String -> (([]) Val) -> Redex
@@ -4133,6 +5340,32 @@ eval_cmp_Interp mname fname params =
           case (Prelude.||) (val_ltb v2 v1) (val_eqb v1 v2) of {
            Prelude.True -> RValSeq ((:) (VLit (Atom "true")) ([]));
            Prelude.False -> RValSeq ((:) (VLit (Atom "false")) ([]))};
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+   BMax ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) v1 l ->
+      case l of {
+       ([]) -> RExc (undef (VLit (Atom fname)));
+       (:) v2 l0 ->
+        case l0 of {
+         ([]) ->
+          case val_ltb v1 v2 of {
+           Prelude.True -> RValSeq ((:) v2 ([]));
+           Prelude.False -> RValSeq ((:) v1 ([]))};
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+   BMin ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) v1 l ->
+      case l of {
+       ([]) -> RExc (undef (VLit (Atom fname)));
+       (:) v2 l0 ->
+        case l0 of {
+         ([]) ->
+          case val_ltb v2 v1 of {
+           Prelude.True -> RValSeq ((:) v2 ([]));
+           Prelude.False -> RValSeq ((:) v1 ([]))};
          (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
    _ -> RExc (undef (VLit (Atom fname)))}
 
@@ -4552,6 +5785,1256 @@ eval_check_Interp mname fname params =
         case l of {
          ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
          (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+   BIsList ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) v l ->
+      case v of {
+       VNil ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "true")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       VLit _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       VCons _ _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "true")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       VTuple _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       VMap _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+   BIsTuple ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) v l ->
+      case v of {
+       VLit _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       VTuple _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "true")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       VMap _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+   BIsFunction ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) v1 l ->
+      case v1 of {
+       VLit _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) v2 l1 ->
+          case v2 of {
+           VLit l2 ->
+            case l2 of {
+             Atom _ ->
+              case l1 of {
+               ([]) -> RExc
+                (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+             Integer n ->
+              case l1 of {
+               ([]) ->
+                case (Prelude.<) n 0 of {
+                 Prelude.True -> RExc
+                  (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) (VLit
+                    (Integer n)) ([]))))));
+                 Prelude.False -> RValSeq ((:) (VLit (Atom "false")) ([]))};
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+           VTuple _ ->
+            case l1 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+           VMap _ ->
+            case l1 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+           _ ->
+            case l1 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+       VTuple _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) v2 l1 ->
+          case v2 of {
+           VLit l2 ->
+            case l2 of {
+             Atom _ ->
+              case l1 of {
+               ([]) -> RExc
+                (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+             Integer n ->
+              case l1 of {
+               ([]) ->
+                case (Prelude.<) n 0 of {
+                 Prelude.True -> RExc
+                  (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) (VLit
+                    (Integer n)) ([]))))));
+                 Prelude.False -> RValSeq ((:) (VLit (Atom "false")) ([]))};
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+           VTuple _ ->
+            case l1 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+           VMap _ ->
+            case l1 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+           _ ->
+            case l1 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+       VMap _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) v2 l1 ->
+          case v2 of {
+           VLit l2 ->
+            case l2 of {
+             Atom _ ->
+              case l1 of {
+               ([]) -> RExc
+                (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+             Integer n ->
+              case l1 of {
+               ([]) ->
+                case (Prelude.<) n 0 of {
+                 Prelude.True -> RExc
+                  (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) (VLit
+                    (Integer n)) ([]))))));
+                 Prelude.False -> RValSeq ((:) (VLit (Atom "false")) ([]))};
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+           VTuple _ ->
+            case l1 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+           VMap _ ->
+            case l1 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+           _ ->
+            case l1 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+       VClos ext id params0 e ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "true")) ([]));
+         (:) v2 l0 ->
+          case v2 of {
+           VLit l1 ->
+            case l1 of {
+             Atom _ ->
+              case l0 of {
+               ([]) -> RExc
+                (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+             Integer n ->
+              case l0 of {
+               ([]) ->
+                case (Prelude.<) n 0 of {
+                 Prelude.True -> RExc
+                  (badarg (VTuple ((:) (VLit (Atom fname)) ((:) (VClos ext id
+                    params0 e) ((:) (VLit (Integer n)) ([]))))));
+                 Prelude.False ->
+                  case (Prelude.==) ((Prelude.id) params0) n of {
+                   Prelude.True -> RValSeq ((:) (VLit (Atom "true")) ([]));
+                   Prelude.False -> RValSeq ((:) (VLit (Atom "false")) ([]))}};
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+           VTuple _ ->
+            case l0 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+           VMap _ ->
+            case l0 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+           _ ->
+            case l0 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+       _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) v2 l0 ->
+          case v2 of {
+           VLit l1 ->
+            case l1 of {
+             Atom _ ->
+              case l0 of {
+               ([]) -> RExc
+                (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+             Integer n ->
+              case l0 of {
+               ([]) ->
+                case (Prelude.<) n 0 of {
+                 Prelude.True -> RExc
+                  (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) (VLit
+                    (Integer n)) ([]))))));
+                 Prelude.False -> RValSeq ((:) (VLit (Atom "false")) ([]))};
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+           VTuple _ ->
+            case l0 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+           VMap _ ->
+            case l0 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+           _ ->
+            case l0 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}}};
+   BIsMap ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) v l ->
+      case v of {
+       VLit _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       VTuple _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       VMap _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "true")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+   BIsPid ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) v l ->
+      case v of {
+       VLit _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       VPid _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "true")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       VTuple _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       VMap _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       _ ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+   BIsPort ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) _ l ->
+      case l of {
+       ([]) -> RValSeq ((:) (VLit (Atom "false")) ([]));
+       (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+   _ -> RExc (undef (VLit (Atom fname)))}
+
+eval_tuple_bifs_Interp :: Prelude.String -> Prelude.String -> (([]) Val) ->
+                          Redex
+eval_tuple_bifs_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
+   BDeleteElement ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) v1 l0 ->
+      case v1 of {
+       VLit l1 ->
+        case l1 of {
+         Atom _ ->
+          case l0 of {
+           ([]) -> RExc (undef (VLit (Atom fname)));
+           (:) v2 l ->
+            case l of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+         Integer i ->
+          case l0 of {
+           ([]) -> RExc (undef (VLit (Atom fname)));
+           (:) v2 l2 ->
+            case v2 of {
+             VLit _ ->
+              case l2 of {
+               ([]) -> RExc
+                (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+             VTuple l ->
+              case l2 of {
+               ([]) ->
+                case (Prelude.&&) ((Prelude.<=) ((\x -> x) 1) i)
+                       ((Prelude.<=) i
+                         ((Prelude.id) ((Data.List.genericLength) l))) of {
+                 Prelude.True -> RValSeq ((:) (VTuple
+                  ((Prelude.++)
+                    (firstn (sub ((Prelude.id) i) (Prelude.succ 0)) l)
+                    (skipn ((Prelude.id) i) l)))
+                  ([]));
+                 Prelude.False -> RExc
+                  (badarg (VTuple ((:) (VLit (Atom fname)) ((:) (VLit
+                    (Integer i)) ((:) (VTuple l) ([]))))))};
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+             VMap _ ->
+              case l2 of {
+               ([]) -> RExc
+                (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+             _ ->
+              case l2 of {
+               ([]) -> RExc
+                (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}};
+       VTuple _ ->
+        case l0 of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) v2 l1 ->
+          case l1 of {
+           ([]) -> RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+       VMap _ ->
+        case l0 of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) v2 l1 ->
+          case l1 of {
+           ([]) -> RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+       _ ->
+        case l0 of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) v2 l ->
+          case l of {
+           ([]) -> RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}};
+   BInsertElement ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) v1 l0 ->
+      case v1 of {
+       VLit l1 ->
+        case l1 of {
+         Atom _ ->
+          case l0 of {
+           ([]) -> RExc (undef (VLit (Atom fname)));
+           (:) v2 l ->
+            case l of {
+             ([]) -> RExc (undef (VLit (Atom fname)));
+             (:) v3 l2 ->
+              case l2 of {
+               ([]) -> RExc
+                (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2 ((:)
+                  v3 ([])))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+         Integer i ->
+          case l0 of {
+           ([]) -> RExc (undef (VLit (Atom fname)));
+           (:) v2 l2 ->
+            case v2 of {
+             VLit _ ->
+              case l2 of {
+               ([]) -> RExc (undef (VLit (Atom fname)));
+               (:) v3 l3 ->
+                case l3 of {
+                 ([]) -> RExc
+                  (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                    ((:) v3 ([])))))));
+                 (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+             VTuple l ->
+              case l2 of {
+               ([]) -> RExc (undef (VLit (Atom fname)));
+               (:) v3 l3 ->
+                case l3 of {
+                 ([]) ->
+                  case (Prelude.&&) ((Prelude.<=) ((\x -> x) 1) i)
+                         ((Prelude.<=) i
+                           ((Prelude.+)
+                             ((Prelude.id) ((Data.List.genericLength) l))
+                             ((\x -> x) 1))) of {
+                   Prelude.True -> RValSeq ((:) (VTuple
+                    ((Prelude.++)
+                      (firstn (sub ((Prelude.id) i) (Prelude.succ 0)) l) ((:)
+                      v3 (skipn (sub ((Prelude.id) i) (Prelude.succ 0)) l))))
+                    ([]));
+                   Prelude.False -> RExc
+                    (badarg (VTuple ((:) (VLit (Atom fname)) ((:) (VLit
+                      (Integer i)) ((:) (VTuple l) ((:) v3 ([])))))))};
+                 (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+             VMap _ ->
+              case l2 of {
+               ([]) -> RExc (undef (VLit (Atom fname)));
+               (:) v3 l3 ->
+                case l3 of {
+                 ([]) -> RExc
+                  (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                    ((:) v3 ([])))))));
+                 (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+             _ ->
+              case l2 of {
+               ([]) -> RExc (undef (VLit (Atom fname)));
+               (:) v3 l ->
+                case l of {
+                 ([]) -> RExc
+                  (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                    ((:) v3 ([])))))));
+                 (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}}};
+       VTuple _ ->
+        case l0 of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) v2 l1 ->
+          case l1 of {
+           ([]) -> RExc (undef (VLit (Atom fname)));
+           (:) v3 l2 ->
+            case l2 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2 ((:)
+                v3 ([])))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+       VMap _ ->
+        case l0 of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) v2 l1 ->
+          case l1 of {
+           ([]) -> RExc (undef (VLit (Atom fname)));
+           (:) v3 l2 ->
+            case l2 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2 ((:)
+                v3 ([])))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+       _ ->
+        case l0 of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) v2 l ->
+          case l of {
+           ([]) -> RExc (undef (VLit (Atom fname)));
+           (:) v3 l1 ->
+            case l1 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2 ((:)
+                v3 ([])))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}}};
+   BMakeTuple ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) v1 l ->
+      case v1 of {
+       VLit l0 ->
+        case l0 of {
+         Atom _ ->
+          case l of {
+           ([]) -> RExc (undef (VLit (Atom fname)));
+           (:) v2 l1 ->
+            case l1 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+         Integer n ->
+          case l of {
+           ([]) -> RExc (undef (VLit (Atom fname)));
+           (:) v2 l1 ->
+            case l1 of {
+             ([]) ->
+              case (Prelude.<=) 0 n of {
+               Prelude.True -> RValSeq ((:) (VTuple
+                (repeat v2 ((Prelude.id) n))) ([]));
+               Prelude.False -> RExc
+                (badarg (VTuple ((:) (VLit (Atom fname)) ((:) (VLit (Integer
+                  n)) ((:) v2 ([]))))))};
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+       VTuple _ ->
+        case l of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) v2 l1 ->
+          case l1 of {
+           ([]) -> RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+       VMap _ ->
+        case l of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) v2 l1 ->
+          case l1 of {
+           ([]) -> RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+       _ ->
+        case l of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) v2 l0 ->
+          case l0 of {
+           ([]) -> RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}};
+   BSize ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) v l0 ->
+      case v of {
+       VLit _ ->
+        case l0 of {
+         ([]) -> RExc
+          (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v ([])))));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       VTuple l ->
+        case l0 of {
+         ([]) -> RValSeq ((:) (VLit (Integer
+          ((Prelude.id) ((Data.List.genericLength) l)))) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       VMap _ ->
+        case l0 of {
+         ([]) -> RExc
+          (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v ([])))));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       VBitstring b ->
+        case l0 of {
+         ([]) -> RValSeq ((:) (VLit (Integer
+          (of_N
+            (add
+              (div (bvn_n b) (Npos ((\x -> 2 Prelude.* x)
+                ((\x -> 2 Prelude.* x) ((\x -> 2 Prelude.* x) 1)))))
+              (case eqb
+                      (modulo (bvn_n b) (Npos ((\x -> 2 Prelude.* x)
+                        ((\x -> 2 Prelude.* x) ((\x -> 2 Prelude.* x) 1)))))
+                      N0 of {
+                Prelude.True -> N0;
+                Prelude.False -> Npos 1})))))
+          ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       _ ->
+        case l0 of {
+         ([]) -> RExc
+          (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v ([])))));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+   _ -> RExc (undef (VLit (Atom fname)))}
+
+eval_conversion_Interp :: Prelude.String -> Prelude.String -> (([]) Val) ->
+                          (,) Redex (Prelude.Maybe SideEffect)
+eval_conversion_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
+   BListToInteger ->
+    case params of {
+     ([]) -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing;
+     (:) v1 l ->
+      case l of {
+       ([]) ->
+        case mk_ascii_list v1 of {
+         Prelude.Just cs ->
+          case parse_integer (Prelude.succ (Prelude.succ (Prelude.succ
+                 (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+                 (Prelude.succ (Prelude.succ (Prelude.succ 0)))))))))) cs of {
+           Prelude.Just z -> (,) (RValSeq ((:) (VLit (Integer z)) ([])))
+            Prelude.Nothing;
+           Prelude.Nothing -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ([]))))))
+            Prelude.Nothing};
+         Prelude.Nothing -> (,) (RExc
+          (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ([]))))))
+          Prelude.Nothing};
+       (:) v2 l0 ->
+        case v2 of {
+         VLit l1 ->
+          case l1 of {
+           Atom _ ->
+            case l0 of {
+             ([]) -> (,) (RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([])))))))
+              Prelude.Nothing;
+             (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+              Prelude.Nothing};
+           Integer base ->
+            case l0 of {
+             ([]) ->
+              case mk_ascii_list v1 of {
+               Prelude.Just cs ->
+                case parse_integer ((Prelude.id) base) cs of {
+                 Prelude.Just z -> (,) (RValSeq ((:) (VLit (Integer z))
+                  ([]))) Prelude.Nothing;
+                 Prelude.Nothing -> (,) (RExc
+                  (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) (VLit
+                    (Integer base)) ([])))))))
+                  Prelude.Nothing};
+               Prelude.Nothing -> (,) (RExc
+                (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) (VLit
+                  (Integer base)) ([])))))))
+                Prelude.Nothing};
+             (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+              Prelude.Nothing}};
+         VTuple _ ->
+          case l0 of {
+           ([]) -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([])))))))
+            Prelude.Nothing;
+           (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing};
+         VMap _ ->
+          case l0 of {
+           ([]) -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([])))))))
+            Prelude.Nothing;
+           (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing};
+         _ ->
+          case l0 of {
+           ([]) -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([])))))))
+            Prelude.Nothing;
+           (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}}}};
+   BBinaryToInteger ->
+    case params of {
+     ([]) -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing;
+     (:) v1 l ->
+      case v1 of {
+       VLit _ ->
+        case l of {
+         ([]) -> (,) (RExc
+          (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ([]))))))
+          Prelude.Nothing;
+         (:) v2 l1 ->
+          case l1 of {
+           ([]) -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([])))))))
+            Prelude.Nothing;
+           (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}};
+       VTuple _ ->
+        case l of {
+         ([]) -> (,) (RExc
+          (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ([]))))))
+          Prelude.Nothing;
+         (:) v2 l1 ->
+          case l1 of {
+           ([]) -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([])))))))
+            Prelude.Nothing;
+           (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}};
+       VMap _ ->
+        case l of {
+         ([]) -> (,) (RExc
+          (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ([]))))))
+          Prelude.Nothing;
+         (:) v2 l1 ->
+          case l1 of {
+           ([]) -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([])))))))
+            Prelude.Nothing;
+           (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}};
+       VBitstring b ->
+        case l of {
+         ([]) ->
+          case case bvn_aligned b of {
+                Prelude.True ->
+                 parse_integer (Prelude.succ (Prelude.succ (Prelude.succ
+                   (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+                   (Prelude.succ (Prelude.succ (Prelude.succ 0))))))))))
+                   (bvn_to_chars b);
+                Prelude.False -> Prelude.Nothing} of {
+           Prelude.Just z -> (,) (RValSeq ((:) (VLit (Integer z)) ([])))
+            Prelude.Nothing;
+           Prelude.Nothing -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) (VBitstring b)
+              ([]))))))
+            Prelude.Nothing};
+         (:) v2 l0 ->
+          case v2 of {
+           VLit l1 ->
+            case l1 of {
+             Atom _ ->
+              case l0 of {
+               ([]) -> (,) (RExc
+                (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                  ([])))))))
+                Prelude.Nothing;
+               (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+                Prelude.Nothing};
+             Integer base ->
+              case l0 of {
+               ([]) ->
+                case case bvn_aligned b of {
+                      Prelude.True ->
+                       parse_integer ((Prelude.id) base) (bvn_to_chars b);
+                      Prelude.False -> Prelude.Nothing} of {
+                 Prelude.Just z -> (,) (RValSeq ((:) (VLit (Integer z))
+                  ([]))) Prelude.Nothing;
+                 Prelude.Nothing -> (,) (RExc
+                  (badarg (VTuple ((:) (VLit (Atom fname)) ((:) (VBitstring
+                    b) ((:) (VLit (Integer base)) ([])))))))
+                  Prelude.Nothing};
+               (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+                Prelude.Nothing}};
+           VTuple _ ->
+            case l0 of {
+             ([]) -> (,) (RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([])))))))
+              Prelude.Nothing;
+             (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+              Prelude.Nothing};
+           VMap _ ->
+            case l0 of {
+             ([]) -> (,) (RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([])))))))
+              Prelude.Nothing;
+             (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+              Prelude.Nothing};
+           _ ->
+            case l0 of {
+             ([]) -> (,) (RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([])))))))
+              Prelude.Nothing;
+             (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+              Prelude.Nothing}}};
+       _ ->
+        case l of {
+         ([]) -> (,) (RExc
+          (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ([]))))))
+          Prelude.Nothing;
+         (:) v2 l0 ->
+          case l0 of {
+           ([]) -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([])))))))
+            Prelude.Nothing;
+           (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}}}};
+   BAtomToList ->
+    case params of {
+     ([]) -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing;
+     (:) v l ->
+      case v of {
+       VLit l0 ->
+        case l0 of {
+         Atom a ->
+          case l of {
+           ([]) -> (,) (RValSeq ((:) (string_to_vcons a) ([])))
+            Prelude.Nothing;
+           (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing};
+         Integer _ ->
+          case l of {
+           ([]) -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v ([]))))))
+            Prelude.Nothing;
+           (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}};
+       VTuple _ ->
+        case l of {
+         ([]) -> (,) (RExc
+          (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v ([]))))))
+          Prelude.Nothing;
+         (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing};
+       VMap _ ->
+        case l of {
+         ([]) -> (,) (RExc
+          (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v ([]))))))
+          Prelude.Nothing;
+         (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing};
+       _ ->
+        case l of {
+         ([]) -> (,) (RExc
+          (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v ([]))))))
+          Prelude.Nothing;
+         (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}}};
+   BBinaryToAtom ->
+    case params of {
+     ([]) -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing;
+     (:) v1 l ->
+      case v1 of {
+       VLit _ ->
+        case l of {
+         ([]) -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing;
+         (:) v2 l1 ->
+          case l1 of {
+           ([]) -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([])))))))
+            Prelude.Nothing;
+           (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}};
+       VTuple _ ->
+        case l of {
+         ([]) -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing;
+         (:) v2 l1 ->
+          case l1 of {
+           ([]) -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([])))))))
+            Prelude.Nothing;
+           (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}};
+       VMap _ ->
+        case l of {
+         ([]) -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing;
+         (:) v2 l1 ->
+          case l1 of {
+           ([]) -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([])))))))
+            Prelude.Nothing;
+           (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}};
+       VBitstring b ->
+        case l of {
+         ([]) -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing;
+         (:) v2 l0 ->
+          case v2 of {
+           VLit l1 ->
+            case l1 of {
+             Atom enc ->
+              case l0 of {
+               ([]) ->
+                case (Prelude.&&) (bvn_aligned b)
+                       ((Prelude.||)
+                         ((Prelude.||)
+                           (((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                             enc "utf8")
+                           (((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                             enc "latin1"))
+                         (((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                           enc "unicode")) of {
+                 Prelude.True ->
+                  let {a = string_of_list_ascii (bvn_to_chars b)} in
+                  (,) (RValSeq ((:) (VLit (Atom a)) ([]))) (Prelude.Just ((,)
+                  AtomCreation ((:) (VLit (Atom a)) ([]))));
+                 Prelude.False -> (,) (RExc
+                  (badarg (VTuple ((:) (VLit (Atom fname)) ((:) (VBitstring
+                    b) ((:) (VLit (Atom enc)) ([])))))))
+                  Prelude.Nothing};
+               (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+                Prelude.Nothing};
+             Integer _ ->
+              case l0 of {
+               ([]) -> (,) (RExc
+                (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                  ([])))))))
+                Prelude.Nothing;
+               (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+                Prelude.Nothing}};
+           VTuple _ ->
+            case l0 of {
+             ([]) -> (,) (RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([])))))))
+              Prelude.Nothing;
+             (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+              Prelude.Nothing};
+           VMap _ ->
+            case l0 of {
+             ([]) -> (,) (RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([])))))))
+              Prelude.Nothing;
+             (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+              Prelude.Nothing};
+           _ ->
+            case l0 of {
+             ([]) -> (,) (RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([])))))))
+              Prelude.Nothing;
+             (:) _ _ -> (,) (RExc (undef (VLit (Atom fname))))
+              Prelude.Nothing}}};
+       _ ->
+        case l of {
+         ([]) -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing;
+         (:) v2 l0 ->
+          case l0 of {
+           ([]) -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([])))))))
+            Prelude.Nothing;
+           (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}}}};
+   BListToBinary ->
+    case params of {
+     ([]) -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing;
+     (:) v l ->
+      case v of {
+       VLit _ ->
+        case l of {
+         ([]) ->
+          case iolist_bits v of {
+           Prelude.Just b -> (,) (RValSeq ((:) (VBitstring b) ([])))
+            Prelude.Nothing;
+           Prelude.Nothing -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v ([]))))))
+            Prelude.Nothing};
+         (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing};
+       VTuple _ ->
+        case l of {
+         ([]) ->
+          case iolist_bits v of {
+           Prelude.Just b -> (,) (RValSeq ((:) (VBitstring b) ([])))
+            Prelude.Nothing;
+           Prelude.Nothing -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v ([]))))))
+            Prelude.Nothing};
+         (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing};
+       VMap _ ->
+        case l of {
+         ([]) ->
+          case iolist_bits v of {
+           Prelude.Just b -> (,) (RValSeq ((:) (VBitstring b) ([])))
+            Prelude.Nothing;
+           Prelude.Nothing -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v ([]))))))
+            Prelude.Nothing};
+         (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing};
+       VBitstring b ->
+        case l of {
+         ([]) -> (,) (RExc
+          (badarg (VTuple ((:) (VLit (Atom fname)) ((:) (VBitstring b)
+            ([]))))))
+          Prelude.Nothing;
+         (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing};
+       _ ->
+        case l of {
+         ([]) ->
+          case iolist_bits v of {
+           Prelude.Just b -> (,) (RValSeq ((:) (VBitstring b) ([])))
+            Prelude.Nothing;
+           Prelude.Nothing -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v ([]))))))
+            Prelude.Nothing};
+         (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}}};
+   BIolistToBinary ->
+    case params of {
+     ([]) -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing;
+     (:) v l ->
+      case l of {
+       ([]) ->
+        case iolist_bits v of {
+         Prelude.Just b -> (,) (RValSeq ((:) (VBitstring b) ([])))
+          Prelude.Nothing;
+         Prelude.Nothing -> (,) (RExc
+          (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v ([]))))))
+          Prelude.Nothing};
+       (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}};
+   BIolistSize ->
+    case params of {
+     ([]) -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing;
+     (:) v l ->
+      case l of {
+       ([]) ->
+        case iolist_bits v of {
+         Prelude.Just b -> (,) (RValSeq ((:) (VLit (Integer
+          (of_N
+            (div (bvn_n b) (Npos ((\x -> 2 Prelude.* x)
+              ((\x -> 2 Prelude.* x) ((\x -> 2 Prelude.* x) 1))))))))
+          ([]))) Prelude.Nothing;
+         Prelude.Nothing -> (,) (RExc
+          (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v ([]))))))
+          Prelude.Nothing};
+       (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}};
+   _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}
+
+eval_split_binary_Interp :: Prelude.String -> Prelude.String -> (([]) 
+                            Val) -> Redex
+eval_split_binary_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
+   BSplitBinary ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) v1 l ->
+      case v1 of {
+       VLit _ ->
+        case l of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) v2 l1 ->
+          case l1 of {
+           ([]) -> RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+       VTuple _ ->
+        case l of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) v2 l1 ->
+          case l1 of {
+           ([]) -> RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+       VMap _ ->
+        case l of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) v2 l1 ->
+          case l1 of {
+           ([]) -> RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+       VBitstring b ->
+        case l of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) v2 l0 ->
+          case v2 of {
+           VLit l1 ->
+            case l1 of {
+             Atom _ ->
+              case l0 of {
+               ([]) -> RExc
+                (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                  ([]))))));
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+             Integer p ->
+              case l0 of {
+               ([]) ->
+                case (Prelude.&&)
+                       ((Prelude.&&) (bvn_aligned b) ((Prelude.<=) 0 p))
+                       ((Prelude.<=)
+                         ((Prelude.*) p ((\x -> x) ((\x -> 2 Prelude.* x)
+                           ((\x -> 2 Prelude.* x) ((\x -> 2 Prelude.* x)
+                           1)))))
+                         (of_N (bvn_n b))) of {
+                 Prelude.True ->
+                  let {
+                   k = to_N
+                         ((Prelude.*) p ((\x -> x) ((\x -> 2 Prelude.* x)
+                           ((\x -> 2 Prelude.* x) ((\x -> 2 Prelude.* x)
+                           1)))))}
+                  in
+                  RValSeq ((:) (VTuple ((:) (VBitstring (Bv_to_bvn k
+                  (bv_extract (bvn_n b)
+                    ((\n m -> case n of { N0 -> N0; Npos a -> case m of { N0 -> n; Npos b -> if a Prelude.> b then Npos (a Prelude.- b) else N0 } })
+                      (bvn_n b) k)
+                    k (bvn_val b))))
+                  ((:) (VBitstring (Bv_to_bvn
+                  ((\n m -> case n of { N0 -> N0; Npos a -> case m of { N0 -> n; Npos b -> if a Prelude.> b then Npos (a Prelude.- b) else N0 } })
+                    (bvn_n b) k)
+                  (bv_extract (bvn_n b) N0
+                    ((\n m -> case n of { N0 -> N0; Npos a -> case m of { N0 -> n; Npos b -> if a Prelude.> b then Npos (a Prelude.- b) else N0 } })
+                      (bvn_n b) k)
+                    (bvn_val b))))
+                  ([])))) ([]));
+                 Prelude.False -> RExc
+                  (badarg (VTuple ((:) (VLit (Atom fname)) ((:) (VBitstring
+                    b) ((:) (VLit (Integer p)) ([]))))))};
+               (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
+           VTuple _ ->
+            case l0 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+           VMap _ ->
+            case l0 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+           _ ->
+            case l0 of {
+             ([]) -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+                ([]))))));
+             (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+       _ ->
+        case l of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) v2 l0 ->
+          case l0 of {
+           ([]) -> RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) v1 ((:) v2
+              ([]))))));
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}};
+   _ -> RExc (undef (VLit (Atom fname)))}
+
+eval_lists_bifs_Interp :: Prelude.String -> Prelude.String -> (([]) Val) ->
+                          Redex
+eval_lists_bifs_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
+   BMember ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) x l0 ->
+      case l0 of {
+       ([]) -> RExc (undef (VLit (Atom fname)));
+       (:) l l1 ->
+        case l1 of {
+         ([]) ->
+          case mk_list l of {
+           Prelude.Just items ->
+            case existsb (val_eqb x) items of {
+             Prelude.True -> RValSeq ((:) (VLit (Atom "true")) ([]));
+             Prelude.False -> RValSeq ((:) (VLit (Atom "false")) ([]))};
+           Prelude.Nothing -> RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) x ((:) l ([]))))))};
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+   BKeyfind ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) key l0 ->
+      case l0 of {
+       ([]) -> RExc (undef (VLit (Atom fname)));
+       (:) pos l1 ->
+        case l1 of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) l l2 ->
+          case l2 of {
+           ([]) ->
+            case pos of {
+             VLit l3 ->
+              case l3 of {
+               Atom _ -> RExc
+                (badarg (VTuple ((:) (VLit (Atom fname)) ((:) key ((:) pos
+                  ((:) l ([])))))));
+               Integer n ->
+                case mk_list l of {
+                 Prelude.Just items ->
+                  case (Prelude.<=) ((\x -> x) 1) n of {
+                   Prelude.True ->
+                    case find_key key n items of {
+                     Prelude.Just e -> RValSeq ((:) e ([]));
+                     Prelude.Nothing -> RValSeq ((:) (VLit (Atom "false"))
+                      ([]))};
+                   Prelude.False -> RExc
+                    (badarg (VTuple ((:) (VLit (Atom fname)) ((:) key ((:)
+                      pos ((:) l ([])))))))};
+                 Prelude.Nothing -> RExc
+                  (badarg (VTuple ((:) (VLit (Atom fname)) ((:) key ((:) pos
+                    ((:) l ([])))))))}};
+             _ -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) key ((:) pos ((:)
+                l ([])))))))};
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}};
+   BKeymember ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) key l0 ->
+      case l0 of {
+       ([]) -> RExc (undef (VLit (Atom fname)));
+       (:) pos l1 ->
+        case l1 of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) l l2 ->
+          case l2 of {
+           ([]) ->
+            case pos of {
+             VLit l3 ->
+              case l3 of {
+               Atom _ -> RExc
+                (badarg (VTuple ((:) (VLit (Atom fname)) ((:) key ((:) pos
+                  ((:) l ([])))))));
+               Integer n ->
+                case mk_list l of {
+                 Prelude.Just items ->
+                  case (Prelude.<=) ((\x -> x) 1) n of {
+                   Prelude.True ->
+                    case find_key key n items of {
+                     Prelude.Just _ -> RValSeq ((:) (VLit (Atom "true"))
+                      ([]));
+                     Prelude.Nothing -> RValSeq ((:) (VLit (Atom "false"))
+                      ([]))};
+                   Prelude.False -> RExc
+                    (badarg (VTuple ((:) (VLit (Atom fname)) ((:) key ((:)
+                      pos ((:) l ([])))))))};
+                 Prelude.Nothing -> RExc
+                  (badarg (VTuple ((:) (VLit (Atom fname)) ((:) key ((:) pos
+                    ((:) l ([])))))))}};
+             _ -> RExc
+              (badarg (VTuple ((:) (VLit (Atom fname)) ((:) key ((:) pos ((:)
+                l ([])))))))};
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}};
+   BReverse ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) l l0 ->
+      case l0 of {
+       ([]) ->
+        case mk_list l of {
+         Prelude.Just items -> RValSeq ((:) (meta_to_cons (rev0 items)) ([]));
+         Prelude.Nothing -> RExc
+          (badarg (VTuple ((:) (VLit (Atom fname)) ((:) l ([])))))};
+       (:) tail l1 ->
+        case l1 of {
+         ([]) ->
+          case mk_list l of {
+           Prelude.Just items -> RValSeq ((:)
+            (fold_left (\acc x -> VCons x acc) items tail) ([]));
+           Prelude.Nothing -> RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) l ((:) tail
+              ([]))))))};
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
    _ -> RExc (undef (VLit (Atom fname)))}
 
 eval_error_Interp :: Prelude.String -> Prelude.String -> (([]) Val) ->
@@ -4737,6 +7220,44 @@ eval_map_bifs_Interp mname fname params =
               (badmap (VTuple ((:) (VLit (Atom "put")) ((:) key ((:) value
                 ((:) map ([])))))))};
            (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}};
+   BMapSize ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) map l ->
+      case map of {
+       VLit _ ->
+        case l of {
+         ([]) -> RExc (badmap map);
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       VTuple _ ->
+        case l of {
+         ([]) -> RExc (badmap map);
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       VMap contents ->
+        case l of {
+         ([]) -> RValSeq ((:) (VLit (Integer
+          ((Prelude.id) ((Data.List.genericLength) contents)))) ([]));
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))};
+       _ ->
+        case l of {
+         ([]) -> RExc (badmap map);
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
+   BFromKeys ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) keys l ->
+      case l of {
+       ([]) -> RExc (undef (VLit (Atom fname)));
+       (:) value l0 ->
+        case l0 of {
+         ([]) ->
+          case mk_list keys of {
+           Prelude.Just l1 -> RValSeq ((:) (VMap
+            (fold_left (\m k -> map_put k value m) l1 ([]))) ([]));
+           Prelude.Nothing -> RExc
+            (badarg (VTuple ((:) (VLit (Atom fname)) ((:) keys ((:) value
+              ([]))))))};
+         (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
    _ -> RExc (undef (VLit (Atom fname)))}
 
 eval_bin_to_list_Interp :: Prelude.String -> Prelude.String -> (([]) 
@@ -4918,6 +7439,8 @@ eval_Interp mname fname params =
     Prelude.Nothing);
    BNot -> Prelude.Just ((,) (eval_logical_Interp mname fname params)
     Prelude.Nothing);
+   BXor -> Prelude.Just ((,) (eval_logical_Interp mname fname params)
+    Prelude.Nothing);
    BEq -> Prelude.Just ((,) (eval_equality_Interp mname fname params)
     Prelude.Nothing);
    BTypeEq -> Prelude.Just ((,) (eval_equality_Interp mname fname params)
@@ -4932,12 +7455,29 @@ eval_Interp mname fname params =
     (eval_transform_list_Interp mname fname params) Prelude.Nothing);
    BSplit -> Prelude.Just ((,)
     (eval_transform_list_Interp mname fname params) Prelude.Nothing);
+   BMember -> Prelude.Just ((,) (eval_lists_bifs_Interp mname fname params)
+    Prelude.Nothing);
+   BKeyfind -> Prelude.Just ((,) (eval_lists_bifs_Interp mname fname params)
+    Prelude.Nothing);
+   BKeymember -> Prelude.Just ((,)
+    (eval_lists_bifs_Interp mname fname params) Prelude.Nothing);
+   BReverse -> Prelude.Just ((,) (eval_lists_bifs_Interp mname fname params)
+    Prelude.Nothing);
    BTupleToList -> Prelude.Just ((,)
     (eval_list_tuple_Interp mname fname params) Prelude.Nothing);
    BListToTuple -> Prelude.Just ((,)
     (eval_list_tuple_Interp mname fname params) Prelude.Nothing);
    BListToAtom -> Prelude.Just (eval_convert_Interp mname fname params);
    BIntegerToList -> Prelude.Just (eval_convert_Interp mname fname params);
+   BListToInteger -> Prelude.Just (eval_conversion_Interp mname fname params);
+   BBinaryToInteger -> Prelude.Just
+    (eval_conversion_Interp mname fname params);
+   BAtomToList -> Prelude.Just (eval_conversion_Interp mname fname params);
+   BBinaryToAtom -> Prelude.Just (eval_conversion_Interp mname fname params);
+   BListToBinary -> Prelude.Just (eval_conversion_Interp mname fname params);
+   BIolistToBinary -> Prelude.Just
+    (eval_conversion_Interp mname fname params);
+   BIolistSize -> Prelude.Just (eval_conversion_Interp mname fname params);
    BLt -> Prelude.Just ((,) (eval_cmp_Interp mname fname params)
     Prelude.Nothing);
    BLe -> Prelude.Just ((,) (eval_cmp_Interp mname fname params)
@@ -4967,6 +7507,18 @@ eval_Interp mname fname params =
    BIsBinary -> Prelude.Just ((,) (eval_check_Interp mname fname params)
     Prelude.Nothing);
    BIsBitstring -> Prelude.Just ((,) (eval_check_Interp mname fname params)
+    Prelude.Nothing);
+   BIsList -> Prelude.Just ((,) (eval_check_Interp mname fname params)
+    Prelude.Nothing);
+   BIsTuple -> Prelude.Just ((,) (eval_check_Interp mname fname params)
+    Prelude.Nothing);
+   BIsFunction -> Prelude.Just ((,) (eval_check_Interp mname fname params)
+    Prelude.Nothing);
+   BIsMap -> Prelude.Just ((,) (eval_check_Interp mname fname params)
+    Prelude.Nothing);
+   BIsPid -> Prelude.Just ((,) (eval_check_Interp mname fname params)
+    Prelude.Nothing);
+   BIsPort -> Prelude.Just ((,) (eval_check_Interp mname fname params)
     Prelude.Nothing);
    BError ->
     case eval_error_Interp mname fname params of {
@@ -5024,6 +7576,24 @@ eval_Interp mname fname params =
     (eval_bin_to_list_Interp mname fname params) Prelude.Nothing);
    BBitstringToList -> Prelude.Just ((,)
     (eval_bin_to_list_Interp mname fname params) Prelude.Nothing);
+   BDeleteElement -> Prelude.Just ((,)
+    (eval_tuple_bifs_Interp mname fname params) Prelude.Nothing);
+   BInsertElement -> Prelude.Just ((,)
+    (eval_tuple_bifs_Interp mname fname params) Prelude.Nothing);
+   BMakeTuple -> Prelude.Just ((,)
+    (eval_tuple_bifs_Interp mname fname params) Prelude.Nothing);
+   BSize -> Prelude.Just ((,) (eval_tuple_bifs_Interp mname fname params)
+    Prelude.Nothing);
+   BMapSize -> Prelude.Just ((,) (eval_map_bifs_Interp mname fname params)
+    Prelude.Nothing);
+   BFromKeys -> Prelude.Just ((,) (eval_map_bifs_Interp mname fname params)
+    Prelude.Nothing);
+   BMax -> Prelude.Just ((,) (eval_cmp_Interp mname fname params)
+    Prelude.Nothing);
+   BMin -> Prelude.Just ((,) (eval_cmp_Interp mname fname params)
+    Prelude.Nothing);
+   BSplitBinary -> Prelude.Just ((,)
+    (eval_split_binary_Interp mname fname params) Prelude.Nothing);
    _ -> Prelude.Just ((,) (eval_arith_Interp mname fname params)
     Prelude.Nothing)}
 

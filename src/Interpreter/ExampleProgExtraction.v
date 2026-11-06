@@ -44,4 +44,5 @@ Extract Inductive bvn => Bvn [Bv_to_bvn].
 Extract Inductive Segment => Segment [Build_Segment].
 Extract Inductive bv => Bv [BV].
 
-Extraction "HaskellSrc/exe/ExampleProgs.hs" examplePrograms.
+(* relative to the project root: use "make extract" *)
+Extraction "src/Interpreter/HaskellSrc/exe/ExampleProgs.hs" examplePrograms.

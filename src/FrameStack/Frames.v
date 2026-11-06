@@ -336,7 +336,7 @@ match ident with
 | IApp (VClos ext id vars e) =>
   if Nat.eqb vars (length vl)
   then Some (RExp (e.[list_subst (convert_to_closlist ext ++ vl) idsubst]), None)
-  else Some (RExc (badarity (VClos ext id vars e)), None)
+  else Some (RExc (badarity (VClos ext id vars e) (meta_to_cons vl)), None)
 | IApp v => Some (RExc (badfun v), None)
 | IBin => match construct_bitstring vl with
           | Some val => Some (RValSeq [VBitstring val], None)

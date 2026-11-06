@@ -212,6 +212,70 @@ Proof.
     rewrite String.eqb_eq in H46. rewrite H46. reflexivity.
     destruct (s2 =? "unlink")%string eqn:H47.
     rewrite String.eqb_eq in H47. rewrite H47. reflexivity.
+    destruct (s2 =? "bxor")%string eqn:H48.
+    rewrite String.eqb_eq in H48. rewrite H48. reflexivity.
+    destruct (s2 =? "bnot")%string eqn:H49.
+    rewrite String.eqb_eq in H49. rewrite H49. reflexivity.
+    destruct (s2 =? "band")%string eqn:H50.
+    rewrite String.eqb_eq in H50. rewrite H50. reflexivity.
+    destruct (s2 =? "bor")%string eqn:H51.
+    rewrite String.eqb_eq in H51. rewrite H51. reflexivity.
+    destruct (s2 =? "xor")%string eqn:H52.
+    rewrite String.eqb_eq in H52. rewrite H52. reflexivity.
+    destruct (s2 =? "is_list")%string eqn:H53.
+    rewrite String.eqb_eq in H53. rewrite H53. reflexivity.
+    destruct (s2 =? "is_tuple")%string eqn:H54.
+    rewrite String.eqb_eq in H54. rewrite H54. reflexivity.
+    destruct (s2 =? "is_bitstring")%string eqn:H55.
+    rewrite String.eqb_eq in H55. rewrite H55. reflexivity.
+    destruct (s2 =? "is_binary")%string eqn:H56.
+    rewrite String.eqb_eq in H56. rewrite H56. reflexivity.
+    destruct (s2 =? "byte_size")%string eqn:H57.
+    rewrite String.eqb_eq in H57. rewrite H57. reflexivity.
+    destruct (s2 =? "bit_size")%string eqn:H58.
+    rewrite String.eqb_eq in H58. rewrite H58. reflexivity.
+    destruct (s2 =? "binary_to_list")%string eqn:H59.
+    rewrite String.eqb_eq in H59. rewrite H59. reflexivity.
+    destruct (s2 =? "bitstring_to_list")%string eqn:H60.
+    rewrite String.eqb_eq in H60. rewrite H60. reflexivity.
+    destruct (s2 =? "split_binary")%string eqn:H61.
+    rewrite String.eqb_eq in H61. rewrite H61. reflexivity.
+    destruct (s2 =? "iolist_to_binary")%string eqn:H62.
+    rewrite String.eqb_eq in H62. rewrite H62. reflexivity.
+    destruct (s2 =? "iolist_size")%string eqn:H63.
+    rewrite String.eqb_eq in H63. rewrite H63. reflexivity.
+    destruct (s2 =? "list_to_binary")%string eqn:H64.
+    rewrite String.eqb_eq in H64. rewrite H64. reflexivity.
+    destruct (s2 =? "list_to_integer")%string eqn:H65.
+    rewrite String.eqb_eq in H65. rewrite H65. reflexivity.
+    destruct (s2 =? "binary_to_integer")%string eqn:H66.
+    rewrite String.eqb_eq in H66. rewrite H66. reflexivity.
+    destruct (s2 =? "atom_to_list")%string eqn:H67.
+    rewrite String.eqb_eq in H67. rewrite H67. reflexivity.
+    destruct (s2 =? "binary_to_atom")%string eqn:H68.
+    rewrite String.eqb_eq in H68. rewrite H68. reflexivity.
+    destruct (s2 =? "is_function")%string eqn:H69.
+    rewrite String.eqb_eq in H69. rewrite H69. reflexivity.
+    destruct (s2 =? "is_map")%string eqn:H70.
+    rewrite String.eqb_eq in H70. rewrite H70. reflexivity.
+    destruct (s2 =? "is_pid")%string eqn:H71.
+    rewrite String.eqb_eq in H71. rewrite H71. reflexivity.
+    destruct (s2 =? "is_port")%string eqn:H72.
+    rewrite String.eqb_eq in H72. rewrite H72. reflexivity.
+    destruct (s2 =? "delete_element")%string eqn:H73.
+    rewrite String.eqb_eq in H73. rewrite H73. reflexivity.
+    destruct (s2 =? "insert_element")%string eqn:H74.
+    rewrite String.eqb_eq in H74. rewrite H74. reflexivity.
+    destruct (s2 =? "make_tuple")%string eqn:H75.
+    rewrite String.eqb_eq in H75. rewrite H75. reflexivity.
+    destruct (s2 =? "size")%string eqn:H76.
+    rewrite String.eqb_eq in H76. rewrite H76. reflexivity.
+    destruct (s2 =? "map_size")%string eqn:H77.
+    rewrite String.eqb_eq in H77. rewrite H77. reflexivity.
+    destruct (s2 =? "max")%string eqn:H78.
+    rewrite String.eqb_eq in H78. rewrite H78. reflexivity.
+    destruct (s2 =? "min")%string eqn:H79.
+    rewrite String.eqb_eq in H79. rewrite H79. reflexivity.
     
     rewrite String.eqb_neq in *.
     all:destruct s2; try reflexivity; try congruence.
@@ -320,6 +384,14 @@ Proof.
       rewrite String.eqb_eq in H3. rewrite H3.
       - destruct (s2 =? "split")%string eqn:H4.
         rewrite String.eqb_eq in H4. rewrite H4. reflexivity.
+        destruct (s2 =? "member")%string eqn:H4a.
+        rewrite String.eqb_eq in H4a. rewrite H4a. reflexivity.
+        destruct (s2 =? "keyfind")%string eqn:H4b.
+        rewrite String.eqb_eq in H4b. rewrite H4b. reflexivity.
+        destruct (s2 =? "keymember")%string eqn:H4c.
+        rewrite String.eqb_eq in H4c. rewrite H4c. reflexivity.
+        destruct (s2 =? "reverse")%string eqn:H4d.
+        rewrite String.eqb_eq in H4d. rewrite H4d. reflexivity.
         rewrite String.eqb_neq in *.
         all:destruct s2; try reflexivity; try congruence.
         all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
@@ -342,7 +414,69 @@ Proof.
           destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
           destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
         all:destruct s2; try reflexivity; try congruence.
-      - rewrite String.eqb_neq in *.
+        all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
+          destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
+          destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
+        all:destruct s2; try reflexivity; try congruence.
+        all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
+          destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
+          destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
+        all:destruct s2; try reflexivity; try congruence.
+        all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
+          destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
+          destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
+        all:destruct s2; try reflexivity; try congruence.
+        all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
+          destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
+          destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
+        all:destruct s2; try reflexivity; try congruence.
+      - destruct (s1 =? "maps")%string eqn:H5.
+        rewrite String.eqb_eq in H5. rewrite H5.
+        -- destruct (s2 =? "get")%string eqn:H6.
+          rewrite String.eqb_eq in H6. rewrite H6. reflexivity.
+          destruct (s2 =? "put")%string eqn:H7.
+          rewrite String.eqb_eq in H7. rewrite H7. reflexivity.
+          destruct (s2 =? "from_keys")%string eqn:H8.
+          rewrite String.eqb_eq in H8. rewrite H8. reflexivity.
+          rewrite String.eqb_neq in *.
+          all:destruct s2; try reflexivity; try congruence.
+          all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
+            destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
+            destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
+          all:destruct s2; try reflexivity; try congruence.
+          all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
+            destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
+            destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
+          all:destruct s2; try reflexivity; try congruence.
+          all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
+            destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
+            destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
+          all:destruct s2; try reflexivity; try congruence.
+          all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
+            destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
+            destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
+          all:destruct s2; try reflexivity; try congruence.
+          all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
+            destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
+            destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
+          all:destruct s2; try reflexivity; try congruence.
+          all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
+            destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
+            destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
+          all:destruct s2; try reflexivity; try congruence.
+          all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
+            destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
+            destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
+          all:destruct s2; try reflexivity; try congruence.
+          all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
+            destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
+            destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
+          all:destruct s2; try reflexivity; try congruence.
+          all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
+            destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
+            destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
+          all:destruct s2; try reflexivity; try congruence.
+        -- rewrite String.eqb_neq in *.
         all:destruct s1; try reflexivity; try congruence.
         all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
           destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
@@ -502,6 +636,34 @@ Proof.
   rewrite <- convert_string_to_code_equiv. reflexivity.
 Qed.
 
+Lemma eval_tuple_bifs_equiv: forall (mname : string) (fname : string) (params : list Val),
+  eval_tuple_bifs mname fname params = eval_tuple_bifs_Interp mname fname params.
+Proof.
+  intros. unfold eval_tuple_bifs_Interp.
+  rewrite <- convert_string_to_code_equiv. reflexivity.
+Qed.
+
+Lemma eval_conversion_equiv: forall (mname : string) (fname : string) (params : list Val),
+  eval_conversion mname fname params = eval_conversion_Interp mname fname params.
+Proof.
+  intros. unfold eval_conversion_Interp.
+  rewrite <- convert_string_to_code_equiv. reflexivity.
+Qed.
+
+Lemma eval_split_binary_equiv: forall (mname : string) (fname : string) (params : list Val),
+  eval_split_binary mname fname params = eval_split_binary_Interp mname fname params.
+Proof.
+  intros. unfold eval_split_binary_Interp.
+  rewrite <- convert_string_to_code_equiv. reflexivity.
+Qed.
+
+Lemma eval_lists_bifs_equiv: forall (mname : string) (fname : string) (params : list Val),
+  eval_lists_bifs mname fname params = eval_lists_bifs_Interp mname fname params.
+Proof.
+  intros. unfold eval_lists_bifs_Interp.
+  rewrite <- convert_string_to_code_equiv. reflexivity.
+Qed.
+
 Lemma eval_equiv: forall (mname : string) (fname : string) (params : list Val),
   eval mname fname params = eval_Interp mname fname params.
 Proof.
@@ -524,6 +686,10 @@ Proof.
   rewrite <- eval_map_bifs_equiv.
   rewrite <- eval_bin_size_equiv.
   rewrite <- eval_bin_to_list_equiv.
+  rewrite <- eval_tuple_bifs_equiv.
+  rewrite <- eval_conversion_equiv.
+  rewrite <- eval_split_binary_equiv.
+  rewrite <- eval_lists_bifs_equiv.
   reflexivity.
 Qed.
 

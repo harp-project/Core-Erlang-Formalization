@@ -591,7 +591,7 @@ Proof.
   * destruct params.
     (* we have to make sure, that the number of parameters differ *)
     - epose proof (H [FApp1 [˝VNil];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H6. inv H6. repeat deriv.
@@ -599,7 +599,7 @@ Proof.
       inv H11. inv H2.
       now apply inf_diverges in H6.
     - epose proof (H [FApp1 [];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H4. inv H4. repeat deriv.
@@ -616,7 +616,7 @@ Proof.
   * destruct params.
     (* we have to make sure, that the number of parameters differ *)
     - epose proof (H [FApp1 [˝VNil];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H6. inv H6. repeat deriv.
@@ -625,7 +625,7 @@ Proof.
       inv H11. inv H2.
       now apply inf_diverges in H6.
     - epose proof (H [FApp1 [];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H4. inv H4. repeat deriv.
@@ -643,7 +643,7 @@ Proof.
   * destruct params.
     (* we have to make sure, that the number of parameters differ *)
     - epose proof (H [FApp1 [˝VNil];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H6. inv H6. repeat deriv.
@@ -652,7 +652,7 @@ Proof.
       inv H11. inv H2.
       now apply inf_diverges in H6.
     - epose proof (H [FApp1 [];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H4. inv H4. repeat deriv.
@@ -670,7 +670,7 @@ Proof.
   * destruct params.
     (* we have to make sure, that the number of parameters differ *)
     - epose proof (H [FApp1 [˝VNil];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H6. inv H6. repeat deriv.
@@ -679,7 +679,7 @@ Proof.
       inv H11. inv H2.
       now apply inf_diverges in H6.
     - epose proof (H [FApp1 [];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H4. inv H4. repeat deriv.
@@ -697,7 +697,7 @@ Proof.
   * destruct params.
     (* we have to make sure, that the number of parameters differ *)
     - epose proof (H [FApp1 [˝VNil];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H6. inv H6. repeat deriv.
@@ -706,7 +706,7 @@ Proof.
       inv H11. inv H2.
       now apply inf_diverges in H6.
     - epose proof (H [FApp1 [];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H4. inv H4. repeat deriv.
@@ -724,7 +724,7 @@ Proof.
   * destruct params.
     (* we have to make sure, that the number of parameters differ *)
     - epose proof (H [FApp1 [˝VNil];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H6. inv H6. repeat deriv.
@@ -733,7 +733,7 @@ Proof.
       inv H11. inv H2.
       now apply inf_diverges in H6.
     - epose proof (H [FApp1 [];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H4. inv H4. repeat deriv.
@@ -751,7 +751,7 @@ Proof.
   * destruct params.
     (* we have to make sure, that the number of parameters differ *)
     - epose proof (H [FApp1 [˝VNil];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H6. inv H6. repeat deriv.
@@ -760,7 +760,7 @@ Proof.
       inv H11. inv H2.
       now apply inf_diverges in H6.
     - epose proof (H [FApp1 [];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H4. inv H4. repeat deriv.
@@ -779,14 +779,14 @@ Proof.
   * destruct params.
   (* we have to make sure, that the number of parameters differ *)
     - epose proof (H [FApp1 [˝VNil];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       inv H6. repeat deriv.
       cbn in H10. repeat deriv.
       cbn in H11. inv H11. inv H2. now apply inf_diverges in H6.
     - epose proof (H [FApp1 [];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       inv H4. repeat deriv.
@@ -1089,7 +1089,7 @@ Proof.
   * destruct params.
     (* we have to make sure, that the number of parameters differ *)
     - epose proof (H [FApp1 [˝VNil];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H6. inv H6. repeat deriv.
@@ -1098,7 +1098,7 @@ Proof.
       inv H11. inv H2.
       now apply inf_diverges in H6.
     - epose proof (H [FApp1 [];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
-        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PTuple [PLit "badarity"%string; PVar]], ˝ttrue, ˝VNil);
         ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H4. inv H4. repeat deriv.

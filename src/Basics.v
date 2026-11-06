@@ -9,6 +9,7 @@ Require Export Stdlib.micromega.Lia
                Stdlib.Arith.PeanoNat.
 Import ListNotations.
 
+
 (**
   This tactic trasforms boolean equality between nats to propositional
   inside hypotheses
@@ -928,3 +929,44 @@ Qed.
 Lemma null_map : forall (A B : Type) (f : A -> B) (ll : list A),
   null (map f ll) = null ll.
 Proof. intros A B f ll. destruct ll; reflexivity. Qed.
+
+Lemma biforall_rev {A B} (P : A -> B -> Prop) l l' :
+  list_biforall P l l' -> list_biforall P (List.rev l) (List.rev l').
+Proof.
+  intros H. induction H; simpl; auto. constructor.
+  apply biforall_app; auto.
+  constructor. assumption. constructor.
+Qed.
+
+Lemma biforall_nth_error {A B} (P : A -> B -> Prop) l l' k :
+  list_biforall P l l' ->
+  (nth_error l k = None /\ nth_error l' k = None) \/
+  (exists a b, nth_error l k = Some a /\ nth_error l' k = Some b /\ P a b).
+Proof.
+  intros H. revert k. induction H; intros [|k]; simpl.
+  * left. auto.
+  * left. auto.
+  * right. do 2 eexists. repeat split; eauto.
+  * apply IHlist_biforall.
+Qed.
+
+Require Import stdpp.list. (* Export breaks Induction *)
+
+(** Relatedness of tuple functions *)
+Lemma biforall_take {A B} (P : A -> B -> Prop) l l' n :
+  list_biforall P l l' -> list_biforall P (take n l) (take n l').
+Proof.
+  intros H. revert n. induction H; intros [|n]; simpl; constructor; auto.
+Qed.
+
+Lemma biforall_drop {A B} (P : A -> B -> Prop) l l' n :
+  list_biforall P l l' -> list_biforall P (drop n l) (drop n l').
+Proof.
+  intros H. revert n. induction H; intros [|n]; simpl; try constructor; auto.
+Qed.
+
+Lemma biforall_repeat {A B} (P : A -> B -> Prop) a b n :
+  P a b -> list_biforall P (repeat a n) (repeat b n).
+Proof.
+  intros H. induction n; simpl; constructor; auto.
+Qed.

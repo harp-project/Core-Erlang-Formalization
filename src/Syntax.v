@@ -271,10 +271,13 @@ Definition badkey (v : Val) : Exception :=
   (Error, VLit (Atom "badkey"%string), v).
 Definition undef (v : Val) : Exception :=
   (Error, VLit (Atom "undef"%string), v).
-Definition badfun (v : Val) : Exception := 
-  (Error,VLit (Atom "badfun"%string), v).
-Definition badarity (v : Val) : Exception := 
-  (Error,VLit (Atom "badarity"%string), v).
+(** In Erlang, the reasons of these two exceptions are tuples:
+    {badfun, F} and {badarity, {F, Args}} *)
+Definition badfun (v : Val) : Exception :=
+  (Error, VTuple [VLit (Atom "badfun"%string); v], VNil).
+(** [args] is the argument list as an Erlang list value *)
+Definition badarity (f args : Val) : Exception :=
+  (Error, VTuple [VLit (Atom "badarity"%string); VTuple [f; args]], VNil).
 Definition if_clause : Exception := 
   (Error, VLit (Atom "if_clause"%string), ErrorVal).
 Definition timeout_value v : Exception :=
