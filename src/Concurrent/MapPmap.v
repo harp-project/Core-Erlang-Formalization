@@ -250,8 +250,14 @@ Proof.
         repeat f_equal.
         rewrite isNotUsed_renamePID_red. reflexivity.
         destruct v1; inv H4; cbn.
-        1-8, 10: set_solver.
-        case_match; inv H15. 2: set_solver.
+        1-2, 7,8,10: clear; set_solver.
+        1-4: set_solver.
+        case_match; inv H15. 
+        2: { simpl in *.
+             pose proof (meta_to_cons_usedPIDs l).
+             pose proof (mk_list_usedPIDs v2 ι' l).
+             set_solver.
+        }
         simpl. intro. apply subst_usedPIDs in H14; simpl in *.
         destruct H14; destruct_hyps. set_solver.
         apply list_subst_idsubst_inl in H14.
@@ -370,7 +376,6 @@ Proof.
               right. exists ι0, p. split. by setoid_rewrite lookup_insert_eq.
               inv H5; simpl in *;
               destruct (Nat.eqb) in H4; inv H4.
-              2,4: set_solver.
               ++ repeat rewrite union_empty_r_L in H15.
                  rewrite union_empty_l_L in H15.
                  simpl in H15. apply subst_usedPIDs in H15; simpl in *.
@@ -388,6 +393,10 @@ Proof.
                        apply elem_of_flat_union. eexists; split; eassumption.
                      }
                      clear -H0 H15. set_solver.
+              ++ simpl in H15.
+                 pose proof mk_list_usedPIDs v2 ι l.
+                 pose proof meta_to_cons_usedPIDs l.
+                 set_solver.
               ++ repeat rewrite union_empty_r_L in H15.
                  rewrite union_empty_l_L in H15.
                  simpl in H15. apply elem_of_union in H15 as [H15 | H15].
@@ -409,6 +418,10 @@ Proof.
                        apply elem_of_flat_union. eexists; split; eassumption.
                      }
                      clear -H0 H16. set_solver.
+              ++ simpl in H15.
+                 pose proof mk_list_usedPIDs v2 ι l.
+                 pose proof meta_to_cons_usedPIDs l.
+                 set_solver.
            -- destruct H15. congruence.
               right. exists ι0. eexists. split. by setoid_rewrite lookup_insert_eq.
               assert (fresh ∉ usedPIDsProc p). {
@@ -726,7 +739,6 @@ Proof.
                 inv H11; simpl in *; set_solver.
              -- rewrite Eq1. right. exists ι0, p1. split. by setoid_rewrite lookup_insert_eq.
                 inv H11; simpl in *; case_match; inv H10.
-                2,4: set_solver.
                 ++ repeat rewrite union_empty_r_L in H.
                    rewrite union_empty_l_L in H.
                    simpl in H. apply subst_usedPIDs in H; simpl in *.
@@ -744,6 +756,10 @@ Proof.
                          apply elem_of_flat_union. eexists; split; eassumption.
                        }
                        clear -H3 H4. set_solver.
+                ++ simpl in H.
+                   pose proof mk_list_usedPIDs v2 ι l.
+                   pose proof meta_to_cons_usedPIDs l.
+                   set_solver.
                 ++ repeat rewrite union_empty_r_L in H.
                    rewrite union_empty_l_L in H.
                    simpl in H. apply elem_of_union in H as [H | H].
@@ -765,6 +781,10 @@ Proof.
                          apply elem_of_flat_union. eexists; split; eassumption.
                        }
                        clear -H4 H3. set_solver.
+                ++ simpl in H.
+                   pose proof mk_list_usedPIDs v2 ι l.
+                   pose proof meta_to_cons_usedPIDs l.
+                   set_solver.
     }
 Qed.
 Set Guard Checking.

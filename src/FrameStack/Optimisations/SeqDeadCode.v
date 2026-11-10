@@ -573,7 +573,10 @@ Proof.
       rewrite H1 in H8.
       destruct vals; try congruence.
       destruct vals; try congruence.
-      inv H8. inv H0. by eexists. inv H.
+      (* match_fail with one argument: an exception, also for function_clause *)
+      1: repeat case_match; inv H8; inv H0; first [by eexists | inv H].
+      (* more arguments: not reducible *)
+      1: repeat case_match; congruence.
     }
     inv H2. inv H.
     pose proof (proj1 (semantic_iff_termination k _ _)
@@ -592,9 +595,10 @@ Proof.
       unfold eval_primop_error in H12.
       rewrite H1 in H12.
       destruct vals; simpl in *; try congruence.
-      + inv H12. inv H6. by eexists. inv H.
-      + destruct (vals ++ [v]) eqn:ERROR; try congruence.
-        apply app_eq_nil in ERROR as []. inv H3.
+      + repeat case_match; inv H12; inv H6; first [by eexists | inv H].
+      + destruct (vals ++ [v]) eqn:ERROR.
+        1: apply app_eq_nil in ERROR as [_ ERROR]; congruence.
+        1: repeat case_match; congruence.
   * intros. destruct H1 as [k [Hres D]].
     inv D. inv_result.
     inv H1.

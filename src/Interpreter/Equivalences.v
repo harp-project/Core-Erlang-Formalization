@@ -112,8 +112,7 @@ Proof.
                  simpl. rewrite H'. reflexivity.
               -- inv H1. apply eval_cool_params_0 with (l := None). discriminate. reflexivity.
            ++ inv H0. apply eval_cool_params_0 with (l := None). discriminate. reflexivity.
-        ** rewrite <- primop_eval_equiv in H1.
-           destruct (primop_eval f vl) eqn:H'; try discriminate. destruct p. inv H1.
+        ** destruct (primop_eval f vl) eqn:H'; try discriminate. destruct p. inv H1.
            apply eval_cool_params_0 with (l := o). discriminate. simpl.
            rewrite H'. reflexivity.
         ** destruct v; inv H1;

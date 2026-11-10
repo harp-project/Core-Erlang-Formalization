@@ -7,6 +7,7 @@ src/Equalities.v
 src/SideEffects.v
 src/Scoping.v
 src/Auxiliaries.v
+src/AuxiliariesTests.v
 src/Maps.v
 src/Manipulation.v
 src/ScopingLemmas.v

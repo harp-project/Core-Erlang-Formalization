@@ -276,253 +276,14 @@ Definition usedInEther_Interp : PID -> Ether -> bool :=
     then true
     else false.
 
-(** STRING MATCH SWAPPED DEFINITIONS FOR RESULT CONSTRUCTION
-
-    Default extracting of pattern matches on strings from Coq
-    to Haskell is a bit strange. Strings get matched on every character
-    and characters get matched on every bit. This results in functions
-    with pattern matches hundreds of layers deep, and many thousands
-    of lines long.
-    
-    A fix for this behaviour is, instead of using match expressions,
-    having nested if-else statements utilizing "String.eqb".
-    Importing "ExtrHaskellString" swaps "String.eqb" with "Prelude.==".
-    This results in the extracted file being thousand of lines shorter.
-    
-    Note that extraction to OCaml doesn't have this problem.
-    
-    As with gmap and gset wrapper functions, all functions with matches
-    on strings need replacing, as well as functions utilizing them
-    and so on. Equivalence proofs are in "InterpreterAuxLemmas.v".
+(**
+  Optimisation here: we define equality checking with Val_eqb_strict instead of
+  Val_eqb, which is optimised as Prelude.== during extraction. This is possible
+  because all uses of Val_eqb_strict in the following functions coincide with
+  the use of Val_eqb (while this is not true for arbitrary parameters).
 *)
-
-Definition convert_primop_to_code_Interp (s : string) : PrimopCode :=
-  (** primops *)
-  if String.eqb s "match_fail"%string
-    then PMatchFail
-  else if String.eqb s "raise"%string
-    then PRaise
-  else if String.eqb s "recv_next"%string
-    then PRecvNext
-  else if String.eqb s "recv_peek_message"%string
-    then PPeekMsg
-  else if String.eqb s "remove_message"%string
-    then PRemoveMsg
-  else if String.eqb s "recv_wait_timeout"%string
-    then PRecvWaitTimeout
-  else PNothing
-.
-
-Definition eval_primop_error_Interp (fname : string) (params : list Val) : option Exception :=
-match convert_primop_to_code_Interp fname with
-| PMatchFail =>
-  match params with
-  (* Erlang raises error:function_clause, the arguments belong to the stacktrace *)
-  | [VTuple (VLit (Atom a) :: args)] =>
-    if String.eqb a "function_clause"%string
-    then Some (Error, VLit (Atom a), VTuple args)
-    else Some (Error, VTuple (VLit (Atom a) :: args), VNil)
-  | [val]        => Some (Error, val, VNil) (* TODO: in the future VNil should be the stacktrace *)
-  | _            => None (* This is a compilation error *)
-  end
-| PRaise => match params with
-  | [stacktrace; reas] => Some (Error, reas, stacktrace)
-  | _ => None (* This is a compilation error *)
-  end
-| _ => Some (undef (VLit (Atom fname)))
-end.
-
-Definition primop_eval_Interp (fname : string) (params : list Val) 
-  : option (Redex * (option SideEffect)) :=
-match convert_primop_to_code_Interp fname with
-  | PMatchFail | PRaise =>
-    match (eval_primop_error_Interp fname params) with
-    | Some exc => Some (RExc exc, None)
-    | None => None (* this is a compile-time error *)
-    end
-(** These are concurrent primops: *)
-  | PRecvNext | PRemoveMsg | PPeekMsg
-  | PRecvWaitTimeout => None
-(***)
-  | _ => Some (RExc (undef (VLit (Atom fname))), None)
-end.
-
-Definition convert_string_to_code_Interp : (string * string) -> BIFCode :=
-  fun '(sf, sn) => 
-    if String.eqb sf "erlang"%string
-      then (
-        if String.eqb sn "+"%string then BPlus
-        else if String.eqb sn "-"%string then BMinus
-        else if String.eqb sn "*"%string then BMult
-        else if String.eqb sn "/"%string then BDivide
-        else if String.eqb sn "bsl"%string then BSl
-        else if String.eqb sn "bsr"%string then BSr
-        else if String.eqb sn "rem"%string then BRem
-        else if String.eqb sn "div"%string then BDiv
-        else if String.eqb sn "abs"%string then BAbs
-        else if String.eqb sn "bxor"%string then BBXor
-        else if String.eqb sn "bnot"%string then BBNot
-        else if String.eqb sn "band"%string then BBAnd
-        else if String.eqb sn "bor"%string then BBOr
-        else if String.eqb sn "and"%string then BAnd
-        else if String.eqb sn "or"%string then BOr
-        else if String.eqb sn "not"%string then BNot
-        else if String.eqb sn "xor"%string then BXor
-        else if String.eqb sn "=="%string then BEq
-        else if String.eqb sn "=:="%string then BTypeEq
-        else if String.eqb sn "/="%string then BNeq
-        else if String.eqb sn "=/="%string then BTypeNeq
-        else if String.eqb sn "++"%string then BApp
-        else if String.eqb sn "--"%string then BMinusMinus
-        else if String.eqb sn "tuple_to_list"%string then BTupleToList
-        else if String.eqb sn "list_to_tuple"%string then BListToTuple
-        else if String.eqb sn "list_to_atom"%string then BListToAtom
-        else if String.eqb sn "integer_to_list"%string then BIntegerToList
-        else if String.eqb sn "<"%string then BLt
-        else if String.eqb sn ">"%string then BGt
-        else if String.eqb sn "=<"%string then BLe
-        else if String.eqb sn ">="%string then BGe
-        else if String.eqb sn "length"%string then BLength
-        else if String.eqb sn "tuple_size"%string then BTupleSize
-        else if String.eqb sn "hd"%string then BHd
-        else if String.eqb sn "tl"%string then BTl
-        else if String.eqb sn "element"%string then BElement
-        else if String.eqb sn "setelement"%string then BSetElement
-        else if String.eqb sn "is_number"%string then BIsNumber
-        else if String.eqb sn "is_integer"%string then BIsInteger
-        else if String.eqb sn "is_atom"%string then BIsAtom
-        else if String.eqb sn "is_boolean"%string then BIsBoolean
-        else if String.eqb sn "is_list"%string then BIsList
-        else if String.eqb sn "is_tuple"%string then BIsTuple
-        else if String.eqb sn "fun_info"%string then BFunInfo
-        else if String.eqb sn "error"%string then BError
-        else if String.eqb sn "exit"%string then BExit
-        else if String.eqb sn "throw"%string then BThrow
-        else if String.eqb sn "!"%string then BSend
-        else if String.eqb sn "spawn"%string then BSpawn
-        else if String.eqb sn "spawn_link"%string then BSpawnLink
-        else if String.eqb sn "process_flag"%string then BProcessFlag
-        else if String.eqb sn "self"%string then BSelf
-        else if String.eqb sn "link"%string then BLink
-        else if String.eqb sn "unlink"%string then BUnLink
-        else if String.eqb sn "is_bitstring"%string then BIsBitstring
-        else if String.eqb sn "is_binary"%string then BIsBinary
-        else if String.eqb sn "byte_size"%string then BByteSize
-        else if String.eqb sn "bit_size"%string then BBitSize
-        else if String.eqb sn "binary_to_list"%string then BBinaryToList
-        else if String.eqb sn "bitstring_to_list"%string then BBitstringToList
-        else if String.eqb sn "split_binary"%string then BSplitBinary
-        else if String.eqb sn "iolist_to_binary"%string then BIolistToBinary
-        else if String.eqb sn "iolist_size"%string then BIolistSize
-        else if String.eqb sn "list_to_binary"%string then BListToBinary
-        else if String.eqb sn "list_to_integer"%string then BListToInteger
-        else if String.eqb sn "binary_to_integer"%string then BBinaryToInteger
-        else if String.eqb sn "atom_to_list"%string then BAtomToList
-        else if String.eqb sn "binary_to_atom"%string then BBinaryToAtom
-        else if String.eqb sn "is_function"%string then BIsFunction
-        else if String.eqb sn "is_map"%string then BIsMap
-        else if String.eqb sn "is_pid"%string then BIsPid
-        else if String.eqb sn "is_port"%string then BIsPort
-        else if String.eqb sn "delete_element"%string then BDeleteElement
-        else if String.eqb sn "insert_element"%string then BInsertElement
-        else if String.eqb sn "make_tuple"%string then BMakeTuple
-        else if String.eqb sn "size"%string then BSize
-        else if String.eqb sn "map_size"%string then BMapSize
-        else if String.eqb sn "max"%string then BMax
-        else if String.eqb sn "min"%string then BMin
-        else BNothing
-      )
-    else if String.eqb sf "io"%string
-      then (
-        if String.eqb sn "fwrite"%string then BFwrite
-        else if String.eqb sn "fread"%string then BFread
-        else BNothing
-      )
-    else if String.eqb sf "lists"%string
-      then (
-        if String.eqb sn "split"%string then BSplit
-        else if String.eqb sn "member"%string then BMember
-        else if String.eqb sn "keyfind"%string then BKeyfind
-        else if String.eqb sn "keymember"%string then BKeymember
-        else if String.eqb sn "reverse"%string then BReverse
-        else BNothing
-      )
-    else if String.eqb sf "maps"%string
-      then (
-        if String.eqb sn "get"%string then BGet
-        else if String.eqb sn "put"%string then BPut
-        else if String.eqb sn "from_keys"%string then BFromKeys
-        else BNothing
-      )
-    else BNothing.
-
-Definition eval_arith_Interp (mname : string) (fname : string) (params : list Val) :  Redex :=
-match convert_string_to_code_Interp (mname, fname), params with
-(** addition *)
-| BPlus, [VLit (Integer a); VLit (Integer b)] => RValSeq [VLit (Integer (a + b))]
-| BPlus, [a; b]                               => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
-(** subtraction *)
-| BMinus, [VLit (Integer a); VLit (Integer b)] => RValSeq [VLit (Integer (a - b))]
-| BMinus, [a; b]                               => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
-(** unary minus *)
-| BMinus, [VLit (Integer a)]                   => RValSeq [VLit (Integer (0 - a))]
-| BMinus, [a]                                  => RExc (badarith (VTuple [VLit (Atom fname); a]))
-(** unary plus *)
-| BPlus, [VLit (Integer a)]                   => RValSeq [VLit (Integer a)]
-| BPlus, [a]                                  => RExc (badarith (VTuple [VLit (Atom fname); a]))
-(** multiplication *)
-| BMult, [VLit (Integer a); VLit (Integer b)] => RValSeq [VLit (Integer (a * b))]
-| BMult, [a; b]                               => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
-(** division *)
-| BDivide, [VLit (Integer a); VLit (Integer 0)] => RExc (badarith (VTuple [VLit (Atom fname); VLit (Integer a); VLit (Integer 0)]))
-| BDivide, [VLit (Integer a); VLit (Integer b)] => RValSeq [VLit (Integer (a / b))]
-| BDivide, [a; b]                               => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
-(** rem *)
-| BRem, [VLit (Integer a); VLit (Integer 0)] => RExc (badarith (VTuple [VLit (Atom fname); VLit (Integer a); VLit (Integer 0)]))
-| BRem, [VLit (Integer a); VLit (Integer b)] => RValSeq [VLit (Integer (Z.rem a b))]
-| BRem, [a; b]                               => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
-(** div *)
-| BDiv, [VLit (Integer a); VLit (Integer 0)] => RExc (badarith (VTuple [VLit (Atom fname); VLit (Integer a); VLit (Integer 0)]))
-| BDiv, [VLit (Integer a); VLit (Integer b)] => RValSeq [VLit (Integer (Z.quot a b))]
-| BDiv, [a; b]                               => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
-(** bsl *)
-| BSl, [VLit (Integer a); VLit (Integer b)]  => RValSeq [VLit (Integer (Z.shiftl a b))]
-| BSl, [a; b]                                => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
-(** bsr *)
-| BSr, [VLit (Integer a); VLit (Integer b)]  => RValSeq [VLit (Integer (Z.shiftr a b))]
-| BSr, [a; b]                                => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
-(** abs *)
-| BAbs, [VLit (Integer a)]                   => RValSeq [VLit (Integer (Z.abs a))]
-| BAbs, [a]                                  => RExc (badarg (VTuple [VLit (Atom fname); a]))
-(** bnot *)
-| BBNot, [VLit (Integer a)]                  => RValSeq [VLit (Integer (Z.lnot a))]
-| BBNot, [a]                                 => RExc (badarith (VTuple [VLit (Atom fname); a]))
-(** band *)
-| BBAnd, [VLit (Integer a); VLit (Integer b)] => RValSeq [VLit (Integer (Z.land a b))]
-| BBAnd, [a; b]                               => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
-(** bor *)
-| BBOr, [VLit (Integer a); VLit (Integer b)]  => RValSeq [VLit (Integer (Z.lor a b))]
-| BBOr, [a; b]                                => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
-(** bxor *)
-| BBXor, [VLit (Integer a); VLit (Integer b)] => RValSeq [VLit (Integer (Z.lxor a b))]
-| BBXor, [a; b]                               => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
-(** anything else *)
-| _         , _                              => RExc (undef (VLit (Atom fname)))
-end.
-
-Definition eval_io_Interp (mname : string) (fname : string) (params : list Val)
-   : (Redex * option SideEffect) :=
-match convert_string_to_code_Interp (mname, fname), length params, params with
-(** writing *)
-| BFwrite, 1, _ => (RValSeq [ok], Some (Output, params))
-(** reading *)
-| BFread, 2, e => (RValSeq [VTuple [ok; nth 1 params ErrorVal]], Some (Input, params))
-(** anything else *)
-| _              , _, _ => (RExc (undef (VLit (Atom fname))), None)
-end.
-
 Definition eval_logical_Interp (mname fname : string) (params : list Val) : Redex :=
-match convert_string_to_code_Interp (mname, fname), params with
+match convert_string_to_code (mname, fname), params with
 (** Note: we intentionally avoid pattern matching on strings here *)
 (** logical and *)
 | BAnd, [a; b] =>
@@ -596,103 +357,8 @@ match convert_string_to_code_Interp (mname, fname), params with
 | _ , _ => RExc (undef (VLit (Atom fname)))
 end.
 
-Definition eval_equality_Interp (mname : string) (fname : string) (params : list Val) : Redex :=
-match convert_string_to_code_Interp (mname, fname), params with
-| BEq,  [v1; v2] (* TODO: with floats, this one should be adjusted *)
-| BTypeEq, [v1; v2] => if Val_eqb v1 v2 then RValSeq [ttrue] else RValSeq [ffalse]
-| BNeq,  [v1; v2] (* TODO: with floats, this one should be adjusted *)
-| BTypeNeq, [v1; v2] => if Val_eqb v1 v2 then RValSeq [ffalse] else RValSeq [ttrue]
-(** anything else *)
-| _ , _ => RExc (undef (VLit (Atom fname)))
-end.
-
-Definition eval_transform_list_Interp (mname : string) (fname : string) (params : list Val) : Redex :=
-match convert_string_to_code_Interp (mname, fname), params with
-| BApp, [v1; v2]        => eval_append v1 v2
-| BMinusMinus, [v1; v2] => eval_subtract v1 v2
-| BSplit, [v1; v2] => eval_split v1 v2
-| _ , _ => RExc (undef (VLit (Atom fname)))
-end.
-
-Definition eval_list_tuple_Interp (mname : string) (fname : string) (params : list Val) : Redex :=
-match convert_string_to_code_Interp (mname, fname), params with
-| BTupleToList, [v] => transform_tuple v
-| BListToTuple, [v] => match mk_list v with
-                                 | None => RExc (badarg (VTuple [VLit (Atom "list_to_tuple"); v]))
-                                 | Some l => RValSeq [VTuple l]
-                                 end
-| _                     , _   => RExc (undef (VLit (Atom fname)))
-end.
-
-Definition eval_convert_Interp (mname : string) (fname : string) (params : list Val) : Redex * option SideEffect :=
-match convert_string_to_code_Interp (mname, fname), params with
-| BListToAtom, [v] =>
-  match mk_ascii_list v with
-  | None => (RExc (badarg (VTuple [VLit (Atom "list_to_atom"); v])), None)
-  | Some sl => (RValSeq [VLit (Atom (string_of_list_ascii(sl)))], Some (AtomCreation, [VLit (Atom (string_of_list_ascii(sl)))]))
-  end
-| BIntegerToList, [v] =>
-  match v with
-  | VLit (Integer z) => (RValSeq [string_to_vcons (NilZero.string_of_int (Z.to_int z))], None)
-  | _ => (RExc (badarg (VTuple [VLit (Atom "integer_to_list"); v])), None)
-  end
-| BIntegerToList, [VLit (Integer z); VLit (Integer base)] =>
-  if negb ((2 <=? base)%Z && (base <=? 36)%Z)
-  then (RExc (badarg (VTuple [VLit (Atom "integer_to_list"); VLit (Integer z); VLit (Integer base)])), None)
-  else (RValSeq [string_to_vcons (string_of_list_ascii (integer_to_digits base z))], None)
-| BIntegerToList, [v1; v2] => (RExc (badarg (VTuple [VLit (Atom "integer_to_list"); v1; v2])), None)
-| _                     , _   => (RExc (undef (VLit (Atom fname))), None)
-end.
-
-Definition eval_cmp_Interp (mname : string) (fname : string) (params : list Val) : Redex :=
-match convert_string_to_code_Interp (mname, fname), params with
-| BLt,  [v1; v2] => if Val_ltb v1 v2 then RValSeq [ttrue] else RValSeq [ffalse]
-| BLe, [v1; v2] => if orb (Val_ltb v1 v2) (Val_eqb v1 v2) 
-                           then RValSeq [ttrue] else RValSeq [ffalse]
-| BGt,  [v1; v2] => if Val_ltb v2 v1 then RValSeq [ttrue] else RValSeq [ffalse]
-| BGe, [v1; v2] => if orb (Val_ltb v2 v1) (Val_eqb v1 v2)
-                           then RValSeq [ttrue] else RValSeq [ffalse]
-(** max and min return the first argument if the two are equal *)
-| BMax, [v1; v2] => if Val_ltb v1 v2 then RValSeq [v2] else RValSeq [v1]
-| BMin, [v1; v2] => if Val_ltb v2 v1 then RValSeq [v2] else RValSeq [v1]
-(** anything else *)
-| _ , _ => RExc (undef (VLit (Atom fname)))
-end.
-
-Definition eval_hd_tl_Interp (mname : string) (fname : string) (params : list Val) : Redex :=
-match convert_string_to_code_Interp (mname, fname), params with
-| BHd, [VCons x y] => RValSeq [x]
-| BHd, [v] => RExc (badarg (VTuple [VLit (Atom fname); v]))
-| BTl, [VCons x y] => RValSeq [y]
-| BTl, [v] => RExc (badarg (VTuple [VLit (Atom fname); v]))
-| _, _ => RExc (undef (VLit (Atom fname)))
-end.
-
-Definition eval_elem_tuple_Interp (mname : string) (fname : string) (params : list Val) : Redex :=
-match convert_string_to_code_Interp (mname, fname), params with
-| BElement, [VLit (Integer i); VTuple l] =>
-    match i with
-    | Z.pos p => match nth_error l (pred (Pos.to_nat p)) with
-                 | None   => RExc (badarg (VTuple [VLit (Atom fname); VLit (Integer i); VTuple l]))
-                 | Some v => RValSeq [v]
-                 end
-    | _       => RExc (badarg (VTuple [VLit (Atom fname); VLit (Integer i); VTuple l]))
-    end
-| BElement, [v1; v2] => RExc (badarg (VTuple [VLit (Atom fname); v1; v2]))
-| BSetElement, [VLit (Integer i); VTuple l; val] =>
-    match i with
-    | Z.pos p => match replace_nth_error l (pred (Pos.to_nat p)) val with
-                 | None    => RExc (badarg (VTuple [VLit (Atom fname); VLit (Integer i); VTuple l; val]))
-                 | Some l' => RValSeq [VTuple l']
-                 end
-    | _       => RExc (badarg (VTuple [VLit (Atom fname); VLit (Integer i); VTuple l]))
-    end
-| BSetElement, [v1; v2; v3] => RExc (badarg (VTuple [VLit (Atom fname); v1; v2; v3]))
-| _, _ => RExc (undef (VLit (Atom fname)))
-end.
-
 Definition eval_check_Interp (mname fname : string) (params : list Val) : Redex := 
-match convert_string_to_code_Interp (mname, fname), params with
+match convert_string_to_code (mname, fname), params with
 | BIsNumber, [VLit (Integer i)]     => RValSeq [ttrue]
 | BIsNumber, [_]                    => RValSeq [ffalse]
 | BIsInteger, [VLit (Integer i)]    => RValSeq [ttrue]
@@ -734,165 +400,6 @@ match convert_string_to_code_Interp (mname, fname), params with
 | _, _              => RExc (undef (VLit (Atom fname)))
 end.
 
-(**
-  Removing and inserting an element, creating a tuple, size of tuples and binaries
-*)
-Definition eval_tuple_bifs_Interp (mname : string) (fname : string) (params : list Val) : Redex :=
-match convert_string_to_code_Interp (mname, fname), params with
-| BDeleteElement, [VLit (Integer i); VTuple l] =>
-    if ((1 <=? i)%Z && (i <=? Z.of_nat (length l))%Z)
-    then RValSeq [VTuple (firstn (Z.to_nat i - 1) l ++ skipn (Z.to_nat i) l)]
-    else RExc (badarg (VTuple [VLit (Atom fname); VLit (Integer i); VTuple l]))
-| BDeleteElement, [v1; v2] => RExc (badarg (VTuple [VLit (Atom fname); v1; v2]))
-| BInsertElement, [VLit (Integer i); VTuple l; v] =>
-    if ((1 <=? i)%Z && (i <=? Z.of_nat (length l) + 1)%Z)
-    then RValSeq [VTuple (firstn (Z.to_nat i - 1) l ++ v :: skipn (Z.to_nat i - 1) l)]
-    else RExc (badarg (VTuple [VLit (Atom fname); VLit (Integer i); VTuple l; v]))
-| BInsertElement, [v1; v2; v3] => RExc (badarg (VTuple [VLit (Atom fname); v1; v2; v3]))
-| BMakeTuple, [VLit (Integer n); v] =>
-    if (0 <=? n)%Z
-    then RValSeq [VTuple (repeat v (Z.to_nat n))]
-    else RExc (badarg (VTuple [VLit (Atom fname); VLit (Integer n); v]))
-| BMakeTuple, [v1; v2] => RExc (badarg (VTuple [VLit (Atom fname); v1; v2]))
-| BSize, [VTuple l] => RValSeq [VLit (Integer (Z.of_nat (length l)))]
-| BSize, [VBitstring b] =>
-    RValSeq [VLit (Integer (Z.of_N (N.div (bvn_n b) 8 +
-                 if N.eqb (N.modulo (bvn_n b) 8%N) 0%N then 0 else 1)))]
-| BSize, [v] => RExc (badarg (VTuple [VLit (Atom fname); v]))
-| _, _ => RExc (undef (VLit (Atom fname)))
-end.
-
-(** Conversions of lists, binaries and atoms *)
-Definition eval_conversion_Interp (mname : string) (fname : string) (params : list Val)
-  : Redex * option SideEffect :=
-match convert_string_to_code_Interp (mname, fname), params with
-| BListToInteger, [v] =>
-    match mk_ascii_list v with
-    | Some cs => match parse_integer 10 cs with
-                 | Some z => (RValSeq [VLit (Integer z)], None)
-                 | None => (RExc (badarg (VTuple [VLit (Atom fname); v])), None)
-                 end
-    | None => (RExc (badarg (VTuple [VLit (Atom fname); v])), None)
-    end
-| BListToInteger, [v; VLit (Integer base)] =>
-    match mk_ascii_list v with
-    | Some cs => match parse_integer (Z.to_nat base) cs with
-                 | Some z => (RValSeq [VLit (Integer z)], None)
-                 | None => (RExc (badarg (VTuple [VLit (Atom fname); v; VLit (Integer base)])), None)
-                 end
-    | None => (RExc (badarg (VTuple [VLit (Atom fname); v; VLit (Integer base)])), None)
-    end
-| BListToInteger, [v1; v2] => (RExc (badarg (VTuple [VLit (Atom fname); v1; v2])), None)
-| BBinaryToInteger, [VBitstring b] =>
-    match (if bvn_aligned b then parse_integer 10 (bvn_to_chars b) else None) with
-    | Some z => (RValSeq [VLit (Integer z)], None)
-    | None => (RExc (badarg (VTuple [VLit (Atom fname); VBitstring b])), None)
-    end
-| BBinaryToInteger, [VBitstring b; VLit (Integer base)] =>
-    match (if bvn_aligned b then parse_integer (Z.to_nat base) (bvn_to_chars b) else None) with
-    | Some z => (RValSeq [VLit (Integer z)], None)
-    | None => (RExc (badarg (VTuple [VLit (Atom fname); VBitstring b; VLit (Integer base)])), None)
-    end
-| BBinaryToInteger, [v] => (RExc (badarg (VTuple [VLit (Atom fname); v])), None)
-| BBinaryToInteger, [v1; v2] => (RExc (badarg (VTuple [VLit (Atom fname); v1; v2])), None)
-| BAtomToList, [VLit (Atom a)] => (RValSeq [string_to_vcons a], None)
-| BAtomToList, [v] => (RExc (badarg (VTuple [VLit (Atom fname); v])), None)
-| BBinaryToAtom, [VBitstring b; VLit (Atom enc)] =>
-    if bvn_aligned b && (String.eqb enc "utf8"%string || String.eqb enc "latin1"%string
-                         || String.eqb enc "unicode"%string)
-    then let a := string_of_list_ascii (bvn_to_chars b) in
-         (RValSeq [VLit (Atom a)], Some (AtomCreation, [VLit (Atom a)]))
-    else (RExc (badarg (VTuple [VLit (Atom fname); VBitstring b; VLit (Atom enc)])), None)
-| BBinaryToAtom, [v1; v2] => (RExc (badarg (VTuple [VLit (Atom fname); v1; v2])), None)
-| BListToBinary, [VBitstring b] => (RExc (badarg (VTuple [VLit (Atom fname); VBitstring b])), None)
-| BListToBinary, [v] =>
-    match iolist_bits v with
-    | Some b => (RValSeq [VBitstring b], None)
-    | None => (RExc (badarg (VTuple [VLit (Atom fname); v])), None)
-    end
-| BIolistToBinary, [v] =>
-    match iolist_bits v with
-    | Some b => (RValSeq [VBitstring b], None)
-    | None => (RExc (badarg (VTuple [VLit (Atom fname); v])), None)
-    end
-| BIolistSize, [v] =>
-    match iolist_bits v with
-    | Some b => (RValSeq [VLit (Integer (Z.of_N (N.div (bvn_n b) 8)))], None)
-    | None => (RExc (badarg (VTuple [VLit (Atom fname); v])), None)
-    end
-| _, _ => (RExc (undef (VLit (Atom fname))), None)
-end.
-
-(** Splitting a binary into two at a byte position *)
-Definition eval_split_binary_Interp (mname : string) (fname : string) (params : list Val) : Redex :=
-match convert_string_to_code_Interp (mname, fname), params with
-| BSplitBinary, [VBitstring b; VLit (Integer p)] =>
-    if bvn_aligned b && (0 <=? p)%Z && (p * 8 <=? Z.of_N (bvn_n b))%Z
-    then let k := Z.to_N (p * 8) in
-         RValSeq [VTuple [VBitstring (bv_to_bvn (bv_extract (bvn_n b - k) k (bvn_val b)));
-                          VBitstring (bv_to_bvn (bv_extract 0 (bvn_n b - k) (bvn_val b)))]]
-    else RExc (badarg (VTuple [VLit (Atom fname); VBitstring b; VLit (Integer p)]))
-| BSplitBinary, [v1; v2] => RExc (badarg (VTuple [VLit (Atom fname); v1; v2]))
-| _, _ => RExc (undef (VLit (Atom fname)))
-end.
-
-(** List functions of the lists module *)
-Definition eval_lists_bifs_Interp (mname : string) (fname : string) (params : list Val) : Redex :=
-match convert_string_to_code_Interp (mname, fname), params with
-| BMember, [x; l] =>
-    match mk_list l with
-    | Some items => if existsb (Val_eqb x) items then RValSeq [ttrue] else RValSeq [ffalse]
-    | None => RExc (badarg (VTuple [VLit (Atom fname); x; l]))
-    end
-| BKeyfind, [key; pos; l] =>
-    match pos, mk_list l with
-    | VLit (Integer n), Some items =>
-        if (1 <=? n)%Z
-        then match find_key key n items with
-             | Some e => RValSeq [e]
-             | None => RValSeq [ffalse]
-             end
-        else RExc (badarg (VTuple [VLit (Atom fname); key; pos; l]))
-    | _, _ => RExc (badarg (VTuple [VLit (Atom fname); key; pos; l]))
-    end
-| BKeymember, [key; pos; l] =>
-    match pos, mk_list l with
-    | VLit (Integer n), Some items =>
-        if (1 <=? n)%Z
-        then match find_key key n items with
-             | Some _ => RValSeq [ttrue]
-             | None => RValSeq [ffalse]
-             end
-        else RExc (badarg (VTuple [VLit (Atom fname); key; pos; l]))
-    | _, _ => RExc (badarg (VTuple [VLit (Atom fname); key; pos; l]))
-    end
-| BReverse, [l] =>
-    match mk_list l with
-    | Some items => RValSeq [meta_to_cons (List.rev items)]
-    | None => RExc (badarg (VTuple [VLit (Atom fname); l]))
-    end
-| BReverse, [l; tail] =>
-    match mk_list l with
-    | Some items => RValSeq [fold_left (fun acc x => VCons x acc) items tail]
-    | None => RExc (badarg (VTuple [VLit (Atom fname); l; tail]))
-    end
-| _, _ => RExc (undef (VLit (Atom fname)))
-end.
-
-Definition eval_error_Interp (mname : string) (fname : string) (params : list Val) : option Exception :=
-match convert_string_to_code_Interp (mname, fname), params with
-| BError, [reason]              => Some (Error, reason, VNil) (* TODO stacktrace! *)
-| BError, [reason;args]         => Some (Error, reason, args) (* TODO stacktrace! *)
-| BError, [reason;args;options] => Some (Error, reason, args) (* TODO options, stacktrace! *)
-| BThrow, [reason]              => Some (Throw, reason, VNil) (* TODO stacktrace! *)
-| BExit, [reason]               => Some (Exit, reason, VNil) (* TODO stacktrace! *)
-(** This line corresponds to the concurrent exit/2 BIF! It is not defined here,
-    its semantics is in ProcessSemantics.v *)
-| BExit, [_;_]                  => None
-(***)
-| _, _                          => Some (undef (VLit (Atom fname)))
-end.
-
 Definition eval_funinfo_Interp (params : list Val) : Redex :=
 match params with
 | [VClos ext id params e;v] =>
@@ -903,146 +410,47 @@ match params with
 | _ => RExc (undef (VLit "fun_info"%string))
 end.
 
-Definition eval_concurrent_Interp (mname : string) (fname : string) (params : list Val) : option Exception :=
-match convert_string_to_code_Interp (mname, fname) with
-| BSend                          => match params with
-                                    | _ :: _ :: _ => None
-                                    | _           => Some (undef (VLit (Atom fname)))
-                                    end
-| BSpawn | BSpawnLink            => match params with (* TODO: 1, 3 parameter spawn versions *)
-                                    | _ :: _ :: _ => None
-                                    | _           => Some (undef (VLit (Atom fname)))
-                                    end
-| BSelf                          => match params with
-                                    | [] => None
-                                    | _  => Some (undef (VLit (Atom fname)))
-                                    end
-| BLink | BUnLink | BProcessFlag => match params with
-                                    | _ :: _ => None
-                                    | _      => Some (undef (VLit (Atom fname)))
-                                    end
-| _                              => Some (undef (VLit (Atom fname)))
-end.
-
-Definition eval_map_bifs_Interp (mname fname : string)
-                         (params : list Val) : Redex :=
-match convert_string_to_code_Interp (mname, fname) with
-| BPut => match params with
-          | key :: value :: map :: [] =>
-            match map with
-            | VMap contents => RValSeq [VMap (map_put key value contents)]
-            | _ => RExc (badmap (VTuple [VLit "put"%string;key;value;map]))
-            end
-          | _ => RExc (undef (VLit (Atom fname)))
-          end
-| BGet => match params with
-          | key :: map :: [] =>
-            match map with
-            | VMap contents =>
-              match map_get key contents with
-              | Some v => RValSeq [v]
-              | None   => RExc (badkey key)
-              end
-            | _ => RExc (badmap map)
-            end
-          | key :: map :: default :: [] =>
-            match map with
-            | VMap contents =>
-              match map_get key contents with
-              | Some v => RValSeq [v]
-              | None   => RValSeq [default]
-              end
-            | _ => RExc (badmap map)
-            end
-          | _ => RExc (undef (VLit (Atom fname)))
-          end
-| BMapSize => match params with
-               | [VMap contents] => RValSeq [VLit (Integer (Z.of_nat (length contents)))]
-               | [map] => RExc (badmap map)
-               | _ => RExc (undef (VLit (Atom fname)))
-               end
-| BFromKeys => match params with
-               | [keys; value] =>
-                 match mk_list keys with
-                 | Some l => RValSeq [VMap (fold_left (fun m k => map_put k value m) l [])]
-                 | None => RExc (badarg (VTuple [VLit (Atom fname); keys; value]))
-                 end
-               | _ => RExc (undef (VLit (Atom fname)))
-               end
-| _ => RExc (undef (VLit (Atom fname)))
-end.
-
-Definition eval_bin_to_list_Interp (mname fname : string)
-                            (params : list Val) : Redex :=
-match convert_string_to_code_Interp (mname, fname), params with
-| BBitstringToList, [VBitstring b] => 
-   match bvn_to_bytes b with
-   | (bytes, rems) => RValSeq [meta_to_cons (map (VLit ∘ Integer) bytes ++ if N.eqb (N.modulo (bvn_n b) 8%N) 0%N then [] else [VBitstring rems])]
-   end
-| BBitstringToList, [v] => RExc (badarg (VTuple [VLit (Atom fname); v]))
-| BBinaryToList, [VBitstring b] =>
-    if N.eqb (N.modulo (bvn_n b) 8%N) 0%N
-    then match bvn_to_bytes b with
-         | (bytes, rems) => RValSeq [meta_to_cons (map (VLit ∘ Integer) bytes)]
-         end
-    else RExc (badarg (VTuple [VLit (Atom fname); VBitstring b]))
-| BBinaryToList, [v] => RExc (badarg (VTuple [VLit (Atom fname); v]))
-| _, _ => RExc (undef (VLit (Atom fname)))
-end.
-
-Definition eval_bin_size_Interp (mname fname : string)
-                         (params : list Val) : Redex :=
-match convert_string_to_code_Interp (mname, fname), params with
-| BByteSize, [VBitstring b] =>
-    RValSeq [VLit (Integer (Z.of_N (N.div (bvn_n b) 8 +
-                 if N.eqb (N.modulo (bvn_n b) 8%N) 0%N then 0 else 1)))]
-| BByteSize, [v]            => RExc (badarg (VTuple [VLit (Atom fname); v]))
-| BBitSize, [VBitstring b]  => RValSeq [VLit (Integer (Z.of_N (bvn_n b)))]
-| BBitSize, [v]             => RExc (badarg (VTuple [VLit (Atom fname); v]))
-| _, _                      => RExc (undef (VLit (Atom fname)))
-end.
-
 Definition eval_Interp (mname : string) (fname : string) (params : list Val) 
    : option (Redex * option SideEffect) :=
-match convert_string_to_code_Interp (mname, fname) with
+match convert_string_to_code (mname, fname) with
 | BPlus | BMinus | BMult | BDivide | BRem | BDiv
 | BSl   | BSr    | BAbs  | BBNot   | BBAnd | BBOr
-| BBXor                                           => Some (eval_arith_Interp mname fname params, None)
-| BFwrite | BFread                                => Some (eval_io_Interp mname fname params)
+| BBXor                                           => Some (eval_arith mname fname params, None)
+| BFwrite | BFread                                => Some (eval_io mname fname params)
 | BAnd | BOr | BNot | BXor                        => Some (eval_logical_Interp mname fname params, None)
-| BEq | BTypeEq | BNeq | BTypeNeq                 => Some (eval_equality_Interp mname fname params, None)
-| BApp | BMinusMinus | BSplit                     => Some (eval_transform_list_Interp mname fname params, None)
-| BTupleToList | BListToTuple                     => Some (eval_list_tuple_Interp mname fname params, None)
-| BListToAtom | BIntegerToList                    => Some (eval_convert_Interp mname fname params)
+| BEq | BTypeEq | BNeq | BTypeNeq                 => Some (eval_equality mname fname params, None)
+| BApp | BMinusMinus | BSplit                     => Some (eval_transform_list mname fname params, None)
+| BTupleToList | BListToTuple                     => Some (eval_list_tuple mname fname params, None)
+| BListToAtom | BIntegerToList                    => Some (eval_convert mname fname params)
 | BListToInteger | BBinaryToInteger | BAtomToList
 | BBinaryToAtom | BListToBinary | BIolistToBinary
-| BIolistSize                                     => Some (eval_conversion_Interp mname fname params)
-| BSplitBinary                                    => Some (eval_split_binary_Interp mname fname params, None)
+| BIolistSize                                     => Some (eval_conversion mname fname params)
+| BSplitBinary                                    => Some (eval_split_binary mname fname params, None)
 | BDeleteElement | BInsertElement | BMakeTuple
-| BSize                                           => Some (eval_tuple_bifs_Interp mname fname params, None)
-| BMember | BKeyfind | BKeymember | BReverse      => Some (eval_lists_bifs_Interp mname fname params, None)
-| BLt | BGt | BLe | BGe | BMax | BMin            => Some (eval_cmp_Interp mname fname params, None)
+| BSize                                           => Some (eval_tuple_bifs mname fname params, None)
+| BMember | BKeyfind | BKeymember | BReverse      => Some (eval_lists_bifs mname fname params, None)
+| BLt | BGt | BLe | BGe | BMax | BMin            => Some (eval_cmp mname fname params, None)
 | BLength                                         => Some (eval_length params, None)
 | BTupleSize                                      => Some (eval_tuple_size params, None)
-| BHd | BTl                                       => Some (eval_hd_tl_Interp mname fname params, None)
-| BElement | BSetElement                          => Some (eval_elem_tuple_Interp mname fname params, None)
+| BHd | BTl                                       => Some (eval_hd_tl mname fname params, None)
+| BElement | BSetElement                          => Some (eval_elem_tuple mname fname params, None)
 | BIsNumber | BIsInteger | BIsAtom | BIsBoolean   => Some (eval_check_Interp mname fname params, None)
 | BIsBinary | BIsBitstring | BIsList | BIsTuple
-| BIsFunction | BIsMap | BIsPid | BIsPort         => Some (eval_check_Interp mname fname params, None)
-| BError | BExit | BThrow                         => match (eval_error_Interp mname fname params) with
+| BIsFunction | BIsMap | BIsPid | BIsPort         => Some (eval_check mname fname params, None)
+| BError | BExit | BThrow                         => match (eval_error mname fname params) with
                                                       | Some exc => Some (RExc exc, None)
                                                       | None => None
                                                      end
 | BFunInfo                                        => Some (eval_funinfo_Interp params, None)
-| BGet | BPut | BMapSize | BFromKeys => Some (eval_map_bifs_Interp mname fname params, None)
-| BByteSize | BBitSize             => Some (eval_bin_size_Interp mname fname params, None)
-| BBinaryToList | BBitstringToList => Some (eval_bin_to_list_Interp  mname fname params, None)
+| BGet | BPut | BMapSize | BFromKeys => Some (eval_map_bifs mname fname params, None)
+| BByteSize | BBitSize             => Some (eval_bin_size mname fname params, None)
+| BBinaryToList | BBitstringToList => Some (eval_bin_to_list  mname fname params, None)
 
 (** undefined functions *)
 | BNothing                                        => Some (RExc (undef (VLit (Atom fname))), None)
 (* concurrent BIFs *)
 | BSend | BSpawn | BSpawnLink | BSelf | BProcessFlag
-| BLink | BUnLink                                 => match eval_concurrent_Interp mname fname params with
+| BLink | BUnLink                                 => match eval_concurrent mname fname params with
                                                      | Some exc => Some (RExc exc, None)
                                                      | None => None
                                                      end
@@ -1059,7 +467,7 @@ match ident with
                   eval_Interp module func vl
                | _, _ => Some (RExc (badfun (VTuple [m; f])), None)
                end
-| IPrimOp f => primop_eval_Interp f vl
+| IPrimOp f => primop_eval f vl
 | IApp (VClos ext id vars e) =>
   if Nat.eqb vars (length vl)
   then Some (RExp (e.[list_subst (convert_to_closlist ext ++ vl) idsubst]), None)
