@@ -286,3 +286,5 @@ test_has_map_fields % map patterns
 test_catch % catch
 test_catch_return_atom % catch
 long_atoms % atom length
+test_list_to_atom % atom length, utf8
+test_module_info % module_info

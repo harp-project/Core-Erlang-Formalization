@@ -363,6 +363,93 @@ Section Equalities.
     intros. unfold bvn_eqb. by rewrite N.eqb_sym, Z.eqb_sym.
   Qed.
 
+  (**
+    "Bit strings are compared bit by bit. If one bit string is a prefix of the other, the shorter bit string is considered smaller."
+    https://www.erlang.org/doc/system/expressions.html#term-comparisons
+
+    This utilises MSB first (not LSB!!!).
+   *)
+  Definition bvn_ltb (b1 b2 : bvn) : bool :=
+    let n1 := bvn_n b1 in let n2 := bvn_n b2 in
+    let m  := N.min n1 n2 in
+    let p1 := Z.shiftr (bv_unsigned (bvn_val b1)) (Z.of_N (n1 - m)) in
+    let p2 := Z.shiftr (bv_unsigned (bvn_val b2)) (Z.of_N (n2 - m)) in
+    Z.ltb p1 p2 || (Z.eqb p1 p2 && N.ltb n1 n2).
+
+  (** The first [k] bits of [b] (MSB first), for [0 <= k <= bvn_n b] *)
+  Definition bvn_prefix (b : bvn) (k : Z) : Z :=
+    Z.shiftr (bv_unsigned (bvn_val b)) (Z.of_N (bvn_n b) - k).
+
+  Lemma bvn_ltb_spec b1 b2 :
+    let m := Z.min (Z.of_N (bvn_n b1)) (Z.of_N (bvn_n b2)) in
+    bvn_ltb b1 b2 = true <->
+      (bvn_prefix b1 m < bvn_prefix b2 m \/
+      (bvn_prefix b1 m = bvn_prefix b2 m /\ Z.of_N (bvn_n b1) < Z.of_N (bvn_n b2)))%Z.
+  Proof.
+    intros m. unfold bvn_ltb, bvn_prefix, m.
+    rewrite !N2Z.inj_sub, !N2Z.inj_min by lia.
+    rewrite orb_true_iff, andb_true_iff, Z.ltb_lt, Z.eqb_eq, N.ltb_lt. lia.
+  Qed.
+
+  (** If the first [m] bits of [b1] are less or equal than the first [m] bits
+      of [b2], then the same holds for their first [k <= m] bits. *)
+  Lemma bvn_prefix_le b1 b2 k m :
+    (0 <= k <= m)%Z -> (m <= Z.of_N (bvn_n b1))%Z -> (m <= Z.of_N (bvn_n b2))%Z ->
+    (bvn_prefix b1 m <= bvn_prefix b2 m)%Z ->
+    (bvn_prefix b1 k <= bvn_prefix b2 k)%Z.
+  Proof.
+    unfold bvn_prefix. intros.
+    replace (Z.of_N (bvn_n b1) - k)%Z with (Z.of_N (bvn_n b1) - m + (m - k))%Z by lia.
+    replace (Z.of_N (bvn_n b2) - k)%Z with (Z.of_N (bvn_n b2) - m + (m - k))%Z by lia.
+    rewrite <- !Z.shiftr_shiftr by lia.
+    rewrite !(Z.shiftr_div_pow2 _ (m - k)) by lia.
+    apply Z.div_le_mono; [apply Z.pow_pos_nonneg|]; lia.
+  Qed.
+
+  Lemma bvn_ltb_irrefl b : bvn_ltb b b = false.
+  Proof.
+    destruct (bvn_ltb b b) eqn:H; auto.
+    apply bvn_ltb_spec in H. lia.
+  Qed.
+
+  Lemma bvn_ltb_asym b1 b2 : bvn_ltb b1 b2 = true -> bvn_ltb b2 b1 = false.
+  Proof.
+    intros H. destruct (bvn_ltb b2 b1) eqn:H0; auto.
+    apply bvn_ltb_spec in H, H0. rewrite Z.min_comm in H0. lia.
+  Qed.
+
+  Lemma bvn_ltb_trans b1 b2 b3 :
+    bvn_ltb b1 b2 = true -> bvn_ltb b2 b3 = true -> bvn_ltb b1 b3 = true.
+  Proof.
+    rewrite !bvn_ltb_spec.
+    pose proof (N2Z.is_nonneg (bvn_n b1)). pose proof (N2Z.is_nonneg (bvn_n b2)).
+    pose proof (N2Z.is_nonneg (bvn_n b3)).
+    remember (Z.of_N (bvn_n b1)) as n1. remember (Z.of_N (bvn_n b2)) as n2.
+    remember (Z.of_N (bvn_n b3)) as n3.
+    set (k := Z.min n1 (Z.min n2 n3)).
+    intros H12 H23.
+    assert (Q12 : (bvn_prefix b1 k <= bvn_prefix b2 k)%Z).
+    { apply bvn_prefix_le with (m := Z.min n1 n2); subst k; lia. }
+    assert (Q23 : (bvn_prefix b2 k <= bvn_prefix b3 k)%Z).
+    { apply bvn_prefix_le with (m := Z.min n2 n3); subst k; lia. }
+    destruct (Z.lt_ge_cases (bvn_prefix b1 k) (bvn_prefix b3 k)) as [Hlt | Hge].
+    * (* b1 and b3 already differ in the first k bits *)
+      left.
+      destruct (Z.lt_ge_cases (bvn_prefix b1 (Z.min n1 n3))
+                              (bvn_prefix b3 (Z.min n1 n3))) as [|Hc]; auto.
+      apply bvn_prefix_le with (k := k) in Hc; subst k; lia.
+    * (* the first k bits of all three are equal: decided by the lengths *)
+      assert (Hk : k = n1 \/ k = n2 \/ k = n3) by (subst k; lia).
+      destruct Hk as [Hk | [Hk | Hk]].
+      - replace (Z.min n1 n2) with k in H12 by (subst k; lia).
+        replace (Z.min n1 n3) with k by (subst k; lia).
+        right. split. 1: lia.
+        destruct (Z.eq_dec n1 n3). 2: lia.
+        replace (Z.min n2 n3) with k in H23 by (subst k; lia). lia.
+      - replace (Z.min n1 n2) with k in H12 by (subst k; lia). lia.
+      - replace (Z.min n2 n3) with k in H23 by (subst k; lia). lia.
+  Qed.
+
   (** Boolean equality for values. Note that this equality is weakened!
       All PIDs are considered equal, and closures are compared based on
       their reference number. *)
@@ -489,11 +576,15 @@ Section Equalities.
     | VNil, VBitstring _ => true
     | VCons hd tl, VCons hd' tl' => if Val_eqb hd hd' then Val_ltb tl tl' else Val_ltb hd hd'
     | VCons _ _, VBitstring _ => true
-    | VBitstring b1, VBitstring b2 => Z.ltb (bv_unsigned (bvn_val b1)) (bv_unsigned (bvn_val b2))
+    (** Lexicographic comparison, see [bvn_ltb] *)
+    | VBitstring b1, VBitstring b2 => bvn_ltb b1 b2
     | _, _ => false
     end.
 
 End Equalities.
+
+(* keep [simpl] from unfolding the comparison into its let-bindings *)
+Arguments bvn_ltb : simpl never.
 
 Notation "v1 =ᵥ v2" := (Val_eqb v1 v2) (at level 69, no associativity).
 Notation "v1 <ᵥ v2" := (Val_ltb v1 v2) (at level 69, no associativity).
@@ -667,7 +758,7 @@ Proof.
       destruct x. now rewrite Val_eqb_refl, IHIHv.
     }
   * now rewrite Nat.ltb_irrefl.
-  * apply Z.ltb_ge. lia.
+  * apply bvn_ltb_irrefl.
 Qed.
 
 (** Transitivity of equality and less-than for values *)
@@ -942,7 +1033,7 @@ Proof.
           eapply H2; eassumption.
       }
   * apply Nat.ltb_lt in H, H0. lia.
-  * apply Z.ltb_lt in H, H0. lia.
+  * apply bvn_ltb_asym in H. congruence.
 Qed.
 
 (** Value equality means that less-than cannot be satisfied. *)
@@ -1154,7 +1245,7 @@ Proof.
   * destruct v2; simpl in *; try congruence.
     apply Nat.ltb_lt in H, H0. apply Nat.ltb_lt. lia.
   * destruct v2; simpl in *; try congruence.
-    apply Z.ltb_lt in H0, H. apply Z.ltb_lt. lia.
+    eapply bvn_ltb_trans; eassumption.
 Qed.
 
 (** If two values are equal, and a third is greater or equal to the second, then
