@@ -1,5 +1,5 @@
 # KNOWNTARGETS will not be passed along to CoqMakefile
-KNOWNTARGETS := CoqMakefile extra-stuff extra-stuff2 extract
+KNOWNTARGETS := CoqMakefile extra-stuff extra-stuff2 extract extract-hs
 # KNOWNFILES will not get implicit targets from the final rule, and so
 # depending on them won't invoke the submake
 # Warning: These files get declared as PHONY, so any targets depending
@@ -27,7 +27,9 @@ invoke-coqmakefile: CoqMakefile
 # The extractions are always run from the project root (the output paths in
 # HaskellExtraction.v and ExampleProgExtraction.v are relative to it), and the
 # raw extracted RocqExtraction.hs is always preprocessed exactly once, right
-# after being generated.
+# after being generated. `extract-hs` only produces (and preprocesses) the
+# Haskell files, without building them; the CI uses it to check that the
+# committed extraction is up to date.
 EXAMPLE_ASTS := $(wildcard src/Interpreter/ExampleASTs/rocqAST/*.v)
 EXAMPLE_VOS  := $(EXAMPLE_ASTS:.v=.vo)
 HSSRC        := src/Interpreter/HaskellSrc
@@ -36,8 +38,11 @@ HSSRC        := src/Interpreter/HaskellSrc
 $(EXAMPLE_VOS): %.vo: %.v
 	$(COQBIN)rocq compile -R src CoreErlang $<
 
-.PHONY: extract
-extract: CoqMakefile
+.PHONY: extract extract-hs
+extract: extract-hs
+	cd $(HSSRC) && cabal build
+
+extract-hs: CoqMakefile
 	$(MAKE) --no-print-directory -f CoqMakefile src/Syntax.vo src/Interpreter/StepFunctions.vo src/Interpreter/Scheduler.vo
 	$(MAKE) --no-print-directory $(EXAMPLE_VOS)
 	tmp=$$(mktemp -d) && \
@@ -47,7 +52,6 @@ extract: CoqMakefile
 	cd $(HSSRC) && ./preprocess.sh exe/RocqExtraction.hs
 	grep -q '^import RocqExtraction' $(HSSRC)/exe/ExampleProgs.hs || \
 	  sed -i 's/^import qualified Prelude$$/import qualified Prelude\nimport RocqExtraction/' $(HSSRC)/exe/ExampleProgs.hs
-	cd $(HSSRC) && cabal build
 
 # This should be the last rule, to handle any targets not declared above
 %: invoke-coqmakefile
