@@ -25,7 +25,8 @@ In this repository you can find the formalisation of a subset of Core Erlang in 
 build: [make "-j%{jobs}%"]
 install: [make "install"]
 depends: [
-  "coq" { >= "9.2" }
+  "coq" { >= "9.2" } | "rocq-core" { >= "9.2" }
+  "rocq-stdlib" 
   "rocq-stdpp" { = "1.13.0"}
   "rocq-stdpp-bitvector" { = "1.13.0"}
 ]

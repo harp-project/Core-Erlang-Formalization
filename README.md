@@ -32,16 +32,9 @@ In this repository you can find the formalisation of a subset of Core Erlang in 
 - License: [GNU Lesser General Public License v3 or later](LICENSE)
 - Compatible Rocq/Coq versions: 9.2
 - Additional dependencies:
-  - [Rocq-stdpp](https://rocq-prover.org/p/rocq-stdpp/1.13.0) 1.13.0 or later
-  - In this repository you can find the formalisation of a subset of Core Erlang in Rocq. The main features of the formalisation include:
-- The syntax of Core Erlang
-- A big-step, a functional big-step and a frame stack semantics of sequential Core Erlang
-- A frame stack semantics for a subset of concurrent Core Erlang
-- Proofs of semantic properties
-- Program correctness proofs
-- Program equivalence concepts, program equivalence proofs
-- An interpreter for Core Erlang based on the semantics
-
+  - [Rocq-stdlib](https://rocq-prover.org/p/rocq-stdlib) (the standard library of Rocq)
+  - [Rocq-stdpp](https://rocq-prover.org/p/rocq-stdpp/1.13.0) 1.13.0
+  - [Rocq-stdpp-bitvector](https://rocq-prover.org/p/rocq-stdpp-bitvector/1.13.0) 1.13.0
 - Rocq/Coq namespace: `CoreErlang`
 - Related publication(s):
   - [A Proof Assistant Based Formalisation of Core Erlang](https://doi.org/10.1007/978-3-030-57761-2_7) 
@@ -59,7 +52,7 @@ In this repository you can find the formalisation of a subset of Core Erlang in 
 
 ## Compiling the project
 
-Necessary requirements: Rocq v9.2.0, stdpp and stdpp-bitvector, both v1.13.0 (or newer) and Erlang/OTP v23.0 (not necessary for the Rocq developments). The library is compilable by using `make`. In the following list, we give a brief description about the contents of the files.
+Necessary requirements: Rocq v9.2.0, stdpp and stdpp-bitvector, both v1.13.0. The library is compilable by using `make`. Running the extracted interpreter (`make extract`) additionally requires GHC v9.6 and cabal, while the validation test suite in `test/` also requires Erlang/OTP v26 (neither is necessary for the Rocq developments). In the following list, we give a brief description about the contents of the files.
 
 ## Structure of the formalisation
 
