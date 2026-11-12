@@ -90,7 +90,7 @@ pp(#c_apply{op=O, args=As}, Names) ->
 pp(#c_literal{val=V}, Names) when is_list(V) ->
   pp_cons(V, Names);
 pp(#c_literal{val=V}, _) when is_atom(V) ->
-  "(VVal (VLit (Atom \"" ++ atom_to_list(V) ++ "\")))";
+  "(VVal (VLit (Atom " ++ hs_string(atom_to_list(V)) ++ ")))";
 pp(#c_literal{val=V}, _) when is_integer(V) ->
   "(VVal (VLit (Integer (" ++ integer_to_list(V) ++ "))))";
 
@@ -159,7 +159,7 @@ pp(#c_binary{segments=Ss}, Names) ->
 pp(I, _) when is_integer(I) ->
   "(VVal (VLit (Integer (" ++ integer_to_list(I) ++ "))))";
 pp(A, _) when is_atom(A) ->
-  "(VVal (VLit (Atom \"" ++ atom_to_list(A) ++ "\")))";
+  "(VVal (VLit (Atom " ++ hs_string(atom_to_list(A)) ++ ")))";
 pp(V, Names) when is_list(V) ->
   pp_cons(V, Names);
 pp(V, Names) when is_map(V) ->
@@ -174,11 +174,21 @@ pp(X, _) ->
 %% PP helpers for expressions
 
 pp_atom(#c_var{name=N}) when is_atom(N) ->
-  "\"" ++ atom_to_list(N) ++ "\"";
+  hs_string(atom_to_list(N));
 pp_atom(#c_var{name=N}) when is_integer(N) ->
-  "\"_"++ integer_to_list(N) ++ "\"";
+  hs_string("_" ++ integer_to_list(N));
 pp_atom(#c_literal{val=V}) ->
-  "\"" ++ atom_to_list(V) ++ "\"".
+  hs_string(atom_to_list(V)).
+
+%% A Haskell string literal denoting exactly the characters of Cs: quotes,
+%% backslashes, control and non-ASCII characters are escaped, so atoms survive
+%% unchanged, and the generated file is plain ASCII.
+hs_string(Cs) -> "\"" ++ lists:flatmap(fun hs_char/1, Cs) ++ "\"".
+
+hs_char($")  -> "\\\"";
+hs_char($\\) -> "\\\\";
+hs_char(C) when C >= 32, C =< 126 -> [C];
+hs_char(C)  -> "\\" ++ integer_to_list(C) ++ "\\&".   % \& ends the numeric escape
 
 pp_list(Es, S, F) -> string:join(lists:map(F, Es), S).
 
@@ -244,7 +254,7 @@ pp_segment(#c_bitstr{val=V, size=Sz} = S, Names) ->
 pp_pattern(#c_literal{val=V}, _) when is_integer(V) ->
   {"(PLit (Integer (" ++ integer_to_list(V) ++ ")))", []};
 pp_pattern(#c_literal{val=V}, _) when is_atom(V) ->
-  {"(PLit (Atom \"" ++ atom_to_list(V) ++ "\"))", []};
+  {"(PLit (Atom " ++ hs_string(atom_to_list(V)) ++ "))", []};
 pp_pattern(#c_literal{val=V}, _) when is_bitstring(V) ->
   pp_pattern_bitstring(V);
 pp_pattern(#c_var{name=N}, _) -> % when is_atom(N) ->
@@ -281,7 +291,7 @@ pp_pattern(#c_binary{segments=Ss}, Names) ->
 pp_pattern(I, _) when is_integer(I) ->
   {"(PLit (Integer (" ++ integer_to_list(I) ++ ")))", []};
 pp_pattern(A, _) when is_atom(A) ->
-  {"(PLit (Atom \"" ++ atom_to_list(A) ++ "\"))", []};
+  {"(PLit (Atom " ++ hs_string(atom_to_list(A)) ++ "))", []};
 pp_pattern(B, _) when is_bitstring(B) ->
   pp_pattern_bitstring(B);
 pp_pattern(V, Names) when is_list(V) ->
@@ -335,7 +345,7 @@ pp_pattern_segment(#c_bitstr{val=V, size=Sz} = S, Names) ->
 pp_segment_size(#c_literal{val=I}, _) when is_integer(I) ->
   "(VLit (Integer (" ++ integer_to_list(I) ++ ")))";
 pp_segment_size(#c_literal{val=A}, _) when is_atom(A) ->
-  "(VLit (Atom \"" ++ atom_to_list(A) ++ "\"))";
+  "(VLit (Atom " ++ hs_string(atom_to_list(A)) ++ "))";
 pp_segment_size(#c_var{name=N}, Names) ->
   case maps:find(N, Names) of
     {ok, I} -> "(VVar " ++ integer_to_list(I) ++ ")";

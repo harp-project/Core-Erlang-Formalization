@@ -44,13 +44,12 @@ report(ModuleName, ReportDirectory, Result, Success) ->
 
 evaluate(File) ->
     try eval_erl(File) of
-        {ok, ErlResult} ->
+        ErlResult ->                          % {ok, Value} | {exception, Class, Reason}
             try eval_hs(File) of
-                {ok, CoqResult} -> {ErlResult == CoqResult, {ErlResult, CoqResult}};
-                Other           -> {false, {hs_fail, Other}}
+                {error, _} = Err -> {false, {hs_fail, Err}};
+                CoqResult        -> {ErlResult =:= CoqResult, {ErlResult, CoqResult}}
             catch _Class:Reason -> {false, {hs_fail, Reason}}
-            end;
-        Other           -> {false, {erl_fail, Other}}
+            end
     catch _Class:Reason -> {false, {erl_fail, Reason}}
     end.
 
