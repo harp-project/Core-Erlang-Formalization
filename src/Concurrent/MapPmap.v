@@ -987,12 +987,9 @@ Definition receive : Exp :=
                  °ECall (˝erlang) (˝send)
                    [
                     ˝VPid ι;
-                    (* NOTE: the nameless approach makes it harder to guess
-                       the variable used outside the given clauses in a receive
-                                                               |
-                                                               v
-                    *)
-                    °ECall (˝erlang) (˝VLit "++") [˝VVar 0; ˝VVar 4]
+                    (* VVar 0 is the variable of the clause (L1), VVar 1 is
+                       the first variable outside the receive (Mapped) *)
+                    °ECall (˝erlang) (˝VLit "++") [˝VVar 0; ˝VVar 1]
                    ])
              ] (˝infinity) (˝VNil)).
 
@@ -2002,7 +1999,7 @@ Opaque map_clos.
         eapply process_local_to_node.
         {
   Transparent receive.
-          unfold receive, EReceive. simpl.
+          unfold receive, EReceive, rename_clauses. simpl.
           repeat rewrite closed_ignores_ren_val; auto with examples.
           eapply lsstep. constructor. constructor. cbn. reflexivity.
           cbn.

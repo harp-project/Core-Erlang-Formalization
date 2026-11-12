@@ -127,25 +127,39 @@ Definition mailboxPush (m : Mailbox) (msg : Val) : Mailbox :=
 
 Arguments mailboxPush m msg /.
 
+(** Renames the clauses of a case expression in the same way as [renameNonVal]
+    does for [ECase]: the guards and bodies are renamed under the variables
+    bound by the patterns. *)
+Definition rename_clauses (ρ : Renaming) (l : list (list Pat * Exp * Exp))
+  : list (list Pat * Exp * Exp) :=
+  map (fun '(p, x, y) => (map (renamePat ρ) p,
+                          rename (uprenn (PatListVars p) ρ) x,
+                          rename (uprenn (PatListVars p) ρ) y)) l.
+
 (* Since OTP 24.0, receive-s are syntactic sugars
    https://www.erlang.org/eeps/eep-0052
 
-  NOTE that whenever this expression is used the free variables of `l` should
-  be shifted by 3, since `ELetRec` and `ELet` bind 3 indices all together!
+  `EReceive l t e` is `receive l after t -> e end`, where the clauses `l`, the
+  timeout `t` and the after-body `e` are all written in the scope of the
+  receive itself. The expansion binds 3 variables around the clauses and the
+  timeout (the `ELetRec` and the `ELet`), and 4 around the after-body (+ the
+  `ELet` of the timeout); these are not visible to the arguments, because the
+  arguments are shifted over them.
 *)
 Definition EReceive l t e :=
   ELetRec [(0,
      °ELet 2 (EPrimOp "recv_peek_message" [])
        (ECase (˝VVar 0) [
          ([PLit (Atom "true")], ˝ttrue, °ECase (˝VVar 1) (
-           map (fun '(pl, g, e) => (pl, g, °ESeq (EPrimOp "remove_message" []) e)) l ++
+           map (fun '(pl, g, e) => (pl, g, °ESeq (EPrimOp "remove_message" []) e))
+               (rename_clauses (Nat.add 3) l) ++
            [([PVar], ˝ttrue, °ESeq (EPrimOp "recv_next" [])
                                  (EApp (˝VFunId (3, 0)) [])
            )]));
          ([PLit (Atom "false")], ˝ttrue,
-           °ELet 1 (EPrimOp "recv_wait_timeout" [t])
+           °ELet 1 (EPrimOp "recv_wait_timeout" [rename (Nat.add 3) t])
               (ECase (˝VVar 0)
-                [([PLit (Atom "true")], ˝ttrue, e); (* TODO: timeout *)
+                [([PLit (Atom "true")], ˝ttrue, rename (Nat.add 4) e); (* TODO: timeout *)
                  ([PLit (Atom "false")], ˝ttrue, °EApp (˝VFunId (3, 0)) [])
                 ]
               )
@@ -165,17 +179,45 @@ Definition EReceive l t e :=
      the first part retrieved from the separate cell, and the second is the
      current mailbox
 *)
-
 Lemma EReceive_scope :
   forall l time r Γ,
   Forall (fun '(pl, g, e) =>
     Forall (PatScoped Γ) pl /\
-    EXP PatListVars pl + (3 + Γ) ⊢ g /\ EXP PatListVars pl + (3 + Γ) ⊢ e) l ->
-  EXP 3 + Γ ⊢ time ->
-  EXP 4 + Γ ⊢ r ->
+    EXP PatListVars pl + Γ ⊢ g /\ EXP PatListVars pl + Γ ⊢ e) l ->
+  EXP Γ ⊢ time ->
+  EXP Γ ⊢ r ->
   EXP Γ ⊢ EReceive l time r.
 Proof.
-  intros. repeat scope_solver_step.
+  intros l time r Γ Hl Ht Hr.
+  (* first, the shifted arguments are scoped under the binders of the expansion *)
+  pose proof ren_preserves_scope as [Hexp [_ [_ Hpat]]].
+  assert (forall n, RENSCOPE Γ ⊢ Nat.add n ∷ n + Γ) as Hshift.
+  { intros n x Hx. lia. }
+  assert (Forall (fun '(pl, g, e) =>
+    Forall (PatScoped (3 + Γ)) pl /\
+    EXP PatListVars pl + (3 + Γ) ⊢ g /\ EXP PatListVars pl + (3 + Γ) ⊢ e)
+    (rename_clauses (Nat.add 3) l)) as H.
+  {
+    unfold rename_clauses. rewrite Forall_map.
+    eapply Forall_impl; [exact Hl|].
+    intros [[pl g] e] (Hp & Hg & He). cbn.
+    rewrite PatListVars_rename.
+    split; [|split].
+    - rewrite Forall_map. eapply Forall_impl; [exact Hp|].
+      intros p Hp'. apply (proj1 (Hpat p Γ) Hp'), (Hshift 3).
+    - apply (proj1 (Hexp g _) Hg). apply uprenn_scope, (Hshift 3).
+    - apply (proj1 (Hexp e _) He). apply uprenn_scope, (Hshift 3).
+  }
+  assert (EXP 3 + Γ ⊢ rename (Nat.add 3) time) as H0.
+  { apply (proj1 (Hexp time Γ) Ht), (Hshift 3). }
+  assert (EXP 4 + Γ ⊢ rename (Nat.add 4) r) as H1.
+  { apply (proj1 (Hexp r Γ) Hr), (Hshift 4). }
+  (* then, the expansion itself is scoped *)
+  unfold EReceive. revert H H0 H1.
+  generalize (rename_clauses (Nat.add 3) l) (rename (Nat.add 3) time) (rename (Nat.add 4) r).
+  clear l time r Hl Ht Hr Hexp Hpat Hshift.
+  intros l time r H H0 H1.
+  repeat scope_solver_step.
   1: scope_solver.
   1-3: lia.
   scope_solver.
@@ -234,8 +276,7 @@ Proof.
     assert (HLP : Forall (Forall (PatScoped (3 + Γ)))
       (map (fst ∘ fst) (map (λ '(pl, g, e), (pl, g, ° ESeq (° EPrimOp "remove_message" []) e)) l))).
     { rewrite map_map, Forall_map. eapply Forall_impl; [exact H|].
-      intros [[pl g] e] [Hp _]. cbn. eapply Forall_impl; [exact Hp|].
-      intros p Hp'. eapply (loosen_scope_pat (3 + Γ) Γ ltac:(lia)) in Hp'. exact Hp'. }
+      intros [[pl g] e] [Hp _]. cbn. exact Hp. }
     rewrite Forall_nth in HLP.
     pose proof (HLP i ltac:(rewrite !length_map; exact H4)) as HP.
     rewrite Forall_nth in HP.
