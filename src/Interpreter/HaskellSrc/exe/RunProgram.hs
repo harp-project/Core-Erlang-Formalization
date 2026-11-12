@@ -29,7 +29,14 @@ cls Exit  = "exit"
 -- Values as Erlang terms
 erl :: Val -> String
 erl VNil               = "[]"
-erl (VLit (Atom a))    = "'" ++ a ++ "'"
+erl (VLit (Atom a))    = "'" ++ concatMap escape a ++ "'"
+  where
+    escape '\'' = "\\'"
+    escape '\\' = "\\\\"
+    escape '\n' = "\\n"
+    escape '\r' = "\\r"
+    escape '\t' = "\\t"
+    escape c    = [c]
 erl (VLit (Integer i)) = show i
 erl (VCons h t)        = "[" ++ erl h ++ "|" ++ erl t ++ "]"
 erl (VTuple vs)        = "{" ++ commas (map erl vs) ++ "}"
