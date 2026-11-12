@@ -80,11 +80,13 @@ jobs:
 
       # The test driver calls plain `ghc` (not cabal) on the generated programs,
       # so the libraries used by the extraction have to be visible to it
-      # through the default GHC environment.
+      # through the default GHC environment. Such an environment exposes ONLY
+      # the listed packages (and base), so boot packages like deepseq have to be
+      # listed explicitly, too.
       - name: Install the Haskell libraries of the extraction
         run: |
           cabal update
-          cabal install --lib hashable unordered-containers \
+          cabal install --lib hashable unordered-containers deepseq \
             --constraint='hashable ^>=1.5' \
             --constraint='unordered-containers ^>=0.2.20'
 
