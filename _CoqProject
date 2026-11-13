@@ -7,6 +7,7 @@ src/Equalities.v
 src/SideEffects.v
 src/Scoping.v
 src/Auxiliaries.v
+src/AuxiliariesTests.v
 src/Maps.v
 src/Manipulation.v
 src/ScopingLemmas.v
@@ -16,6 +17,7 @@ src/StrictEqualities.v
 src/FrameStack/Frames.v
 src/FrameStack/SubstSemanticsLabeled.v
 src/FrameStack/SubstSemantics.v
+src/FrameStack/SubstSemanticsAutoSolver.v
 src/FrameStack/Tests/Tests.v
 src/FrameStack/Tests/ExceptionTests.v
 src/FrameStack/Termination.v
@@ -25,11 +27,10 @@ src/FrameStack/SubstSemanticsLemmas.v
 src/FrameStack/LogRel.v
 src/FrameStack/Compatibility.v
 src/FrameStack/CIU.v
+src/FrameStack/Tests/SubstSemanticsAutoSolverTests.v
 src/FrameStack/Examples.v
 src/FrameStack/CTX.v
 src/FrameStack/Tests/EvalExamples.v
-src/FrameStack/SubstSemanticsAutoSolver.v
-src/FrameStack/Tests/SubstSemanticsAutoSolverTests.v
 
 src/FrameStack/Vulnerabilities/AtomExhaustion.v
 src/FrameStack/Vulnerabilities/AtomExhaustionExamples.v
@@ -54,7 +55,7 @@ src/Interpreter/InterpreterAuxLemmas.v
 src/Interpreter/StepFunctions.v
 src/Interpreter/Scheduler.v
 src/Interpreter/Equivalences.v
-src/Interpreter/ExampleASTs
+src/Interpreter/Tests.v
 
 src/Symbolic/SymbTheorems.v
 src/Symbolic/SymbTactics.v

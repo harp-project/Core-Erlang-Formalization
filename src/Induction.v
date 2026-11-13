@@ -7,11 +7,14 @@
 From CoreErlang Require Export Syntax Basics.
 Import ListNotations.
 
-(** Induction scheme for patterns *)
+(** Induction scheme for patterns - independent of expression *)
 Section CorrectPatInd.
 
 Variables
-  (P : Pat -> Prop)(Q : list Pat -> Prop)(R : list (Pat * Pat) -> Prop).
+  (P : Pat -> Prop)
+  (Q : list Pat -> Prop)
+  (R : list (Pat * Pat) -> Prop)
+  (T : list (Segment Pat Val) -> Prop).
 
 Hypotheses
  (H : P PNil)
@@ -21,33 +24,30 @@ Hypotheses
  (H2 : forall (hd : Pat), P hd -> forall (tl : Pat), P tl -> P (PCons hd tl))
  (H3 : forall (l:list Pat), Q l -> P (PTuple l))
  (H4 : forall (l:list (Pat * Pat)), R l -> P (PMap l))
+ (H5 : forall (l:list (Segment Pat Val)), T l -> P (PBin l))
  (H' : forall v : Pat, P v -> forall l:list Pat, Q l -> Q (v :: l))
  (H0' : forall (v1 : Pat), P v1 -> forall (v2 : Pat), P v2 -> forall l:list (Pat * Pat), R l -> R ((v1, v2) :: l))
- (H1' : Q [])
- (H2' : R []).
+ (H1' : forall seg, P (seg_val seg) ->
+   forall l, T l -> T (seg::l))
+ (H2' : Q [])
+ (H3' : R [])
+ (H4' : T []).
 
-Fixpoint Pat_ind2 (v : Pat) : P v :=
+Fixpoint Pat_ind_weakened (v : Pat) : P v :=
   match v as x return P x with
   | PNil => H
   | PLit l => H0 l
 (*   | PPid p => H0_2 p *)
   | PVar => H1
-  | PCons hd tl => H2 hd (Pat_ind2 hd) tl (Pat_ind2 tl)
-  | PTuple l => H3 l ((fix l_ind (l':list Pat) : Q l' :=
-                       match l' as x return Q x with
-                       | [] => H1'
-                       | v::xs => H' v (Pat_ind2 v) xs (l_ind xs)
-                       end) l)
-  | PMap l => H4 l ((fix l_ind (l' : list (Pat * Pat)) : R l' :=
-                      match l' as x return R x with
-                      | [] => H2'
-                      | (v1, v2)::xs => H0' v1 (Pat_ind2 v1) v2 (Pat_ind2 v2) xs (l_ind xs)
-                      end) l)
+  | PCons hd tl => H2 hd (Pat_ind_weakened hd) tl (Pat_ind_weakened tl)
+  | PTuple l => H3 l (list_ind Q H2' (fun p ls => H' p (Pat_ind_weakened p) ls) l)
+  | PMap l => H4 l (list_ind R H3' (fun '(p1, p2) ls => H0' p1 (Pat_ind_weakened p1) p2 (Pat_ind_weakened p2) ls) l)
+  | PBin l => H5 l (list_ind T H4' (fun seg ls => H1' seg (Pat_ind_weakened (seg_val seg)) ls) l)
   end.
 
 End CorrectPatInd.
 
-(** Correct expression/value/non-value induction, for mutual induction *)
+(** Correct expression/value/non-value/pattern induction, for mutual induction *)
 Section CorrectExpInd.
 
   Variables
@@ -60,7 +60,11 @@ Section CorrectExpInd.
     (RV : list (Val * Val) -> Prop)
     (VV : list (nat * nat * Exp) -> Prop)
     (W : list ((list Pat) * Exp * Exp) -> Prop)
-    (Z : list (nat * Exp) -> Prop).
+    (Z : list (nat * Exp) -> Prop)
+    (PP : Pat -> Prop)
+    (PQ : list Pat -> Prop)
+    (PR : list (Pat * Pat) -> Prop)
+    (PT : list (Segment Pat Val) -> Prop).
 
   Hypotheses
    (HV : forall (e : Val), PV e -> P (VVal e))
@@ -75,6 +79,7 @@ Section CorrectExpInd.
    (HV7 : forall (n : Var), PV(VVar n))
    (HV8 : forall (n : FunId), PV(VFunId n))
    (HV9 : forall (id : nat) (vl : nat) (ext : list (nat * nat * Exp)), VV ext -> forall (e : Exp), P e -> PV(VClos ext id vl e))
+   (HV10 : forall b, PV (VBitstring b))
 
    (HE1 : forall (n : nat) (e : Exp), P e -> PE (EFun n e))
    (HE2 : forall (el : list Exp), Q el -> PE (EValues el))
@@ -91,7 +96,18 @@ Section CorrectExpInd.
    (HE13: forall (e1 : Exp), P e1 -> forall (vl1 : nat) (e2 : Exp), P e2 -> 
    forall (vl2 : nat) (e3 : Exp), P e3 -> PE (ETry e1 vl1 e2 vl2 e3))
 (*    (HE14 : forall l, W l -> PE (EReceive l)) *)
+   (HE14: forall l : list Exp, Q l -> PE (EBin l))
+   (HE15: forall seg : Segment Exp Exp, P (seg_val seg) -> P (seg_size seg) -> PE (ESeg seg))
    
+   (HP : PP PNil)
+   (HP0 : forall (l : Lit), PP (PLit l))
+  (*  (H0_2 : forall (p : PID), P (PPid p)) *)
+   (HP1 :  PP PVar)
+   (HP2 : forall (hd : Pat), PP hd -> forall (tl : Pat), PP tl -> PP (PCons hd tl))
+   (HP3 : forall (l:list Pat), PQ l -> PP (PTuple l))
+   (HP4 : forall (l:list (Pat * Pat)), PR l -> PP (PMap l))
+   (HP5 : forall (l:list (Segment Pat Val)), PT l -> PP (PBin l))
+
    (HQ1 : Q [])
    (HQ2 : forall (e : Exp), P e -> forall (el : list Exp), Q el -> Q (e::el))
    (HQV1: QV [])
@@ -105,11 +121,17 @@ Section CorrectExpInd.
    (HVV1 : VV [])
    (HVV2 : forall (n : nat) (m : nat) (e : Exp), P e -> forall (el : list (nat * nat * Exp)), VV el -> VV ((n,m,e)::el))
    (HW1 : W [])
-   (HW2 : forall (l : list Pat) (e1 : Exp), P e1 -> forall (e2 : Exp), P e2 ->
+   (HW2 : forall (l : list Pat), PQ l -> forall (e1 : Exp), P e1 -> forall (e2 : Exp), P e2 ->
     forall (lv : list ((list Pat) * Exp * Exp)), W lv -> 
     W ((l,e1,e2)::lv))
    (HZ1 : Z [])
    (HZ2 : forall (n : nat) (e : Exp), P e -> forall (el : list (nat * Exp)), Z el -> Z ((n,e)::el))
+   (HP2' : PQ [])
+   (HP' : forall v : Pat, PP v -> forall l:list Pat, PQ l -> PQ (v :: l))
+   (HP3' : PR [])
+   (HP0' : forall (v1 : Pat), PP v1 -> forall (v2 : Pat), PP v2 -> forall l:list (Pat * Pat), PR l -> PR ((v1, v2) :: l))
+   (HP4' : PT [])
+   (HP1' : forall seg, PP (seg_val seg) -> PV (seg_size seg) -> forall l, PT l -> PT (seg::l))
    (*(HW2 : forall (e1 : Exp), P e1 -> forall (e2 : Exp), P e2 ->
     forall (lv : list ((list Pat) * Exp * Exp)), W lv -> 
     forall (l : list Pat), W ((l,e1,e2)::lv) ) *)
@@ -132,12 +154,14 @@ Section CorrectExpInd.
   | EPrimOp f l => HE7 f l (list_ind Q HQ1 (fun e ls => HQ2 e (Exp_ind2 e) ls) l)
   | EApp exp l => HE8 exp (Exp_ind2 exp) l (list_ind Q HQ1 (fun e ls => HQ2 e (Exp_ind2 e) ls) l)
   | ECase e l => HE9 e (Exp_ind2 e) l 
-  (list_ind W HW1 (fun '(lp, e1, e2) ls => (HW2 lp e1 (Exp_ind2 e1) e2 (Exp_ind2 e2) ls)) l)
+  (list_ind W HW1 (fun '(lp, e1, e2) ls => (HW2 lp (list_ind PQ HP2' (fun p ls => HP' p (Pat_ind2 p) ls) lp ) e1 (Exp_ind2 e1) e2 (Exp_ind2 e2) ls)) l)
   | ELet l e1 e2 => HE10 l e1 (Exp_ind2 e1) e2 (Exp_ind2 e2)
   | ESeq e1 e2 => HE11 e1 (Exp_ind2 e1) e2 (Exp_ind2 e2)
   | ELetRec l e => HE12 e (Exp_ind2 e) l (list_ind Z HZ1 (fun '(n,e) ls => HZ2 n e (Exp_ind2 e) ls) l)
   | ETry e1 vl1 e2 vl2 e3 => HE13 e1 (Exp_ind2 e1) vl1 e2 (Exp_ind2 e2) vl2 e3 (Exp_ind2 e3)
 (*   | EReceive l => HE14 l (list_ind W HW1 (fun '(lp, e1, e2) ls => (HW2 lp e1 (Exp_ind2 e1) e2 (Exp_ind2 e2) ls)) l) *)
+  | EBin l => HE14 l (list_ind Q HQ1 (fun e ls => HQ2 e (Exp_ind2 e) ls) l)
+  | ESeg seg => HE15 seg (Exp_ind2 (seg_val seg)) (Exp_ind2 (seg_size seg))
   end
   
   with Val_ind2 (ve : Val) : PV ve :=
@@ -151,9 +175,21 @@ Section CorrectExpInd.
   | VVar n => HV7 n
   | VFunId n => HV8 n
   | VClos ext id vl e => HV9 id vl ext (list_ind VV HVV1 (fun '(n,m,e) ls => HVV2 n m e (Exp_ind2 e) ls) ext) e (Exp_ind2 e)
+  | VBitstring b => HV10 b
   end
-  .
-  Combined Scheme Exp_ind from Exp_ind2, NVal_ind2, Val_ind2.
+  with Pat_ind2 (v : Pat) : PP v :=
+  match v as x return PP x with
+  | PNil => HP
+  | PLit l => HP0 l
+(*   | PPid p => H0_2 p *)
+  | PVar => HP1
+  | PCons hd tl => HP2 hd (Pat_ind2 hd) tl (Pat_ind2 tl)
+  | PTuple l => HP3 l (list_ind PQ HP2' (fun p ls => HP' p (Pat_ind2 p) ls) l)
+  | PMap l => HP4 l (list_ind PR HP3' (fun '(p1, p2) ls => HP0' p1 (Pat_ind2 p1) p2 (Pat_ind2 p2) ls) l)
+  | PBin l => HP5 l (list_ind PT HP4' (fun seg ls => HP1' seg (Pat_ind2 (seg_val seg)) (Val_ind2 (seg_size seg)) ls) l)
+  end.
+
+  Combined Scheme Exp_ind from Exp_ind2, NVal_ind2, Val_ind2, Pat_ind2.
 
 End CorrectExpInd.
 
@@ -175,6 +211,7 @@ Hypotheses
   (HV7 : forall n : FunId, P (VFunId n))
   (HV8 : forall (ext : list (nat * nat * Exp)) (id params : nat) (e : Exp),
   P (VClos ext id params e))
+  (HV9 : forall b : bvn, P (VBitstring b))
   (HQ1: Q [])
   (HQ2: forall (v : Val), P v -> forall (vl : list Val), Q vl -> Q (v::vl))
   (HR1: R [])
@@ -192,6 +229,7 @@ Fixpoint Val_ind_weakened (v : Val) : P v :=
   | VVar n => HV6 n
   | VFunId n => HV7 n
   | VClos ext id vl e => HV8 ext id vl e
+  | VBitstring b => HV9 b
   end.
 
 End Val_ind_weakened.
@@ -205,7 +243,6 @@ Ltac valinduction :=
   match goal with
   | |- forall v : Val, ?P =>
     let FP := fresh "FProp" in
-    let v'  := fresh "v" in
       remember (fun v:Val => P) as FP;
       induction v using Val_ind_weakened with
         (Q := Forall FP)

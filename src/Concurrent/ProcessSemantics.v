@@ -10,6 +10,7 @@ Require Export Stdlib.Sorting.Permutation.
 From stdpp Require Export option gmap.
 
 Import ListNotations.
+Import Notations.
 
 (** destruct_decide is taken *)
 Ltac destruct_decide_eq :=
@@ -127,25 +128,39 @@ Definition mailboxPush (m : Mailbox) (msg : Val) : Mailbox :=
 
 Arguments mailboxPush m msg /.
 
+(** Renames the clauses of a case expression in the same way as [renameNonVal]
+    does for [ECase]: the guards and bodies are renamed under the variables
+    bound by the patterns. *)
+Definition rename_clauses (ρ : Renaming) (l : list (list Pat * Exp * Exp))
+  : list (list Pat * Exp * Exp) :=
+  map (fun '(p, x, y) => (map (renamePat ρ) p,
+                          rename (uprenn (PatListVars p) ρ) x,
+                          rename (uprenn (PatListVars p) ρ) y)) l.
+
 (* Since OTP 24.0, receive-s are syntactic sugars
    https://www.erlang.org/eeps/eep-0052
 
-  NOTE that whenever this expression is used the free variables of `l` should
-  be shifted by 3, since `ELetRec` and `ELet` bind 3 indices all together!
+  `EReceive l t e` is `receive l after t -> e end`, where the clauses `l`, the
+  timeout `t` and the after-body `e` are all written in the scope of the
+  receive itself. The expansion binds 3 variables around the clauses and the
+  timeout (the `ELetRec` and the `ELet`), and 4 around the after-body (+ the
+  `ELet` of the timeout); these are not visible to the arguments, because the
+  arguments are shifted over them.
 *)
 Definition EReceive l t e :=
   ELetRec [(0,
      °ELet 2 (EPrimOp "recv_peek_message" [])
        (ECase (˝VVar 0) [
          ([PLit (Atom "true")], ˝ttrue, °ECase (˝VVar 1) (
-           map (fun '(pl, g, e) => (pl, g, °ESeq (EPrimOp "remove_message" []) e)) l ++
+           map (fun '(pl, g, e) => (pl, g, °ESeq (EPrimOp "remove_message" []) e))
+               (rename_clauses (Nat.add 3) l) ++
            [([PVar], ˝ttrue, °ESeq (EPrimOp "recv_next" [])
                                  (EApp (˝VFunId (3, 0)) [])
            )]));
          ([PLit (Atom "false")], ˝ttrue,
-           °ELet 1 (EPrimOp "recv_wait_timeout" [t])
+           °ELet 1 (EPrimOp "recv_wait_timeout" [rename (Nat.add 3) t])
               (ECase (˝VVar 0)
-                [([PLit (Atom "true")], ˝ttrue, e); (* TODO: timeout *)
+                [([PLit (Atom "true")], ˝ttrue, rename (Nat.add 4) e); (* TODO: timeout *)
                  ([PLit (Atom "false")], ˝ttrue, °EApp (˝VFunId (3, 0)) [])
                 ]
               )
@@ -165,26 +180,53 @@ Definition EReceive l t e :=
      the first part retrieved from the separate cell, and the second is the
      current mailbox
 *)
-
 Lemma EReceive_scope :
   forall l time r Γ,
-  Forall (fun '(pl, g, e) => EXP PatListScope pl + (3 + Γ) ⊢ g /\ EXP PatListScope pl + (3 + Γ) ⊢ e) l ->
-  EXP 3 + Γ ⊢ time ->
-  EXP 4 + Γ ⊢ r ->
+  Forall (fun '(pl, g, e) =>
+    Forall (PatScoped Γ) pl /\
+    EXP PatListVars pl + Γ ⊢ g /\ EXP PatListVars pl + Γ ⊢ e) l ->
+  EXP Γ ⊢ time ->
+  EXP Γ ⊢ r ->
   EXP Γ ⊢ EReceive l time r.
 Proof.
-  intros. do 6 scope_solver_step.
+  intros l time r Γ Hl Ht Hr.
+  (* first, the shifted arguments are scoped under the binders of the expansion *)
+  pose proof ren_preserves_scope as [Hexp [_ [_ Hpat]]].
+  assert (forall n, RENSCOPE Γ ⊢ Nat.add n ∷ n + Γ) as Hshift.
+  { intros n x Hx. lia. }
+  assert (Forall (fun '(pl, g, e) =>
+    Forall (PatScoped (3 + Γ)) pl /\
+    EXP PatListVars pl + (3 + Γ) ⊢ g /\ EXP PatListVars pl + (3 + Γ) ⊢ e)
+    (rename_clauses (Nat.add 3) l)) as H.
+  {
+    unfold rename_clauses. rewrite Forall_map.
+    eapply Forall_impl; [exact Hl|].
+    intros [[pl g] e] (Hp & Hg & He). cbn.
+    rewrite PatListVars_rename.
+    split; [|split].
+    - rewrite Forall_map. eapply Forall_impl; [exact Hp|].
+      intros p Hp'. apply (proj1 (Hpat p Γ) Hp'), (Hshift 3).
+    - apply (proj1 (Hexp g _) Hg). apply uprenn_scope, (Hshift 3).
+    - apply (proj1 (Hexp e _) He). apply uprenn_scope, (Hshift 3).
+  }
+  assert (EXP 3 + Γ ⊢ rename (Nat.add 3) time) as H0.
+  { apply (proj1 (Hexp time Γ) Ht), (Hshift 3). }
+  assert (EXP 4 + Γ ⊢ rename (Nat.add 4) r) as H1.
+  { apply (proj1 (Hexp r Γ) Hr), (Hshift 4). }
+  (* then, the expansion itself is scoped *)
+  unfold EReceive. revert H H0 H1.
+  generalize (rename_clauses (Nat.add 3) l) (rename (Nat.add 3) time) (rename (Nat.add 4) r).
+  clear l time r Hl Ht Hr Hexp Hpat Hshift.
+  intros l time r H H0 H1.
+  repeat scope_solver_step.
   1: scope_solver.
-  2: lia.
-  do 2 scope_solver_step. scope_solver.
-  1: scope_solver.
-  do 2 scope_solver_step.
-  1: scope_solver.
-  do 2 scope_solver_step.
-  scope_solver_step.
-  1: scope_solver.
+  1-3: lia.
+  scope_solver.
+  1, 5: lia.
+  4: scope_solver.
   all: intros; simpl in *; rewrite length_app, length_map in H2; simpl in H2;
-  assert (i < length l \/ i = length l) by lia; destruct H3.
+  assert (i < length l \/ i = length l) as X by lia; destruct X.
+  (* guards *)
   {
     rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H.
     apply H in H3 as H'.
@@ -195,11 +237,13 @@ Proof.
     setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     destruct nth, p. cbn. apply H'.
   }
+  (* last guard *)
   {
     rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     subst. erewrite <- length_map. rewrite nth_middle. cbn. scope_solver.
   }
+  (* bodies *)
   {
     rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H.
     apply H in H3 as H'.
@@ -219,10 +263,34 @@ Proof.
     1: apply H'.
     by rewrite length_map.
   }
+  (* last body *)
   {
     rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     subst. erewrite <- length_map. rewrite nth_middle. cbn. scope_solver.
+  }
+  (* patterns *)
+  {
+    rewrite map_app in H3 |- *.
+    rewrite app_nth1 in H3; [|by rewrite !length_map].
+    rewrite app_nth1; [|by rewrite !length_map].
+    assert (HLP : Forall (Forall (PatScoped (3 + Γ)))
+      (map (fst ∘ fst) (map (λ '(pl, g, e), (pl, g, ° ESeq (° EPrimOp "remove_message" []) e)) l))).
+    { rewrite map_map, Forall_map. eapply Forall_impl; [exact H|].
+      intros [[pl g] e] [Hp _]. cbn. exact Hp. }
+    rewrite Forall_nth in HLP.
+    pose proof (HLP i ltac:(rewrite !length_map; exact H4)) as HP.
+    rewrite Forall_nth in HP.
+    exact (HP j H3).
+  }
+  (* last pattern *)
+  {
+    rewrite map_app in H3 |- *.
+    rewrite app_nth2 in H3; [|by rewrite !length_map; lia].
+    rewrite app_nth2; [|by rewrite !length_map; lia].
+    rewrite !length_map, H4, Nat.sub_diag in H3 |- *.
+    cbn in *.
+    destruct j; [apply scoped_pvar | lia].
   }
 Qed.
 
@@ -266,7 +334,7 @@ Inductive processLocalStep : Process -> Action -> Process -> Prop :=
 | p_exit_drop fs e mb links flag dest source reason b :
   (
     reason = normal /\ dest <> source /\ flag = false \/
-    source ∉ links /\ b = true /\ dest <> source
+    (source ∉ links) /\ b = true /\ dest <> source
                                            (*    ^------------ TODO: this check is missing from doc? *)
   ) ->
   inl (fs, e, mb, links, flag) -⌈ AArrive source dest (SExit reason b) ⌉->
@@ -475,7 +543,7 @@ match s with
 end.
 
 
-Notation "e .ₛ[ x ↦ y ]" := (renamePIDSignal x y e) (at level 2).
+Notation "e .ₛ[ x ↦ y ]" := (renamePIDSignal x y e) (at level 1).
 
 Corollary isNotUsed_renamePID_signal :
   forall s from to, from ∉ (usedPIDsSignal s) -> renamePIDSignal from to s = s.
@@ -711,7 +779,7 @@ Proof.
       do 2 eexists. split. exact P. reflexivity.
 Qed.
 
-Notation "e .ₚ⟦ x ↦ y ⟧" := (renamePIDProc x y e) (at level 2).
+Notation "e .ₚ⟦ x ↦ y ⟧" := (renamePIDProc x y e) (at level 1).
 
 Definition renamePIDAct (from to : PID) (a : Action) : Action :=
   match a with
@@ -725,7 +793,7 @@ Definition renamePIDAct (from to : PID) (a : Action) : Action :=
   | x => x
   end.
 
-Notation "e .ₐ⟦ x ↦ y ⟧" := (renamePIDAct x y e) (at level 2).
+Notation "e .ₐ⟦ x ↦ y ⟧" := (renamePIDAct x y e) (at level 1).
 
 Lemma mailboxPush_rename :
   forall mb v from to, 
@@ -1620,8 +1688,8 @@ Definition Signal_eqb_strict (sig1 sig2 : Signal) : bool :=
 Lemma Signal_eqb_strict_refl: forall sig, Signal_eqb_strict sig sig = true.
 Proof.
   intros. destruct sig; simpl; auto.
-  * apply Val_eqb_strict_refl.
-  * rewrite Val_eqb_strict_refl. simpl. apply eqb_reflx.
+  * apply eqb_strict_refl_val.
+  * rewrite eqb_strict_refl_val. simpl. apply eqb_reflx.
 Qed.
 
 Lemma Signal_eqb_strict_eq: forall sig1 sig2, Signal_eqb_strict sig1 sig2 = true <-> sig1 = sig2.
@@ -1629,10 +1697,10 @@ Proof.
   intros. split; intro.
   * unfold Signal_eqb_strict in H. destruct sig1 eqn:Hs1.
     + destruct sig2 eqn:Hs2; try discriminate.
-      apply Val_eqb_strict_eq in H. subst. reflexivity.
+      apply eqb_strict_eq_val in H. subst. reflexivity.
     + destruct sig2 eqn:Hs2; try discriminate.
       symmetry in H. apply andb_true_eq in H. destruct H.
-      symmetry in H0, H. apply eqb_prop in H0. apply Val_eqb_strict_eq in H.
+      symmetry in H0, H. apply eqb_prop in H0. apply eqb_strict_eq_val in H.
       subst. reflexivity.
     + destruct sig2 eqn:Hs2; try discriminate. reflexivity.
     + destruct sig2 eqn:Hs2; try discriminate. reflexivity.

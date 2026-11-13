@@ -31,14 +31,14 @@ Section list_length_ind.
   Qed.
 End list_length_ind.
 
-Lemma list_length_helper_refl {A : Type} : forall l : list A, length l =? length l = true.
+Lemma list_length_helper_refl {A : Type} : forall l : list A, (length l =? length l) = true.
 Proof.
   induction l.
   * auto.
   * auto.
 Qed.
 
-Lemma list_length_helper {A : Type} : forall l l' : list A, length l = length l' -> length l =? length l' = true.
+Lemma list_length_helper {A : Type} : forall l l' : list A, length l = length l' -> (length l =? length l') = true.
 Proof.
   intros. induction l.
   * inversion H. auto.

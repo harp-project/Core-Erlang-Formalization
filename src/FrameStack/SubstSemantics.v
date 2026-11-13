@@ -47,6 +47,9 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 | eval_heat_tuple (el : list Exp) (xs : list Frame):
   ⟨ xs, ETuple el ⟩ --> ⟨ (FParams ITuple [] el)::xs, RBox ⟩
 
+| eval_heat_bin (el : list Exp) (xs : list Frame):
+  ⟨ xs, EBin el ⟩ --> ⟨ FParams IBin [] el :: xs, RBox ⟩
+
 (* This is handled separately, to satisfy the invariant in FCLOSED for maps *)
 | eval_heat_map_0 (xs : list Frame):
   ⟨ xs, EMap [] ⟩ --> ⟨ xs, RValSeq [VMap []] ⟩
@@ -123,14 +126,14 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
    e1 the guard needs to be evaluated. vs' (the result of the pattern
    matching is stored in the frame) *)
 | eval_step_case_match lp e1 e2 l vs vs' xs :
-  match_pattern_list lp vs = Some vs' ->
+  match_pattern_list lp vs = Matches vs' ->
   ⟨ (FCase1 ((lp,e1,e2)::l))::xs, RValSeq vs ⟩ -->
   ⟨ (FCase2 vs e2.[list_subst vs' idsubst] l)::xs, RExp (e1.[list_subst vs' idsubst]) ⟩
 
 (* reduction started or it is already ongoing, the first pattern doesn't 
    match, so we check the next pattern *)
 | eval_step_case_not_match lp e1 e2 l vs xs :
-  match_pattern_list lp vs = None ->
+  match_pattern_list lp vs = NotMatches ->
   ⟨ (FCase1 ((lp,e1,e2)::l))::xs, RValSeq vs ⟩ -->
   ⟨ (FCase1 l)::xs, RValSeq vs ⟩
 
@@ -148,6 +151,22 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 (** Exceptions *)
 | eval_cool_case_empty vs xs:
   ⟨ (FCase1 [])::xs, RValSeq vs ⟩ --> ⟨ xs, RExc if_clause ⟩
+
+(** segments *)
+(** Heating *)
+| eval_heat_seg seg xs :
+  ⟨ xs, ESeg seg ⟩ -->
+  ⟨FSeg1 (seg_size seg) (seg_unit seg) (seg_type seg) (seg_sign seg) (seg_endian seg) :: xs, seg_val seg⟩
+
+(** Cooling *)
+| eval_cool_seg_val v size unit type sign endian xs :
+  ⟨ FSeg1 size unit type sign endian :: xs, RValSeq [v] ⟩ -->
+  ⟨ FSeg2 v unit type sign endian :: xs, size ⟩
+
+| eval_cool_seg_size v vsize type unit sign endian xs r :
+  segment_to_bitstring v vsize unit type endian = Some r ->
+  ⟨ FSeg2 v unit type sign endian :: xs, RValSeq [vsize] ⟩ -->
+  ⟨ xs, r ⟩
 
 (**  LetRec *)
 (**  Cooling *)

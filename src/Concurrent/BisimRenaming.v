@@ -93,7 +93,7 @@ end.
 
 Definition PIDsRespectNode (O : gset PID) (n : Node) : list (PID * PID) -> Prop :=
   collapse_list (fun '(from, to) n =>
-                   from ∉ O /\ to ∉ O /\ ¬isUsedPool to n.2 /\ ¬appearsEther to n.1)
+                   (from ∉ O) /\ (to ∉ O) /\ ¬isUsedPool to n.2 /\ ¬appearsEther to n.1)
                 (fun '(from, to) => prod_map (renamePIDEther from to) (renamePIDPool from to)) n.
 
 Definition PIDsRespectAction (a : Action) : list (PID * PID) -> Prop :=
@@ -123,7 +123,7 @@ Qed.
 
 Corollary renameList_preCompatible_sym_old :
   forall O l eth Π,
-  Forall (fun '(from, to) => ¬ isTargetedEther to eth /\ ¬isUsedPool to Π /\ to ∉ O /\ from ∉ O) l ->
+  Forall (fun '(from, to) => ¬ isTargetedEther to eth /\ ¬isUsedPool to Π /\ (to ∉ O) /\ (from ∉ O)) l ->
   NoDup (map snd l) ->
   symClos (preCompatibleNodes O) (eth, Π)
     (renamePIDs renamePIDEther l eth, renamePIDs renamePIDPool l Π).
@@ -386,12 +386,12 @@ Lemma step_spawn_respects_3 :
   (eth, Π) -[ a | ι ]ₙ-> (eth', Π') with O ->
   PIDsRespectNode O (eth, Π) l ->
   forall p, spawnPIDOf a = Some p ->
-    exists new, new ∉ usedPIDsAct a /\ new ∉ O /\ ¬isUsedPool new Π /\ ¬appearsEther new eth /\ new ∉ map snd l /\
+    exists new, (new ∉ usedPIDsAct a) /\ (new ∉ O) /\ ¬isUsedPool new Π /\ ¬appearsEther new eth /\ (new ∉ map snd l) /\
     PIDsRespectNode O (eth, Π) ((p, new)::l) /\
     PIDsRespectAction a ((p, new) :: l).
 Proof.
   intros.
-  assert (exists new, new ∉ usedPIDsAct a /\ new ∉ O /\ ¬isUsedPool new Π /\ ¬appearsEther new eth /\ new ∉ map snd l /\ new ∉ map fst l). {
+  assert (exists new, (new ∉ usedPIDsAct a) /\ (new ∉ O) /\ ¬isUsedPool new Π /\ ¬appearsEther new eth /\ (new ∉ map snd l) /\ (new ∉ map fst l)). {
     (* freshness *)
     pose proof (infinite_is_fresh (elements (usedPIDsAct a) ++ elements O ++ elements (allPIDsPool Π) ++ elements (allPIDsEther eth) ++ map snd l ++ map fst l)).
     remember (fresh _) as y in H2. clear-H2. exists y.

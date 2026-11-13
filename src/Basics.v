@@ -9,8 +9,9 @@ Require Export Stdlib.micromega.Lia
                Stdlib.Arith.PeanoNat.
 Import ListNotations.
 
+
 (**
-  This tactic trasforms boolean equality between nats to propositional
+  This tactic transforms boolean equality between nats to propositional
   inside hypotheses
 *)
 Ltac eqb_to_eq_prim :=
@@ -19,11 +20,13 @@ Ltac eqb_to_eq_prim :=
   | [H : Nat.eqb _ _ = false |- _] => apply Nat.eqb_neq in H
   end.
 
+(** Exhaustively applies `eqb_to_eq_prim` to every matching hypothesis. *)
 Ltac eqb_to_eq := repeat eqb_to_eq_prim.
 
 (** The following two tactics can be used to make case separation in the
     hypotheses or goals by infering the basis of the case separation from the
-    context.
+    context. Each call destructs the scrutinee of one `match` (a `sumbool` is
+    destructed directly, anything else with a fresh `eqn:` equation).
  *)
 Ltac break_match_hyp :=
 match goal with
@@ -43,7 +46,8 @@ match goal with
     end
 end.
 
-(** The following tactic puts a function application on an equality hypothesis *)
+(** The following tactic puts a function application on an equality hypothesis:
+    from `H : p = q` it adds `name : f p = f q` to the context. *)
 Tactic Notation "put" constr(f) "on" constr(H) "as" ident(name) :=
 match type of H with
 | ?p = ?q => assert (name : f p = f q) by (now rewrite H + now setoid_rewrite H)
@@ -65,6 +69,13 @@ Qed.
 
 Section lists.
   Context {T : Type}.
+
+  (** Boolean emptiness check for lists. *)
+  Definition null (l : list T) : bool :=
+  match l with
+  | [] => true
+  | _  => false
+  end.
 
   (**
     An alternative phrasing for `Forall_forall` expressed with indexing
@@ -96,28 +107,6 @@ Section lists.
   Qed.
 
   (**
-    Mapping the identity function does not affect the list
-   *)
-  Theorem map_id : forall (l : list T), List.map id l = l.
-  Proof.
-    induction l; simpl; try rewrite IHl; auto.
-  Qed.
-
-  (**
-    A non-empty list has a last element.
-  *)
-  Theorem last_element_exists :
-    forall (l: list T) n, S n = Datatypes.length l -> exists l' x, l = l' ++ [x].
-  Proof.
-    induction l; intros.
-    * inversion H.
-    * inversion H. destruct l.
-      - exists [], a. reflexivity.
-      - simpl in H1. epose (IHl (pred n) _). destruct e, H0. subst. rewrite H0.
-        exists (a::x), x0. apply app_comm_cons. Unshelve. simpl. lia.
-  Qed.
-
-  (**
     The ith element of a concatenated list either comes from the first or the
     second part of the concatenation.
    *)
@@ -141,7 +130,7 @@ Section lists.
   Qed.
 
   (**
-    A list cannot be equal to itself extended with two new first element.
+    A list cannot be equal to itself extended with two new first elements.
    *)
   Lemma cons_cons_neq :
     forall (l : list T) a b, l = a :: b :: l -> False.
@@ -151,7 +140,7 @@ Section lists.
   Qed.
 
   (**
-    If a value is not an element of two lists, iff it is not an element
+    If a value is not an element of two lists, then it is not an element
     of the concatenation of these lists.
    *)
   Corollary app_not_in : forall (x:T) (l1 l2 : list T),
@@ -161,6 +150,10 @@ Section lists.
     intro. eapply in_app_or in H1. destruct H1; contradiction.
   Qed.
 
+  (**
+    The converse of `app_not_in`: a value missing from a concatenation is
+    missing from both parts.
+   *)
   Theorem not_in_app :
     forall (l1 l2 : list T) x, ~In x (l1 ++ l2) ->
     ~In x l1 /\ ~In x l2.
@@ -169,16 +162,6 @@ Section lists.
     * simpl in *. intuition.
     * simpl in *. apply Decidable.not_or in H as [H1 H2]. apply IHl1 in H2 as [H2 H3].
       intuition.
-  Qed.
-
-
-  (**
-    Folding concatenation in the middle of a list.
-  *)
-  Lemma app_cons_fold : forall (l l' : list T) (a : T),
-    l ++ a::l' = l ++ [a] ++ l'.
-  Proof.
-    firstorder.
   Qed.
 
   (**
@@ -196,7 +179,7 @@ Section lists.
     A predicate is satisfied by all transformed list elements, if it is satisfied
     by the original list elements, and the predicate is kept by the transformation.
    *)
-  Lemma Forall_map (l : list T) : forall (P : T -> Prop) (f : T -> T),
+  Lemma Forall_map_1 (l : list T) : forall (P : T -> Prop) (f : T -> T),
     (forall x, P x -> P (f x))
   ->
     Forall P l -> Forall P (map f l).
@@ -209,7 +192,7 @@ Section lists.
   (**
     The opposite direction of the previous lemma.
   *)
-  Lemma map_Forall (l : list T) : forall (P : T -> Prop) (f : T -> T),
+  Lemma Forall_map_2 (l : list T) : forall (P : T -> Prop) (f : T -> T),
     (forall x, P (f x) -> P x)
   ->
     Forall P (map f l) -> Forall P l.
@@ -268,7 +251,7 @@ Section lists.
 
   (**
     The following lemma is used for the signal ordering guarantee of Erlang.
-    If two _fresh_ elements are appended at the end of a list, then is is not
+    If two _fresh_ elements are appended at the end of a list, then it is not
     possible that they appear in the list in an opposite order.
    *)
   Lemma in_list_order :
@@ -289,7 +272,20 @@ Section lists.
   Qed.
 
   (** Membership in option lists *)
-  Definition option_In (x : T) l := option_map (In x) l <> None.
+  Definition option_In (x : T) l :=
+  match l with
+  | Some l => In x l
+  | None => False
+  end.
+
+  (** Universal quantification can be extracted from Forall *)
+  Lemma Forall_forall_extract {Q} :
+    forall (P : Q -> T -> Prop) (l : list T),
+      Forall (fun t => forall x, P x t) l ->
+      (forall x, Forall (P x) l).
+  Proof.
+    intros. induction H; now constructor.
+  Qed.
 
 End lists.
 
@@ -401,13 +397,13 @@ Section list_biforall.
     list_biforall P l1 l2 -> list_biforall Q l1 l2.
   Proof.
     induction l1; intros; inversion H0; constructor; subst.
-    apply H; cbn; try apply elem_of_list_here; auto.
+    apply H; cbn; auto.
     eapply IHl1. 2: eassumption. intros.
-    apply H; try constructor 2; try apply elem_of_list_further; auto.
+    apply H; try constructor 2; auto.
   Qed.
 
   (**
-    The previous weaking lemma expressed for option lists.
+    The previous weakening lemma expressed for option lists.
    *)
   Corollary option_biforall_ext : forall l1 l2 (P Q : T -> U -> Prop),
     (forall x y, option_In x l1 -> option_In y l2 -> P x y -> Q x y) ->
@@ -415,7 +411,6 @@ Section list_biforall.
   Proof.
     intros. destruct l1, l2; auto; simpl in *.
     eapply biforall_ext; try eassumption.
-    intros. apply H; now cbn.
   Qed.
 
   (**
@@ -563,17 +558,6 @@ Proof.
 Qed.
 
 (**
-  Mapping a constant function is the same as repeating the constant.
-*)
-Theorem map_const :
-  forall {T T2} (l : list T) (a : T2), map (fun _ => a) l = repeat a (length l).
-Proof.
-  induction l; intros.
-  auto.
-  simpl. rewrite IHl. auto.
-Qed.
-
-(**
   Another lemma on the connection between indexing and `Forall`.
  *)
 Lemma Forall_pair {A B} (P1 : A -> Prop) (P2 : B -> Prop) l : forall d1 d2,
@@ -611,14 +595,6 @@ Proof.
         simpl in H. specialize (H ltac:(lia)). subst. auto.
 Qed.
 
-(*
-(* if there is two identical hypotheses then this tac will clear one *)
-Ltac proof_irr :=
-match goal with
-| [H1 : ?P, H2 : ?P |- _] => assert (H1 = H2) by apply proof_irrelevance; subst
-end.
-Ltac proof_irr_many := repeat proof_irr. *)
-
 (** The following two tactics deconstruct `Forall` hypotheses *)
 Ltac destruct_forall :=
   match goal with
@@ -630,9 +606,13 @@ Ltac destruct_foralls := repeat destruct_forall.
 
 (** The following tactics are macros for commonly used tactic combinations
     to ease proofs. *)
+(** Inverts `H`, substitutes the resulting equations, then removes `H`. *)
 Ltac inv H := inversion H; subst; clear H.
+(** `lia`/`nia` after simplifying the goal. *)
 Ltac slia := simpl; lia.
 Ltac snia := simpl; nia.
+(** Splits every `match` in the hypotheses, closes contradictory branches
+    with `congruence`, and substitutes the remaining equations. *)
 Ltac destruct_all_hyps := repeat break_match_hyp; try congruence; subst.
 
 (** In Scoping.v there are a number of theorems, which should not appear
@@ -681,6 +661,7 @@ Ltac destruct_hyp :=
   | [H : _ /\ _ |- _] => destruct H
   end.
 
+(** Exhaustively splits all existential and conjunctive hypotheses. *)
 Ltac destruct_hyps := repeat destruct_hyp.
 
 (**
@@ -724,7 +705,7 @@ Proof.
 Qed.
 
 (**
-  Two lemma about first and second projections of list zipping.
+  Two lemmas about first and second projections of list zipping.
 *)
 Lemma fst_combine :
   forall {A B} (l : list A) (l' : list B),
@@ -758,6 +739,7 @@ Ltac destruct_bool :=
   | [H : andb _ _ = true  |- _] => apply Bool.andb_true_iff in H as [? ?]
   | [H : andb _ _ = false |- _] => apply Bool.andb_false_iff in H as [? | ?]
   end.
+(** Exhaustively splits all `orb`/`andb` hypotheses. *)
 Ltac destruct_bools := repeat destruct_bool.
 
 
@@ -768,6 +750,7 @@ Ltac destruct_not_in_base :=
   match goal with
   | [H : ~In _ (_ ++ _) |- _] => apply not_in_app in H as [? ?]
   end.
+(** Exhaustively splits `~In _ (_ ++ _)` hypotheses into their parts. *)
 Ltac destruct_not_in := repeat destruct_not_in_base.
 
 (**
@@ -793,4 +776,149 @@ Proof.
     apply (IHl y b) in H0. destruct H0.
     repeat constructor; auto.
   }
+Qed.
+
+(**
+  The following four propositions convert between `list_biforall` and the
+  inline `fix` that Rocq generates when a relation over a nested list is
+  unfolded (e.g., in the logical relations of `FrameStack/LogRel.v`).
+  The `map` variants handle lists of pairs (e.g., map entries).
+ *)
+Proposition list_biforall_fix_1 {A B} (P : A -> B -> Prop) l1 l2 :
+  (fix go l1 l2 : Prop :=
+     match l1 with
+     | [] => match l2 with
+             | [] => True
+             | _ :: _ => False
+             end
+     | p1 :: l3 => match l2 with
+                   | [] => False
+                   | p2 :: l4 => P p1 p2 /\ go l3 l4
+                   end
+     end)
+    l1 l2 -> list_biforall P l1 l2.
+Proof.
+  revert l2.
+  induction l1; destruct l2; intros.
+  * now constructor.
+  * contradiction.
+  * contradiction.
+  * destruct H as [H1 H2]. constructor. apply H1.
+    apply IHl1 in H2. assumption.
+Qed.
+
+Proposition list_biforall_fix_2 {A B} (P : A -> B -> Prop) l1 l2 :
+  list_biforall P l1 l2 ->
+  (fix go l1 l2 : Prop :=
+     match l1 with
+     | [] => match l2 with
+             | [] => True
+             | _ :: _ => False
+             end
+     | p1 :: l3 => match l2 with
+                   | [] => False
+                   | p2 :: l4 => P p1 p2 /\ go l3 l4
+                   end
+     end)
+    l1 l2.
+Proof.
+  intros H.
+  induction H.
+  * trivial.
+  * now split.
+Qed.
+
+Proposition list_biforall_map_fix_1 {A B} (P : A -> B -> Prop)
+    (l1 : list (A * A)) (l2 : list (B * B)) :
+  (fix go l1 l2 : Prop :=
+     match l1 with
+     | [] => match l2 with
+             | [] => True
+             | _ :: _ => False
+             end
+     | (p1, p2) :: l3 => match l2 with
+                   | [] => False
+                   | (p1', p2') :: l4 => P p1 p1' /\ P p2 p2' /\ go l3 l4
+                   end
+     end)
+    l1 l2 -> list_biforall (fun '(p1, p2) '(p1', p2') => P p1 p1' /\ P p2 p2') l1 l2.
+Proof.
+  revert l2.
+  induction l1; destruct l2; intros.
+  * now constructor.
+  * contradiction.
+  * destruct a; contradiction.
+  * destruct a, p.
+    destruct H as [H1 [H2 H3]]. constructor. constructor.
+    apply H1.
+    apply H2.
+    apply IHl1 in H3. assumption.
+Qed.
+
+Proposition list_biforall_map_fix_2 {A B} (P : A -> B -> Prop)
+    (l1 : list (A * A)) (l2 : list (B * B)) :
+  list_biforall (fun '(p1, p2) '(p1', p2') => P p1 p1' /\ P p2 p2') l1 l2
+->
+  (fix go l1 l2 : Prop :=
+     match l1 with
+     | [] => match l2 with
+             | [] => True
+             | _ :: _ => False
+             end
+     | (p1, p2) :: l3 => match l2 with
+                   | [] => False
+                   | (p1', p2') :: l4 => P p1 p1' /\ P p2 p2' /\ go l3 l4
+                   end
+     end)
+    l1 l2.
+Proof.
+  intros H.
+  induction H.
+  * trivial.
+  * destruct hd, hd'. now split.
+Qed.
+
+(** Mapping does not change the emptiness of a list. *)
+Lemma null_map : forall (A B : Type) (f : A -> B) (ll : list A),
+  null (map f ll) = null ll.
+Proof. intros A B f ll. destruct ll; reflexivity. Qed.
+
+(** The following lemmas show that `list_biforall` is preserved by
+    reversal, indexing, `firstn`, `skipn`, and `repeat`. *)
+Lemma biforall_rev {A B} (P : A -> B -> Prop) l l' :
+  list_biforall P l l' -> list_biforall P (List.rev l) (List.rev l').
+Proof.
+  intros H. induction H; simpl; auto. constructor.
+  apply biforall_app; auto.
+  constructor. assumption. constructor.
+Qed.
+
+Lemma biforall_nth_error {A B} (P : A -> B -> Prop) l l' k :
+  list_biforall P l l' ->
+  (nth_error l k = None /\ nth_error l' k = None) \/
+  (exists a b, nth_error l k = Some a /\ nth_error l' k = Some b /\ P a b).
+Proof.
+  intros H. revert k. induction H; intros [|k]; simpl.
+  * left. auto.
+  * left. auto.
+  * right. do 2 eexists. repeat split; eauto.
+  * apply IHlist_biforall.
+Qed.
+
+Lemma biforall_take {A B} (P : A -> B -> Prop) l l' n :
+  list_biforall P l l' -> list_biforall P (firstn n l) (firstn n l').
+Proof.
+  intros H. revert n. induction H; intros [|n]; simpl; constructor; auto.
+Qed.
+
+Lemma biforall_drop {A B} (P : A -> B -> Prop) l l' n :
+  list_biforall P l l' -> list_biforall P (skipn n l) (skipn n l').
+Proof.
+  intros H. revert n. induction H; intros [|n]; simpl; try constructor; auto.
+Qed.
+
+Lemma biforall_repeat {A B} (P : A -> B -> Prop) a b n :
+  P a b -> list_biforall P (repeat a n) (repeat b n).
+Proof.
+  intros H. induction n; simpl; constructor; auto.
 Qed.

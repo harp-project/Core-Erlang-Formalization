@@ -11,6 +11,7 @@ on:
   pull_request:
     branches:
       - '**'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -19,7 +20,7 @@ jobs:
     strategy:
       matrix:
         image:
-          - 'rocq/rocq-prover:9.1'
+          - 'rocq/rocq-prover:9.2'
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
@@ -27,13 +28,6 @@ jobs:
         with:
           opam_file: 'coq-core-erlang-formalization.opam'
           custom_image: ${{ matrix.image }}
-          before_install: |
-            startGroup "Setup and print opam config"
-              opam repo -a --set-default add coq-extra-dev https://coq.inria.fr/opam/extra-dev
-              opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
-              opam install rocq-stdpp
-              opam config list; opam repo list; opam list
-            endGroup
 
 
 # See also:

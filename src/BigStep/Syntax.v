@@ -15,6 +15,7 @@ Export Lists.List.
 Import Numbers.DecimalString.
 Import ListNotations.
 
+Set Warnings "-register-all".
 Definition Var : Type := string.
 
 Inductive Literal : Type :=
@@ -336,7 +337,7 @@ Module ValueNotations.
 
 Import ListNotations.
 
-Notation "' s '" := (VLit (Atom s)) (at level 1).
+Notation "' s '" := (VLit (Atom s)).
 Notation "` i" := (VLit (Integer i)) (at level 1).
 (* Notation "{@ @}" := (VTuple []) (at level 1).
 Notation "{@ x , .. , z @}" := (VTuple (cons x .. (cons z nil) .. )) (at level 50).

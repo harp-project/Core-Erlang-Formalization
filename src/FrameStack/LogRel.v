@@ -44,13 +44,13 @@ Definition frame_rel (n : nat)
   (FSCLOSED F2 /\ Forall FrameWf F2) /\
   (forall m (Hmn : m <= n) (vl1 vl2 : ValSeq),
     list_biforall (Vrel m Hmn) vl1 vl2 ->
-    | F1, RValSeq vl1 | m ↓ -> | F2, RValSeq vl2 | ↓)
+    ⟨ F1, RValSeq vl1 ⟩ m ↓ -> ⟨ F2, RValSeq vl2 ⟩ ↓)
   /\
   (forall m (Hmn : m <= n) (e1 e2 : Exception),
     exc_rel m (fun m' H => Vrel m' (Nat.le_trans _ _ _ H Hmn)) e1 e2 ->
-    | F1, RExc e1 | m ↓ -> | F2, RExc e2 | ↓)
+    ⟨ F1, RExc e1 ⟩ m ↓ -> ⟨ F2, RExc e2 ⟩ ↓)
   /\
-  (forall m (Hmn : m <= n), | F1, RBox | m ↓ -> | F2, RBox | ↓).
+  (forall m (Hmn : m <= n), ⟨ F1, RBox ⟩ m ↓ -> ⟨ F2, RBox ⟩ ↓).
 
 Definition exp_rel (n : nat)
                    (Vrel : forall m, m <= n -> Val -> Val -> Prop)
@@ -59,7 +59,7 @@ Definition exp_rel (n : nat)
   EXPCLOSED p1 /\ EXPCLOSED p2 /\
   forall m (Hmn : m <= n) F1 F2,
      frame_rel m (fun m' H => Vrel m' (Nat.le_trans _ _ _ H Hmn)) F1 F2 ->
-     | F1, RExp p1 | m ↓ -> | F2, RExp p2 | ↓
+     ⟨ F1, RExp p1 ⟩ m ↓ -> ⟨ F2, RExp p2 ⟩ ↓
 .
 
 (**
@@ -103,9 +103,9 @@ Fixpoint Vrel_rec (n : nat)
                 (e.[list_subst ((convert_to_closlist ext)++vl1) idsubst])
                 (e'.[list_subst ((convert_to_closlist ext')++vl2) idsubst])
    )
+  | VBitstring bits1, VBitstring bits2 => bits1 = bits2
   | _, _ => False
-  end
-.
+  end.
 
 (**
   We use `Fix` to define the final version of the logical relations.
@@ -122,6 +122,19 @@ Definition Frel (n : nat) (K1 K2 : FrameStack) : Prop :=
 Definition Excrel (n: nat) (ex1 ex2 : Exception) : Prop :=
   exc_rel n (fun m _ => Vrel m) ex1 ex2.
 
+
+Definition IRel (n : nat) (i1 i2 : FrameIdent) : Prop :=
+ICLOSED i1 /\ ICLOSED i2 /\
+match i1, i2 with
+| IApp v, IApp v' => Vrel n v v'
+| ITuple, ITuple => True
+| IMap, IMap => True
+| ICall m f, ICall m' f' => Vrel n m m' /\ Vrel n f f'
+| IPrimOp f, IPrimOp f' => f = f'
+| IValues, IValues => True
+| IBin, IBin => True
+| _, _ => False
+end.
 
 (* --------------------------------------------------------------- *)
 
@@ -353,19 +366,16 @@ Definition Grel (n : nat) (Γ : nat) (ξ₁ ξ₂ : Substitution) : Prop :=
     end.
 
 
-Lemma Grel_downclosed_helper : forall vals1 vals2 m n,
-  m <= n -> length vals1 = length vals2 ->
+Lemma Vrel_downclosed_list_biforall : forall vals1 vals2 m n,
+  m <= n ->
   list_biforall (Vrel n) vals1 vals2 ->
   list_biforall (Vrel m) vals1 vals2.
 Proof.
-  intro. induction vals1 using list_length_ind; intros.
-  destruct vals1, vals2.
+  intros. induction H0.
   * constructor.
-  * inversion H1.
-  * inversion H1.
-  * inversion H2. subst. constructor. 
+  * constructor. 
     - eapply Vrel_downclosed. eauto.
-    - eapply H; eauto.
+    - assumption.
 Unshelve. auto.
 Qed.
 
@@ -399,75 +409,6 @@ Definition Erel_open (Γ : nat) (e1 e2 : Exp) :=
   Grel n Γ ξ₁ ξ₂
 ->
   Erel n (subst ξ₁ e1) (subst ξ₂ e2).
-
-Lemma Erel_open_closed : forall {Γ e1 e2},
-    Erel_open Γ e1 e2 ->
-    forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 ->
-              EXPCLOSED (e1.[ξ]) /\ EXPCLOSED (e2.[ξ]).
-Proof.
-  intros.
-  apply @Erel_closed with (n:=0).
-  apply H; auto.
-  unfold Grel.
-  intuition idtac. break_match_goal.
-  (* rewrite Vrel_Fix_eq. unfold Vrel_rec at 1. *)
-  specialize (H0 x H1) as P'. rewrite Heqs in P'. clear dependent ξ.
-  * clear H H1 x e1 e2 Γ. rewrite Vrel_Fix_eq. revert P'. revert v.
-    einduction v using Val_ind_weakened with
-      (Q := Forall (
-        fun v => VALCLOSED v -> Vrel_rec 0 (fun (m : nat) (_ : m < 0) => Vrel m) v v
-      ))
-      (R := Forall (
-        fun '(v1, v2) =>
-         (VALCLOSED v1 -> Vrel_rec 0 (fun (m : nat) (_ : m < 0) => Vrel m) v1 v1) /\
-         (VALCLOSED v2 -> Vrel_rec 0 (fun (m : nat) (_ : m < 0) => Vrel m) v2 v2)
-      )); intros; auto.
-    all: split;[auto|split;auto].
-    - destruct_scopes. split. now eapply IHv0_1. now eapply IHv0_2.
-    - induction l; auto.
-      fdestruct_scopes. split.
-      + now apply H1.
-      + apply IHl; auto. constructor. now apply indexed_to_forall.
-    - induction l; auto.
-      fdestruct_scopes. destruct a. split. 2: split.
-      + apply H3. apply (H0 0). slia.
-      + apply H3. apply (H2 0). slia.
-      + apply IHl; auto. constructor.
-        intros. apply (H0 (S i)). slia.
-        intros. apply (H2 (S i)). slia.
-    - inv P'. lia.
-    - inv P'. lia.
-    - split; auto. intros. split; auto. lia.
-  * specialize (H0 x H1). rewrite Heqs in H0. lia.
-Qed.
-
-Lemma Erel_open_scope : forall {Γ e1 e2},
-    Erel_open Γ e1 e2 ->
-    EXP Γ ⊢ e1 /\ EXP Γ ⊢ e2.
-Proof.
-  intros.
-  pose proof (Erel_open_closed H).
-  split;
-  eapply (subst_implies_scope_exp); intros; apply H0; auto.
-Qed.
-
-Lemma Erel_open_scope_l : forall {Γ e1 e2},
-    Erel_open Γ e1 e2 ->
-    EXP Γ ⊢ e1.
-Proof.
-  intros. eapply Erel_open_scope in H. destruct H. auto.
-Qed.
-
-Global Hint Resolve Erel_open_scope_l : core.
-
-Lemma Erel_open_scope_r : forall {Γ e1 e2},
-    Erel_open Γ e1 e2 ->
-    EXP Γ ⊢ e2.
-Proof.
-  intros. eapply Erel_open_scope in H. destruct H. auto.
-Qed.
-
-Global Hint Resolve Erel_open_scope_r : core.
 
 Theorem Vrel_fundamental_0 v :
   VALCLOSED v -> Vrel 0 v v.
@@ -503,6 +444,50 @@ Proof.
     now apply IHv1.
     now apply IHv2.
 Qed.
+
+Lemma Erel_open_closed : forall {Γ e1 e2},
+    Erel_open Γ e1 e2 ->
+    forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 ->
+              EXPCLOSED (e1.[ξ]) /\ EXPCLOSED (e2.[ξ]).
+Proof.
+  intros.
+  apply @Erel_closed with (n:=0).
+  apply H; auto.
+  unfold Grel.
+  intuition idtac. break_match_goal.
+  (* rewrite Vrel_Fix_eq. unfold Vrel_rec at 1. *)
+  specialize (H0 x H1) as P'. rewrite Heqs in P'. clear dependent ξ.
+  * by apply Vrel_fundamental_0.
+  * specialize (H0 x H1). rewrite Heqs in H0. lia.
+Qed.
+
+Lemma Erel_open_scope : forall {Γ e1 e2},
+    Erel_open Γ e1 e2 ->
+    EXP Γ ⊢ e1 /\ EXP Γ ⊢ e2.
+Proof.
+  intros.
+  pose proof (Erel_open_closed H).
+  split;
+  eapply (subst_implies_scope_exp); intros; apply H0; auto.
+Qed.
+
+Lemma Erel_open_scope_l : forall {Γ e1 e2},
+    Erel_open Γ e1 e2 ->
+    EXP Γ ⊢ e1.
+Proof.
+  intros. eapply Erel_open_scope in H. destruct H. auto.
+Qed.
+
+Global Hint Resolve Erel_open_scope_l : core.
+
+Lemma Erel_open_scope_r : forall {Γ e1 e2},
+    Erel_open Γ e1 e2 ->
+    EXP Γ ⊢ e2.
+Proof.
+  intros. eapply Erel_open_scope in H. destruct H. auto.
+Qed.
+
+Global Hint Resolve Erel_open_scope_r : core.
 
 Lemma Vrel_open_closed : forall {Γ v1 v2},
     Vrel_open Γ v1 v2 ->
@@ -653,6 +638,14 @@ Proof.
   apply H. lia.
 Qed.
 
+Lemma Grel_idsubst n :
+  Grel n 0 idsubst idsubst.
+Proof.
+  split. 2: split.
+  1-2: apply scope_idsubst.
+  intros. lia.
+Qed.
+
 Corollary Grel_list : forall n vl1 vl2 ξ₁ ξ₂ Γ,
   Grel n Γ ξ₁ ξ₂ -> list_biforall (Vrel n) vl1 vl2 ->
   Grel n (length vl1 + Γ) (list_subst vl1 ξ₁) (list_subst vl2 ξ₂).
@@ -671,7 +664,8 @@ Lemma Vrel_possibilities : forall {n v1 v2},
   (exists l l', v1 = VTuple l /\ v2 = VTuple l') \/
   (exists l l', v1 = VMap l /\ v2 = VMap l') \/
   (exists ext1 ext2 id1 id2 vl1 vl2 b1 b2,
-    v1 = VClos ext1 id1 vl1 b1 /\ v2 = VClos ext2 id2 vl2 b2).
+    v1 = VClos ext1 id1 vl1 b1 /\ v2 = VClos ext2 id2 vl2 b2) \/
+  (exists bits, v1 = VBitstring bits /\ v2 = VBitstring bits).
 Proof.
   intros; destruct v1, v2; destruct H as [? [? ?] ]; subst; try contradiction.
   * left. auto.
@@ -680,7 +674,8 @@ Proof.
   * right. right. right. left. repeat eexists.
   * right. right. right. right. left. repeat eexists.
   * right. right. right. right. right. left. repeat eexists.
-  * right. right. right. right. right. right. repeat eexists.
+  * right. right. right. right. right. right. left. repeat eexists.
+  * right. right. right. right. right. right. right. repeat eexists.
 Qed.
 
 Ltac Vrel_possibilities H0 :=
@@ -735,7 +730,7 @@ Qed.
 Definition Rrel (n : nat) (r1 r2 : Redex) :=
   REDCLOSED r1 /\ REDCLOSED r2 /\
   forall m (Hmn : m <= n) F1 F2, Frel m F1 F2 ->
-    | F1, r1 | m ↓ -> | F2, r2 | ↓.
+    ⟨ F1, r1 ⟩ m ↓ -> ⟨ F2, r2 ⟩ ↓.
 
 Definition Rrel_open (Γ : nat) (r1 r2 : Redex) :=
   forall (n : nat) (ξ₁ ξ₂ : Substitution),
@@ -758,16 +753,15 @@ Lemma Vrel_ind :
   (HClos : forall ext ident vl e ext' ident' e', P (VClos ext ident vl e) (VClos ext' ident' vl e'))
   (HCons : forall v1 v2 v1' v2', P v1 v1' -> P v2 v2' -> P (VCons v1 v2) (VCons v1' v2'))
   (HTuple : forall l l', list_biforall P l l' -> P (VTuple l) (VTuple l'))
-  (HMap : forall l l', list_biforall (fun '(a, b) '(a', b') => P a a' /\ P b b') l l' -> P (VMap l) (VMap l')),
+  (HMap : forall l l', list_biforall (fun '(a, b) '(a', b') => P a a' /\ P b b') l l' -> P (VMap l) (VMap l'))
+  (HBitstring : forall bits, P (VBitstring bits) (VBitstring bits)),
   forall {m} v1 v2 (IH: Vrel m v1 v2),
   P v1 v2.
 Proof.
-  intros ? ? ? ? ? ? ? ? ?. valinduction; try destruct v2; intros.
+  intros ? ? ? ? ? ? ? ? ? ?. valinduction; try destruct v2; intros.
   all: try rewrite Vrel_Fix_eq in IH.
   all: try destruct IH as [IHv1 [IHv2 IH]]; try inv IH; auto.
   all: try destruct_hyps; try contradiction.
-  * now subst.
-  (* * now subst. *)
   * rewrite <- Vrel_Fix_eq in H. rewrite <- Vrel_Fix_eq in H0.
     apply IHv1_1 in H; auto.
   * apply HTuple. generalize dependent l0. induction l; destruct l0; intros; try contradiction; constructor.
@@ -790,3 +784,350 @@ Proof.
       1: apply (H3 (S i)); slia.
       1: apply (H5 (S i)); slia.
 Qed.
+
+Fixpoint Prel_rec (vrel : nat -> Val -> Val -> Prop) (n : nat) (p1 p2 : Pat) :=
+  match p1, p2 with
+  | PBin l1, PBin l2 =>
+    (fix go l1 l2 :=
+      match l1, l2 with
+      | [], [] => True
+      | seg1::l1, seg2::l2 => Prel_rec vrel n (seg_val seg1) (seg_val seg2) /\
+                              vrel n (seg_size seg1) (seg_size seg2) /\
+                              seg_unit seg1 = seg_unit seg2 /\
+                              seg_type seg1 = seg_type seg2 /\
+                              seg_sign seg1 = seg_sign seg2 /\
+                              seg_endian seg1 = seg_endian seg2 /\
+                              go l1 l2
+      | _, _ => False
+      end
+    ) l1 l2
+  | PTuple l1, PTuple l2       =>
+    (fix go l1 l2 :=
+      match l1, l2 with
+      | [], [] => True
+      | p1::l1, p2::l2 => Prel_rec vrel n p1 p2 /\ go l1 l2
+      | _, _ => False
+      end
+    ) l1 l2
+  | PCons p1 p2, PCons p1' p2' =>
+    Prel_rec vrel n p1 p1' /\ Prel_rec vrel n p2 p2'
+  | PMap l1, PMap l2           =>
+    (fix go l1 l2 :=
+      match l1, l2 with
+      | [], [] => True
+      | (p1k, p1v)::l1, (p2k, p2v)::l2 => Prel_rec vrel n p1k p2k /\ Prel_rec vrel n p1v p2v /\ go l1 l2
+      | _, _ => False
+      end
+    ) l1 l2
+  | _, _ => p1 = p2
+  end.
+
+Definition Prel := Prel_rec Vrel.
+
+Definition Prel_open (Γ : nat) (p1 p2 : Pat) :=
+  forall (n : nat) (ξ₁ ξ₂ : Substitution), Grel n Γ ξ₁ ξ₂ → Prel n p1.[ξ₁]ₚ p2.[ξ₂]ₚ.
+
+Lemma Prel_closed :
+  forall n p1 p2, Prel n p1 p2 -> PATCLOSED p1 /\ PATCLOSED p2.
+Proof.
+  intros n. induction p1 using Pat_ind_weakened with
+            (Q := Forall (fun p => forall p2, Prel n p p2 -> PATCLOSED p /\ PATCLOSED p2))
+            (R := Forall (PBoth (fun p => forall p2, Prel n p p2 -> PATCLOSED p /\ PATCLOSED p2)))
+            (T := Forall (fun seg => forall p2, Prel n (seg_val seg) p2 -> PATCLOSED (seg_val seg) /\ PATCLOSED p2))
+    .
+  8-13: by constructor.
+  all: intro p2; destruct p2; intros H; simpl in H; try congruence.
+  1-3: by split; constructor.
+  * destruct H as [H1 H2].
+    apply IHp1_1 in H1.
+    apply IHp1_2 in H2.
+    destruct_and!. split; scope_solver.
+  * assert (Forall (PatScoped 0) l /\ Forall (PatScoped 0) l0) as [X1 X2]. {
+      revert l0 H.
+      induction l; destruct l0; intros H; simpl in H; try contradiction.
+      * by split.
+      * destruct H. inv IHp1.
+        apply IHl in H0. 2: assumption. apply H3 in H.
+        clear - H H0. destruct_and!. split; by constructor.
+    }
+    split; constructor; by apply indexed_to_forall.
+  * assert (Forall (PBoth (PatScoped 0)) l /\ Forall (PBoth (PatScoped 0)) l0) as [X1 X2]. {
+      revert l0 H.
+      induction l; destruct l0; try destruct a; intros H; simpl in H; try contradiction.
+      * by split.
+      * destruct p.
+        destruct H as [H_1 [H_2 H_3]]. inv IHp1. destruct H1 as [IH1 IH2].
+        apply IHl in H_3. 2: assumption. apply IH1 in H_1. apply IH2 in H_2.
+        clear - H_1 H_2 H_3. destruct_and!. split; by constructor.
+    }
+    split; constructor; rewrite indexed_to_forall in X1, X2; intros i Hl;
+      try specialize (X1 _ Hl) as [X1_1 X1_2];
+      try specialize (X2 _ Hl) as [X2_1 X2_2];
+      rewrite map_nth with (d := (PNil, PNil)); eassumption.
+    Unshelve. all: exact (PNil, PNil).
+  * assert (Forall (fun seg => PATCLOSED (seg_val seg) /\ VALCLOSED (seg_size seg)) l
+         /\ Forall (fun seg => PATCLOSED (seg_val seg) /\ VALCLOSED (seg_size seg)) segments) as [X1 X2]. {
+      revert segments H.
+      induction l; destruct segments; try destruct a; intros H; simpl in H; try contradiction.
+      * by split.
+      * destruct s; simpl in *.
+        destruct H as [H_1 [H_2 [_ [_ [_ [_ H_3]]]]]]. inv IHp1.
+        apply IHl in H_3. 2: assumption. apply H1 in H_1.
+        apply Vrel_closed in H_2.
+        clear - H_1 H_2 H_3. destruct_and!. split; by constructor.
+    }
+    split; constructor; rewrite indexed_to_forall in X1, X2; intros i Hl;
+      try specialize (X1 _ Hl) as [X1_1 X1_2];
+      try specialize (X2 _ Hl) as [X2_1 X2_2];
+      rewrite map_nth with (d := default_segment); eassumption.
+    Unshelve. all: exact default_segment.
+Qed.
+
+Corollary Prel_closed_l :
+  forall n p1 p2, Prel n p1 p2 -> PATCLOSED p1.
+Proof.
+  intros. by apply Prel_closed in H as [].
+Qed.
+
+Global Hint Resolve Prel_closed_l : core.
+
+
+Corollary Prel_closed_r :
+  forall n p1 p2, Prel n p1 p2 -> PATCLOSED p2.
+Proof.
+  intros. by apply Prel_closed in H as [].
+Qed.
+
+Global Hint Resolve Prel_closed_r : core.
+
+Lemma Prel_open_closed :
+  forall {Γ p1 p2}, Prel_open Γ p1 p2 ->
+  forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 -> PATCLOSED (p1.[ξ]ₚ) /\ PATCLOSED (p2.[ξ]ₚ).
+Proof.
+  intros. unfold Prel_open in H.
+  apply Prel_closed with (n := 0).
+  apply H; eauto.
+  unfold Grel.
+  intuition idtac. break_match_goal.
+  (* rewrite Vrel_Fix_eq. unfold Vrel_rec at 1. *)
+  specialize (H0 x H1) as P'. rewrite Heqs in P'. clear dependent ξ.
+  * by apply Vrel_fundamental_0.
+  * specialize (H0 x H1). rewrite Heqs in H0. lia.
+Qed.
+
+Corollary Prel_open_scope :
+  forall {Γ p1 p2}, Prel_open Γ p1 p2 ->
+    PAT Γ ⊢ p1 /\ PAT Γ ⊢ p2.
+Proof.
+  intros.
+  pose proof (Prel_open_closed H).
+  split;
+  eapply (subst_implies_scope_pat); intros; apply H0; by auto.
+Qed.
+
+Corollary Prel_open_scope_l :
+  forall Γ p1 p2, Prel_open Γ p1 p2 -> PAT Γ ⊢ p1.
+Proof.
+  intros. by apply Prel_open_scope in H as [].
+Qed.
+
+Global Hint Resolve Prel_open_scope_l : core.
+
+Corollary Prel_open_scope_r :
+  forall Γ p1 p2, Prel_open Γ p1 p2 -> PAT Γ ⊢ p2.
+Proof.
+  intros. by apply Prel_open_scope in H as [].
+Qed.
+
+Global Hint Resolve Prel_open_scope_r : core.
+
+Lemma biforall_prel_scoped : forall pats1 pats2 Γ,
+  list_biforall (Prel_open Γ) pats1 pats2 ->
+  Forall (fun e => PAT Γ ⊢ e) pats1 /\ Forall (fun e => PAT Γ ⊢ e) pats2.
+Proof.
+  induction pats1; intros; inversion H; subst; split; constructor.
+  * eapply Prel_open_scope_l; eauto.
+  * specialize (IHpats1 _ _ H4); apply IHpats1.
+  * eapply Prel_open_scope_r; eauto.
+  * eapply IHpats1; eauto.
+Qed.
+
+Lemma biforall_prel_closed : forall pats1 pats2 m,
+  list_biforall (Prel m) pats1 pats2 ->
+  Forall (fun e => PATCLOSED e) pats1 /\ Forall (fun e => PATCLOSED e) pats2.
+Proof.
+  induction pats1; intros; inversion H; subst; split; constructor.
+  * eapply Prel_closed_l; eauto.
+  * specialize (IHpats1 _ _ H4); apply IHpats1.
+  * eapply Prel_closed_r; eauto.
+  * eapply IHpats1; eauto.
+Qed.
+
+Lemma Prel_downclosed :
+  forall {n m : nat} {Hmn : m <= n} {p1 p2 : Pat},
+    Prel n p1 p2 ->
+    Prel m p1 p2.
+Proof.
+  intros n m Hnm p1.
+  induction p1 using Pat_ind_weakened
+    with (Q := Forall (fun p => forall p2, Prel n p p2 -> Prel m p p2))
+         (R := Forall (PBoth (fun p => forall p2, Prel n p p2 -> Prel m p p2)))
+         (T := Forall (fun seg => forall p2, Prel n (seg_val seg) p2 -> Prel m (seg_val seg) p2)).
+  * intros p2 H. destruct p2; simpl in *; try congruence.
+  * intros p2 H. destruct p2; simpl in *; try congruence.
+  * intros p2 H. destruct p2; simpl in *; try congruence.
+  * intros p2 H. destruct p2; simpl in *; try congruence.
+    destruct H as [H1 H2].
+    split.
+    - apply IHp1_1, H1.
+    - apply IHp1_2, H2.
+  * intros p2 H. destruct p2; simpl in *; try congruence.
+    revert l0 H.
+    induction IHp1; intros l0 Hr; destruct l0; simpl in *; try congruence; try contradiction; try by cbn.
+    destruct Hr as [Hr1 Hr2].
+    split.
+    - apply H, Hr1.
+    - apply IHIHp1, Hr2.
+  * intros p2 H. destruct p2; simpl in *; try congruence.
+    revert l0 H.
+    induction IHp1; intros l0 Hr; destruct l0; simpl in *; try congruence; try contradiction; try by cbn.
+    destruct x as [xk xv], p as [pk pv]; simpl in *.
+    destruct H as [Hk Hv], Hr as [Hr1 [Hr2 Hr3]].
+    split;[|split].
+    - apply Hk, Hr1.
+    - apply Hv, Hr2.
+    - apply IHIHp1, Hr3.
+  * intros p2 H. destruct p2; simpl in *; try congruence.
+    revert segments H.
+    induction IHp1; intros segments Hr; destruct segments; simpl in *; try congruence; try contradiction; try by cbn.
+    destruct Hr as [Hr1 [Hr2 [Hr3 [Hr4 [Hr5 [Hr6 Hr7]]]]]].
+    repeat split.
+    - apply H, Hr1.
+    - eapply Vrel_downclosed; eauto.
+    - exact Hr3.
+    - exact Hr4.
+    - exact Hr5.
+    - exact Hr6.
+    - apply IHIHp1, Hr7.
+  * constructor; assumption.
+  * constructor; [split|]; assumption.
+  * constructor; assumption.
+  * constructor.
+  * constructor.
+  * constructor.
+  Unshelve. by auto.
+Qed.
+
+Lemma Prel_rec_weaken :
+  forall R Q n p1 p2, Prel_rec R n p1 p2 ->
+    (forall p1' p2', R n p1' p2' -> Q n p1' p2') ->
+      Prel_rec Q n p1 p2.
+Proof.
+  intros R Q n.
+  induction p1 using Pat_ind_weakened with
+    (Q := Forall (fun p => forall p2, Prel_rec R n p p2 ->
+            (forall a b, R n a b -> Q n a b) -> Prel_rec Q n p p2))
+    (R := Forall (PBoth (fun p => forall p2, Prel_rec R n p p2 ->
+            (forall a b, R n a b -> Q n a b) -> Prel_rec Q n p p2)))
+    (T := Forall (fun seg => forall p2, Prel_rec R n (seg_val seg) p2 ->
+            (forall a b, R n a b -> Q n a b) -> Prel_rec Q n (seg_val seg) p2)).
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+    destruct H as [H1 H2]. split.
+    - apply IHp1_1; assumption.
+    - apply IHp1_2; assumption.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+    revert l0 H.
+    induction IHp1; intros l0 Hr; destruct l0; simpl in *; try congruence; try contradiction.
+    destruct Hr as [Hr1 Hr2]. split.
+    - apply H; assumption.
+    - apply IHIHp1, Hr2.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+    revert l0 H.
+    induction IHp1; intros l0 Hr; destruct l0; simpl in *; try congruence; try contradiction.
+    destruct x as [xk xv], p as [pk pv]; simpl in *.
+    destruct H as [Hk Hv], Hr as [Hr1 [Hr2 Hr3]].
+    split;[|split].
+    - apply Hk; assumption.
+    - apply Hv; assumption.
+    - apply IHIHp1, Hr3.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+    revert segments H.
+    induction IHp1; intros segments Hr; destruct segments; simpl in *; try congruence; try contradiction.
+    destruct Hr as [Hr1 [Hr2 [Hr3 [Hr4 [Hr5 [Hr6 Hr7]]]]]].
+    split;[|split;[|split;[|split;[|split;[|split]]]]].
+    - apply H; assumption.
+    - apply HRQ, Hr2.
+    - exact Hr3.
+    - exact Hr4.
+    - exact Hr5.
+    - exact Hr6.
+    - apply IHIHp1, Hr7.
+  * constructor; assumption.
+  * constructor; [split|]; assumption.
+  * constructor; assumption.
+  * constructor.
+  * constructor.
+  * constructor.
+Qed.
+
+Lemma Prel_rec_subst :
+  forall (R Q : nat -> Val -> Val -> Prop) Γ n ξ1 ξ2 p1 p2,
+    Prel_rec R Γ p1 p2 ->
+    (forall a b, R Γ a b -> Q n (substVal ξ1 a) (substVal ξ2 b)) ->
+      Prel_rec Q n p1.[ξ1]ₚ p2.[ξ2]ₚ.
+Proof.
+  intros R Q Γ n ξ1 ξ2.
+  induction p1 using Pat_ind_weakened with
+    (Q := Forall (fun p => forall p2, Prel_rec R Γ p p2 ->
+            (forall a b, R Γ a b -> Q n a.[ξ1]ᵥ b.[ξ2]ᵥ) -> Prel_rec Q n p.[ξ1]ₚ p2.[ξ2]ₚ))
+    (R := Forall (PBoth (fun p => forall p2, Prel_rec R Γ p p2 ->
+            (forall a b, R Γ a b -> Q n a.[ξ1]ᵥ b.[ξ2]ᵥ) -> Prel_rec Q n p.[ξ1]ₚ p2.[ξ2]ₚ)))
+    (T := Forall (fun seg => forall p2, Prel_rec R Γ (seg_val seg) p2 ->
+            (forall a b, R Γ a b -> Q n a.[ξ1]ᵥ b.[ξ2]ᵥ) -> Prel_rec Q n (seg_val seg).[ξ1]ₚ p2.[ξ2]ₚ)).
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+    destruct H as [H1 H2]. split.
+    - apply IHp1_1; assumption.
+    - apply IHp1_2; assumption.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+    revert l0 H.
+    induction IHp1; intros l0 Hr; destruct l0; simpl in *; try congruence; try contradiction.
+    destruct Hr as [Hr1 Hr2]. split.
+    - apply H; assumption.
+    - apply IHIHp1, Hr2.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+    revert l0 H.
+    induction IHp1; intros l0 Hr; destruct l0; simpl in *; try congruence; try contradiction.
+    all: destruct x as [xk xv]; simpl in *; try contradiction.
+    destruct p as [pk pv]; simpl in *.
+    destruct H as [Hk Hv], Hr as [Hr1 [Hr2 Hr3]].
+    split;[|split].
+    - apply Hk; assumption.
+    - apply Hv; assumption.
+    - apply IHIHp1, Hr3.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+    revert segments H.
+    induction IHp1; intros segments Hr; destruct segments; simpl in *; try congruence; try contradiction.
+    destruct x as [xv xs xu xt xsg xe], s as [sv ss su st ssg se]; simpl in *.
+    destruct Hr as [Hr1 [Hr2 [Hr3 [Hr4 [Hr5 [Hr6 Hr7]]]]]].
+    split;[|split;[|split;[|split;[|split;[|split]]]]].
+    - apply H; assumption.
+    - apply HRQ, Hr2.
+    - exact Hr3.
+    - exact Hr4.
+    - exact Hr5.
+    - exact Hr6.
+    - apply IHIHp1, Hr7.
+  * constructor; assumption.
+  * constructor; [split|]; assumption.
+  * constructor; assumption.
+  * constructor.
+  * constructor.
+  * constructor.
+Qed.
+

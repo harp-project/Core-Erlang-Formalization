@@ -4,6 +4,7 @@
 From CoreErlang Require Export ScopingLemmas Maps Matching Auxiliaries.
 
 Import ListNotations.
+Import Notations.
 
 (** FrameStack *)
 (** Based on [Pitts' work](https://www.cl.cam.ac.uk/~amp12/papers/opespe/opespe-lncs.pdf) *)
@@ -16,6 +17,7 @@ Inductive FrameIdent :=
 | IValues
 | ITuple
 | IMap
+| IBin
 | ICall (m f : Val)
 | IPrimOp (f : string)
 | IApp (v : Val).
@@ -45,6 +47,11 @@ Inductive Frame : Set :=
 | FSeq   (e : Exp)           (* do □ e *)
 | FTry (vl1 : nat) (e2 : Exp) (vl2 : nat) (e3 : Exp)
   (* try □ of <x₁, ..., xₙ> -> e₂ catch <xₙ₊₁, ..., xₙ₊ₘ> -> e₃ *)
+| FSeg1 (size : Exp) (unit : nat) (type : BinType) (sign : BinSign) (endian : BinEnd)
+   (* #<□>{size, unit, type, [sign, endian]} *)
+| FSeg2 (val : Val) (unit : nat) (type : BinType) (sign : BinSign) (endian : BinEnd)
+   (* #<val>{□, unit, type, [sign, endian]} *)
+
 (* Concurrent frames for receive - this is not used in the sequential semantics
    These are very similar to the frames for case, but we define them separately
    for the separation of concerns.
@@ -71,7 +78,8 @@ Inductive ICLOSED : FrameIdent -> Prop :=
 | iclosed_map : ICLOSED IMap
 | iclosed_app v : VALCLOSED v -> ICLOSED (IApp v)
 | iclosed_call m f : VALCLOSED m -> VALCLOSED f -> ICLOSED (ICall m f)
-| iclosed_primop f : ICLOSED (IPrimOp f).
+| iclosed_primop f : ICLOSED (IPrimOp f)
+| iclosed_bin : ICLOSED IBin.
 
 Inductive FCLOSED : Frame -> Prop :=
 | fclosed_cons1 e : EXPCLOSED e -> FCLOSED (FCons1 e)
@@ -86,13 +94,13 @@ Inductive FCLOSED : Frame -> Prop :=
 | fclosed_callmod f l : EXPCLOSED f -> Forall (fun e => EXPCLOSED e) l -> FCLOSED (FCallMod f l)
 | fclosed_callfun m l : VALCLOSED m -> Forall (fun e => EXPCLOSED e) l -> FCLOSED (FCallFun m l)
 | fclosed_case1 l : 
-  Forall (fun '(pl, g, b) => EXP PatListScope pl ⊢ g /\ EXP PatListScope pl ⊢ b) l
+  Forall (fun '(pl, g, b) => Forall (PatScoped 0) pl /\ EXP PatListVars pl ⊢ g /\ EXP PatListVars pl ⊢ b) l
 ->
   FCLOSED (FCase1 l)
 | fclosed_case2 vl (* pl *) e rest :
   Forall (fun v => VALCLOSED v) vl ->
   EXPCLOSED e ->
-  Forall (fun '(pl, g, b) => EXP PatListScope pl ⊢ g /\ EXP PatListScope pl ⊢ b) rest
+  Forall (fun '(pl, g, b) => Forall (PatScoped 0) pl /\ EXP PatListVars pl ⊢ g /\ EXP PatListVars pl ⊢ b) rest
 ->
   FCLOSED (FCase2 vl (* pl *) e rest)
 | fclosed_let vars e : EXP vars ⊢ e -> FCLOSED (FLet vars e)
@@ -101,47 +109,70 @@ Inductive FCLOSED : Frame -> Prop :=
   EXP vars1 ⊢ e2 -> EXP vars2 ⊢ e3
 ->
   FCLOSED (FTry vars1 e2 vars2 e3)
+| fclosed_seg1 size unit type sign endian :
+  EXPCLOSED size
+->
+  FCLOSED (FSeg1 size unit type sign endian)
+| fclosed_seg2 val unit type sign endian :
+  VALCLOSED val
+->
+  FCLOSED (FSeg2 val unit type sign endian)
 .
 
 Proposition clause_scope l :
   (forall i : nat,
   i < Datatypes.length l ->
-  EXP PatListScope (nth i (map (fst ∘ fst) l) [])
+  EXP PatListVars (nth i (map (fst ∘ fst) l) [])
   ⊢ nth i (map (snd ∘ fst) l) (˝ VNil)) ->
   (forall i : nat,
         i < Datatypes.length l ->
-        EXP PatListScope (nth i (map (fst ∘ fst) l) [])
+        EXP PatListVars (nth i (map (fst ∘ fst) l) [])
         ⊢ nth i (map snd l) (˝ VNil)) ->
-   Forall (fun '(pl, g, b) => EXP PatListScope pl ⊢ g /\ EXP PatListScope pl ⊢ b) l.
+  (forall i, i < length l -> forall j, j < length (nth i (map (fst ∘ fst) l) []) ->
+    PAT 0 ⊢ nth j (nth i (map (fst ∘ fst) l) []) PNil) ->
+   Forall (fun '(pl, g, b) => Forall (PatScoped 0) pl /\ EXP PatListVars pl ⊢ g /\ EXP PatListVars pl ⊢ b) l.
 Proof.
   induction l; intros; auto.
   constructor.
-  * destruct a, p. split.
+  * destruct a, p. split. 2: split.
+    - specialize (H1 0 ltac:(slia)).
+      rewrite indexed_to_forall. intros.
+      setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1. cbn in H1.
+      specialize (H1 i ltac:(lia)).
+      exact H1.
     - apply (H 0). slia.
     - apply (H0 0). slia.
-  * apply IHl; intros; (apply (H (S i)) + apply (H0 (S i))); slia.
+  * apply IHl; intros; (apply (H (S i)) + apply (H0 (S i)) + apply (H1 (S i))); slia.
 Qed.
 
 Proposition clause_scope_rev l :
-  Forall (fun '(pl, g, b) => EXP PatListScope pl ⊢ g /\ EXP PatListScope pl ⊢ b) l
+  Forall (fun '(pl, g, b) => Forall (PatScoped 0) pl /\ EXP PatListVars pl ⊢ g /\ EXP PatListVars pl ⊢ b) l
   ->
   (forall i : nat,
   i < Datatypes.length l ->
-  EXP PatListScope (nth i (map (fst ∘ fst) l) [])
+  EXP PatListVars (nth i (map (fst ∘ fst) l) [])
   ⊢ nth i (map (snd ∘ fst) l) (˝ VNil)) /\
   (forall i : nat,
         i < Datatypes.length l ->
-        EXP PatListScope (nth i (map (fst ∘ fst) l) [])
-        ⊢ nth i (map snd l) (˝ VNil))
+        EXP PatListVars (nth i (map (fst ∘ fst) l) [])
+        ⊢ nth i (map snd l) (˝ VNil)) /\
+  (forall i, i < length l -> forall j, j < length (nth i (map (fst ∘ fst) l) []) ->
+    PAT 0 ⊢ nth j (nth i (map (fst ∘ fst) l) []) PNil)
    .
 Proof.
-  intros. induction H; simpl; split; intros; try lia; destruct_foralls.
+  intros. induction H; simpl; repeat split; intros; try lia; destruct_foralls.
   * destruct i.
     - now destruct x, p, H.
     - apply IHForall. lia.
   * destruct i.
     - now destruct x, p, H0.
     - apply IHForall. lia.
+  * destruct i.
+    - destruct x, p; simpl in *.
+      destruct H as [H _].
+      rewrite indexed_to_forall in H.
+      by apply H.
+    - apply IHForall; lia.
 Qed.
 
 Definition to_Exp (ident : FrameIdent) (l : list Exp) : Exp :=
@@ -152,6 +183,7 @@ match ident with
 | IApp v => EApp (˝v) l
 | ICall m f => ECall (˝m) (˝f) l
 | IPrimOp f => EPrimOp f l
+| IBin => EBin l
 end.
 
 (*
@@ -179,6 +211,8 @@ match F with
  | FLet l ex            => °(ELet l e ex)
  | FSeq ex              => °(ESeq e ex)
  | FTry vl1 e2 vl2 e3   => °(ETry e vl1 e2 vl2 e3)
+ | FSeg1 size unit type sign endian => ESeg (Build_Segment e size unit type sign endian)
+ | FSeg2 val unit type sign endian  => ESeg (Build_Segment (˝val) e unit type sign endian)
 end.
 
 Definition FrameStack := list Frame.
@@ -219,6 +253,8 @@ Ltac destruct_frame_scope :=
   | [H : FCLOSED (FLet _ _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FSeq _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FTry _ _ _ _) |- _] => inversion H; subst; clear H
+  | [H : FCLOSED (FSeg1 _ _ _ _ _) |- _] => inversion H; subst; clear H
+  | [H : FCLOSED (FSeg2 _ _ _ _ _) |- _] => inversion H; subst; clear H
 (*   | [H : FCLOSED (FReceive1 _ _ _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FReceive2 _ _ _ _ _) |- _] => inversion H; subst; clear H *)
   end.
@@ -230,6 +266,7 @@ Ltac destruct_scopes :=
 Ltac scope_solver_step :=
   match goal with 
   | |- EXP _ ⊢ _ => constructor; simpl; auto
+  | |- PAT _ ⊢ _ => constructor; simpl; auto
   | |- VAL _ ⊢ _ => constructor; simpl; auto
   | |- RED _ ⊢ _ => constructor; simpl; auto
   | |- NVAL _ ⊢ _ => constructor; simpl; auto
@@ -242,9 +279,10 @@ Ltac scope_solver_step :=
   | |- _ /\ _ => split
   | |- FSCLOSED _ => constructor; simpl
   | |- FCLOSED _ => constructor; simpl
-  | [H : ?i < _ |- _] => inv H; simpl in *; auto; try lia
-  | [H : ?i <= _ |- _] => inv H; simpl in *; auto; try lia
+  | [H : ?i < S _ |- _] => inv H; simpl in *; auto; try lia
+  | [H : ?i <= S _ |- _] => inv H; simpl in *; auto; try lia
   | [H : EXP ?n1 ⊢ ?e |- EXP ?n2 ⊢ ?e] => try now (eapply (loosen_scope_exp n2 n1 ltac:(lia)) in H)
+  | [H : PAT ?n1 ⊢ ?e |- PAT ?n2 ⊢ ?e] => try now (eapply (loosen_scope_pat n2 n1 ltac:(lia)) in H)
   | [H : VAL ?n1 ⊢ ?e |- VAL ?n2 ⊢ ?e] => try now (eapply (loosen_scope_val n2 n1 ltac:(lia)) in H)
   | [H : NVAL ?n1 ⊢ ?e |- NVAL ?n2 ⊢ ?e] => try now (eapply (loosen_scope_nonval n2 n1 ltac:(lia)) in H)
   end.
@@ -260,6 +298,24 @@ Qed.
 Hint Resolve inf_scope : core.
 
 Opaque inf.
+
+Fixpoint construct_bitstring (l : list Val) : option bvn :=
+match l with
+| [] => Some (bv_to_bvn (Z_to_bv 0%N 0%Z))
+| (VBitstring bits) :: rest =>
+    match construct_bitstring rest with
+    | Some restbits =>
+       Some (bv_to_bvn (bv_concat (bvn_n bits + bvn_n restbits) (bvn_val bits) (bvn_val restbits)))
+    | None          => None
+    end
+| _ => None
+end.
+
+(**  111 ++ 001 = 111001%bv 6 = 1 + 8 + 16 + 32 = 57 *)
+Goal (bv_concat 6 (7%bv : bv 3) (1%bv : bv 3)) = (57%bv : bv 6).
+Proof.
+  apply bv_eq. bv_simplify. cbv. lia.
+Qed.
 
 (**
   To avoid duplication of semantic rules for language elements using lists of
@@ -281,8 +337,12 @@ match ident with
 | IApp (VClos ext id vars e) =>
   if Nat.eqb vars (length vl)
   then Some (RExp (e.[list_subst (convert_to_closlist ext ++ vl) idsubst]), None)
-  else Some (RExc (badarity (VClos ext id vars e)), None)
+  else Some (RExc (badarity (VClos ext id vars e) (meta_to_cons vl)), None)
 | IApp v => Some (RExc (badfun v), None)
+| IBin => match construct_bitstring vl with
+          | Some val => Some (RValSeq [VBitstring val], None)
+          | None => Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple vl])), None) (* TODO: not faithful completely *)
+          end
 end.
 
 Proposition FrameIdent_eq_dec :
@@ -299,5 +359,4 @@ match f with
  | FTry _ _ _ _ (* | FReceive1 _ _ _ | FReceive2 _ _ _ _ _ *) => false
  | _ => true
 end.
-
 

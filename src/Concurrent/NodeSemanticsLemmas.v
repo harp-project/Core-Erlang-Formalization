@@ -89,7 +89,7 @@ Qed.
 Lemma not_isUsedPool_insert_1 :
   forall Π ι' ι p,
   ¬ isUsedPool ι' (ι ↦ p ∥ Π) ->
-  ι' ∉ dom Π /\ ι' <> ι.
+  (ι' ∉ dom Π) /\ ι' <> ι.
 Proof.
   intros. unfold isUsedPool in H.
   split; intro; apply H.
@@ -614,8 +614,7 @@ Proof.
   induction l using list_length_ind.
   intros. destruct (length l) eqn:Hlen.
   * apply length_zero_iff_nil in Hlen. subst. set_solver.
-  * apply eq_sym, last_element_exists in Hlen as Hlen'.
-    destruct Hlen' as [l' [x ?]]; subst.
+  * destruct (exists_last (l := l) ltac:(intros ->; discriminate Hlen)) as [l' [x ?]]; subst.
     rename n' into n''.
     apply closureNodeSem_trans_rev in H0 as [n' [D1 D2]].
     rewrite length_app in Hlen. simpl in Hlen. inv D2. inv H6. inv H4.
@@ -735,7 +734,8 @@ Proof.
   destruct (length l) eqn:Hl; intros.
   * apply length_zero_iff_nil in Hl; subst. inv H0. auto.
   * pose proof Hl.
-    eapply eq_sym, last_element_exists in Hl as [l' [x Eq]]. subst.
+    destruct (exists_last (l := l) ltac:(intros ->; discriminate Hl)) as [l' [x Eq]].
+    clear Hl. subst.
     apply closureNodeSem_trans_rev in H0 as [n0' [D1 D2]].
     rewrite length_app in H2. simpl in *.
     inv D2. inv H7.
@@ -1028,7 +1028,8 @@ Proof.
   destruct (length l) eqn:Hl; intros.
   * apply length_zero_iff_nil in Hl; subst. inv H0. auto.
   * pose proof Hl.
-    eapply eq_sym, last_element_exists in Hl as [l' [x Eq]]. subst.
+    destruct (exists_last (l := l) ltac:(intros ->; discriminate Hl)) as [l' [x Eq]].
+    clear Hl. subst.
     apply closureNodeSem_trans_rev in H0 as [n0' [D1 D2]].
     rewrite length_app in H2. simpl in *.
     inv D2. inv H7. eapply compatibility_of_reduction_rev in H5.
@@ -2155,7 +2156,8 @@ Proof.
       }
     - cbn. destruct v1; try now inv H13.
       case_match; inv H13; simpl; rewrite length_map, H.
-      2: reflexivity.
+      (* arity mismatch: badarity carries the arguments *)
+      2: by rewrite renamePID_meta_to_cons.
       do 2 f_equal. rewrite split_renamePID_subst_exp.
       assert (list_subst
                    (convert_to_closlist
@@ -2197,9 +2199,17 @@ Qed.
 Lemma rename_usedPIDs :
   (forall e ρ, usedPIDsExp e = usedPIDsExp (rename ρ e)) /\
   (forall e ρ, usedPIDsNVal e = usedPIDsNVal (renameNonVal ρ e)) /\
-  (forall e ρ, usedPIDsVal e = usedPIDsVal (renameVal ρ e)).
+  (forall e ρ, usedPIDsVal e = usedPIDsVal (renameVal ρ e)) /\
+  (forall p ρ, usedPIDsPat p = usedPIDsPat (renamePat ρ p)).
 Proof.
   apply Exp_ind with
+    (PQ := fun l => Forall (fun p => forall ρ, usedPIDsPat p = usedPIDsPat (renamePat ρ p)) l)
+    (PR := fun l => Forall (fun '(p1, p2) => forall ρ,
+        (usedPIDsPat p1 = usedPIDsPat (renamePat ρ p1)) /\
+        (usedPIDsPat p2 = usedPIDsPat (renamePat ρ p2))) l)
+    (PT := fun l => Forall (fun seg => forall ρ,
+        (usedPIDsPat (seg_val seg) = usedPIDsPat (renamePat ρ (seg_val seg))) /\
+        (usedPIDsVal (seg_size seg) = usedPIDsVal (renameVal ρ (seg_size seg)))) l)
     (QV := fun l => Forall (fun e => forall ρ, usedPIDsVal e = usedPIDsVal (renameVal ρ e)) l)
     (Q := fun l => Forall (fun e => forall ρ, usedPIDsExp e = usedPIDsExp (rename ρ e)) l)
     (RV := fun l => Forall (fun '(e1, e2) => forall ρ,
@@ -2209,6 +2219,7 @@ Proof.
         (usedPIDsExp e1 = usedPIDsExp (rename ρ e1)) /\
         (usedPIDsExp e2 = usedPIDsExp (rename ρ e2))) l)
     (W := fun l => Forall (fun '(p, g, e) => forall ρ,
+       (flat_union usedPIDsPat p = flat_union usedPIDsPat (map (renamePat ρ) p)) /\
        (usedPIDsExp g = usedPIDsExp (rename ρ g)) /\
        (usedPIDsExp e = usedPIDsExp (rename ρ e))) l)
     (Z := fun l => Forall (fun '(n, e) => forall ρ, usedPIDsExp e = usedPIDsExp (rename ρ e)) l)
@@ -2260,6 +2271,34 @@ Proof.
     apply map_ext_in. intros. apply list_elem_of_In in H1.
     rewrite Forall_forall in H0. eapply H0 in H1. destruct a. set_solver.
   * by rewrite <- H1.
+  * (* EBin *)
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H0.
+    rewrite Forall_forall in H. eapply H in H0. exact H0.
+  * (* ESeg *)
+    destruct seg as [v s u t sg en]. simpl in *.
+    rewrite <- H, <- H0. reflexivity.
+  * (* PTuple *)
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H0.
+    rewrite Forall_forall in H. eapply H in H0. exact H0.
+  * (* PMap *)
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H0.
+    rewrite Forall_forall in H. eapply H in H0.
+    destruct a. set_solver.
+  * (* PBin *)
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H0.
+    rewrite Forall_forall in H.
+    pose proof (H _ H0 ρ) as [Hp Hs].
+    destruct a as [v s u t sg en]. cbn in *. rewrite <- Hp, <- Hs. reflexivity.
+  * (* clauses of ECase *)
+    constructor; [|assumption].
+    intros ρ. split; [|split]; [| apply H0 | apply H1].
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros a Ha. apply list_elem_of_In in Ha.
+    rewrite Forall_forall in H. eapply H in Ha. exact Ha.
 Qed.
 
 Lemma subst_usedPIDs :
@@ -2267,9 +2306,18 @@ Lemma subst_usedPIDs :
   /\
   (forall e ι ξ, ι ∈ (usedPIDsNVal e.[ξ]ₑ ) -> ι ∈ (usedPIDsNVal e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))
   /\
-  (forall e ι ξ, ι ∈ (usedPIDsVal e.[ξ]ᵥ ) -> ι ∈ (usedPIDsVal e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)).
+  (forall e ι ξ, ι ∈ (usedPIDsVal e.[ξ]ᵥ ) -> ι ∈ (usedPIDsVal e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))
+  /\
+  (forall p ι ξ, ι ∈ (usedPIDsPat p.[ξ]ₚ ) -> ι ∈ (usedPIDsPat p) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)).
 Proof.
   apply Exp_ind with
+    (PQ := fun l => Forall (fun p => forall ι ξ, ι ∈ (usedPIDsPat p.[ξ]ₚ ) -> ι ∈ (usedPIDsPat p) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) l)
+    (PR := fun l => Forall (fun '(p1, p2) => forall ι ξ,
+        (ι ∈ (usedPIDsPat p1.[ξ]ₚ ) -> ι ∈ (usedPIDsPat p1) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) /\
+        (ι ∈ (usedPIDsPat p2.[ξ]ₚ ) -> ι ∈ (usedPIDsPat p2) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))) l)
+    (PT := fun l => Forall (fun seg => forall ι ξ,
+        (ι ∈ (usedPIDsPat (seg_val seg).[ξ]ₚ ) -> ι ∈ (usedPIDsPat (seg_val seg)) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) /\
+        (ι ∈ (usedPIDsVal (seg_size seg).[ξ]ᵥ ) -> ι ∈ (usedPIDsVal (seg_size seg)) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))) l)
     (QV := fun l => Forall (fun e => forall ι ξ, ι ∈ (usedPIDsVal e.[ξ]ᵥ ) -> ι ∈ (usedPIDsVal e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) l)
     (Q := fun l => Forall (fun e => forall ι ξ, ι ∈ (usedPIDsExp e.[ξ]) -> ι ∈ (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) l)
     (RV := fun l => Forall (fun '(e1, e2) => forall ι ξ,
@@ -2279,6 +2327,7 @@ Proof.
         (ι ∈ (usedPIDsExp e1.[ξ]) -> ι ∈ (usedPIDsExp e1) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) /\
         (ι ∈ (usedPIDsExp e2.[ξ]) -> ι ∈ (usedPIDsExp e2) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))) l)
     (W := fun l => Forall (fun '(p, g, e) => forall ι ξ,
+       (ι ∈ (flat_union usedPIDsPat (map (substPat ξ) p)) -> ι ∈ (flat_union usedPIDsPat p) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) /\
        (ι ∈ (usedPIDsExp g.[ξ]) -> ι ∈ (usedPIDsExp g) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) /\
        (ι ∈ (usedPIDsExp e.[ξ]) -> ι ∈ (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))) l)
     (Z := fun l => Forall (fun '(n, e) => forall ι ξ, ι ∈ (usedPIDsExp e.[ξ]) -> ι ∈ (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) l)
@@ -2310,7 +2359,7 @@ Proof.
     - apply H0 in H1. destruct H1. left. set_solver.
       right. destruct_hyps. eapply upn_inl_eq_1 in H1.
       do 2 eexists; split; try eassumption.
-      by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
+      by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
     - rewrite Forall_forall in H. apply elem_of_flat_union in H1 as [x [P1 P2]].
       apply elem_of_map_iff in P1 as [y [P1 P3]]. eapply H in P3 as P3'. destruct y, p.
       inv P1. apply P3' in P2. destruct P2 as [|].
@@ -2319,12 +2368,12 @@ Proof.
       + right. destruct H1 as [n' [v' [H2_1 H2_2]]].
         eapply upn_inl_eq_1 with (n:=length ext + n0) in H2_1.
         do 2 eexists; split; try eassumption.
-        by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
+        by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
   * apply H in H0. destruct H0; auto.
     right. destruct H0 as [n' [v' [H0_1 H0_2]]].
     apply upn_inl_eq_1 in H0_1.
     do 2 eexists; split; try eassumption.
-    by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
+    by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
   * apply elem_of_flat_union in H0 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
     subst. rewrite Forall_forall in H. eapply H in P3 as P3'. 2: eassumption.
     clear -P2 P3 P3'. destruct_or!; auto.
@@ -2367,27 +2416,32 @@ Proof.
     apply elem_of_flat_union in H1 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
     subst. destruct y, p. simpl in *.
     rewrite Forall_forall in H0. eapply H0 in P3 as P3'.
-    apply elem_of_union in P2 as [P2|P2]; apply P3' in P2;
-    clear -P2 P3 P3'; destruct_or!; auto.
-    - left. apply elem_of_union. right. apply elem_of_flat_union. eexists. split. eassumption.
-      set_solver.
-    - right. destruct P2 as [n' [v' [H0_1 H0_2]]].
-      apply upn_inl_eq_1 in H0_1.
-      do 2 eexists; split; try eassumption.
-      by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
-    - left. apply elem_of_union. right. apply elem_of_flat_union. eexists. split. eassumption.
-      set_solver.
-    - right. destruct P2 as [n' [v' [H0_1 H0_2]]].
-      apply upn_inl_eq_1 in H0_1.
-      do 2 eexists; split; try eassumption.
-      by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
+    apply elem_of_union in P2 as [P2|P2]; [apply elem_of_union in P2 as [P2|P2]|].
+    - apply (proj1 (P3' _ _)) in P2 as [P2|P2].
+      + left. apply elem_of_union. right. apply elem_of_flat_union.
+        exists (l0, e1, e0). split; [exact P3|]. simpl. set_solver.
+      + right. exact P2.
+    - apply (proj1 (proj2 (P3' _ _))) in P2 as [P2|P2].
+      + left. apply elem_of_union. right. apply elem_of_flat_union.
+        exists (l0, e1, e0). split; [exact P3|]. simpl. set_solver.
+      + right. destruct P2 as [n' [v' [H0_1 H0_2]]].
+        apply upn_inl_eq_1 in H0_1.
+        do 2 eexists; split; try eassumption.
+        by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
+    - apply (proj2 (proj2 (P3' _ _))) in P2 as [P2|P2].
+      + left. apply elem_of_union. right. apply elem_of_flat_union.
+        exists (l0, e1, e0). split; [exact P3|]. simpl. set_solver.
+      + right. destruct P2 as [n' [v' [H0_1 H0_2]]].
+        apply upn_inl_eq_1 in H0_1.
+        do 2 eexists; split; try eassumption.
+        by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
   * apply elem_of_union in H1 as [|]; [apply H in H1 | apply H0 in H1].
     - destruct_or!. left. set_solver. set_solver.
     - destruct_or!. left. set_solver.
       right. destruct H1 as [n' [v' [H0_1 H0_2]]].
       apply upn_inl_eq_1 in H0_1.
       do 2 eexists; split; try eassumption.
-      by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
+      by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
   * apply elem_of_union in H1 as [|]; [apply H in H1 | apply H0 in H1].
     - destruct_or!. left. set_solver. set_solver.
     - destruct_or!. left. set_solver. set_solver.
@@ -2397,7 +2451,7 @@ Proof.
       right. destruct H1 as [n' [v' [H0_1 H0_2]]].
       apply upn_inl_eq_1 in H0_1.
       do 2 eexists; split; try eassumption.
-      by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
+      by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
     - rewrite Forall_forall in H0. apply elem_of_flat_union in H1 as [x [P1 P2]].
       apply elem_of_map_iff in P1 as [y [P1 P3]]. destruct y. subst.
       apply H0 in P3 as P3'. apply P3' in P2. destruct_or!.
@@ -2405,19 +2459,62 @@ Proof.
       right.  destruct P2 as [n' [v' [H0_1 H0_2]]].
       apply upn_inl_eq_1 in H0_1.
       do 2 eexists; split; try eassumption.
-      by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
+      by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
   * apply elem_of_union in H2 as [H2|H2]; [apply elem_of_union in H2 as [H2|H2]; [apply H in H2 | apply H0 in H2] | apply H1 in H2].
     - destruct_or!. left. set_solver. set_solver.
     - destruct_or!. set_solver.
       right. destruct H2 as [n' [v' [H0_1 H0_2]]].
       apply upn_inl_eq_1 in H0_1.
       do 2 eexists; split; try eassumption.
-      by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
+      by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
     - destruct_or!. set_solver.
       right. destruct H2 as [n' [v' [H0_1 H0_2]]].
       apply upn_inl_eq_1 in H0_1.
       do 2 eexists; split; try eassumption.
-      by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
+      by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
+  * (* EBin *)
+    apply elem_of_flat_union in H0 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H. eapply H in P3 as P3'. 2: eassumption.
+    clear -P2 P3 P3'. destruct_or!; auto.
+    left. apply elem_of_flat_union. exists y. auto.
+  * (* ESeg *)
+    destruct seg as [v s u t sg en]. simpl in *.
+    apply elem_of_union in H1 as [H1|H1]; [apply H in H1 | apply H0 in H1];
+      destruct_or!; auto; left; set_solver.
+  * (* PCons *)
+    apply elem_of_union in H1 as [|]; [apply H in H1 | apply H0 in H1].
+    - destruct_or!. left. set_solver. set_solver.
+    - destruct_or!. left. set_solver. set_solver.
+  * (* PTuple *)
+    apply elem_of_flat_union in H0 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H. eapply H in P3 as P3'. 2: eassumption.
+    clear -P2 P3 P3'. destruct_or!; auto.
+    left. apply elem_of_flat_union. exists y. auto.
+  * (* PMap *)
+    apply elem_of_flat_union in H0 as [x [P1 P2]].
+    apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H. eapply H in P3 as P3'. destruct y.
+    apply elem_of_union in P2 as [H0 | H0]; apply P3' in H0 as H0'; destruct_or!; auto.
+    - left. simpl in *. apply elem_of_flat_union. exists (p, p0); split; auto.
+      set_solver.
+    - left. simpl in *. apply elem_of_flat_union. exists (p, p0); split; auto.
+      set_solver.
+  * (* PBin *)
+    apply elem_of_flat_union in H0 as [x [P1 P2]].
+    apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H. pose proof (H _ P3) as P3'.
+    destruct y as [v s u t sg en]. simpl in *.
+    apply elem_of_union in P2 as [H0 | H0]; [apply (proj1 (P3' _ _)) in H0 | apply (proj2 (P3' _ _)) in H0];
+      destruct_or!; auto; left; apply elem_of_flat_union;
+      exists {| seg_val := v; seg_size := s; seg_unit := u; seg_type := t; seg_sign := sg; seg_endian := en |}; split; auto; simpl; set_solver.
+  * (* clauses of ECase *)
+    constructor; [|assumption].
+    intros ι ξ. split; [|split]; [| apply H0 | apply H1].
+    intros Hι.
+    apply elem_of_flat_union in Hι as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H. eapply H in P3 as P3'. 2: eassumption.
+    clear -P2 P3 P3'. destruct_or!; auto.
+    left. apply elem_of_flat_union. exists y. auto.
 Qed.
 
 Corollary list_subst_idsubst_inl :
@@ -2433,63 +2530,87 @@ Qed.
 
 Lemma match_pattern_usedPIDs :
   forall p v vs' ι,
-    match_pattern p v = Some vs' ->
+    match_pattern p v = Matches vs' ->
     ι ∈ (flat_union usedPIDsVal vs') ->
     ι ∈ (usedPIDsVal v).
 Proof.
-  induction p using Pat_ind2 with
-    (Q := fun l => Forall (fun p => forall v vs' ι, match_pattern p v = Some vs' ->
+  induction p using Pat_ind_weakened with
+    (Q := fun l => Forall (fun p => forall v vs' ι, match_pattern p v = Matches vs' ->
     ι ∈ (flat_union usedPIDsVal vs') ->
     ι ∈ (usedPIDsVal v)) l)
-    (R := fun l => Forall (fun '(p1, p2) => (forall v vs' ι, match_pattern p1 v = Some vs' ->
+    (R := fun l => Forall (fun '(p1, p2) => (forall v vs' ι, match_pattern p1 v = Matches vs' ->
     ι ∈ (flat_union usedPIDsVal vs') ->
     ι ∈ (usedPIDsVal v)) /\
-    (forall v vs' ι, match_pattern p2 v = Some vs' ->
+    (forall v vs' ι, match_pattern p2 v = Matches vs' ->
     ι ∈ (flat_union usedPIDsVal vs') ->
-    ι ∈ (usedPIDsVal v))) l).
+    ι ∈ (usedPIDsVal v)) ) l)
+    (T := fun l => Forall (fun seg => forall v vs' ι, match_pattern (seg_val seg) v = Matches vs' ->
+    ι ∈ (flat_union usedPIDsVal vs') ->
+    ι ∈ (usedPIDsVal v)) l).
   all: intros; try now (constructor; auto).
-  1-4: try destruct v; inv H.
+  1-3: try destruct v; inv H.
   all: simpl in *; try by set_solver.
   * case_match. 2: congruence. inv H2. set_solver.
-  * case_match; try congruence. case_match; try congruence.
-    inv H2. rewrite flat_union_app in H0.
-    apply elem_of_union in H0 as [|].
-    - eapply IHp1 in H0. 2: exact H. set_solver.
-    - eapply IHp2 in H0. 2: exact H1. set_solver.
+  * case_match; try congruence.
+    subst. unfold match_and in H.
+    do 2 (case_match; try congruence). inv H.
+    rewrite flat_union_app in H0.
+    apply elem_of_union in H0 as [H0|H0].
+    - eapply IHp1 in H0. 2: eassumption. simpl. set_solver.
+    - eapply IHp2 in H0. 2: eassumption. simpl. set_solver.
   * destruct v; try now inv H. simpl in *. generalize dependent l0.
     generalize dependent vs'.
     induction l; intros; destruct l0; inv H. 1: inv H0.
-    inv IHp. case_match; try congruence. case_match; try congruence. inv H2.
-    apply elem_of_flat_union in H0. destruct_hyps. apply elem_of_app in H0 as [|].
-    - apply elem_of_flat_union. eapply H3 in H; try eassumption.
-      2: apply elem_of_flat_union; eexists; split; eassumption.
-      eexists; split. 2: eassumption. by left.
-    - apply IHl in H1; try assumption. clear IHl.
-      simpl. set_solver.
-      apply elem_of_flat_union. eexists. split; eassumption.
+    inv IHp. unfold match_and in H2.
+    do 2 (case_match; try congruence). inv H2.
+    rewrite flat_union_app in H0.
+    apply elem_of_union in H0 as [H0|H0].
+    - eapply H3 in H; [|exact H0]. simpl. set_solver.
+    - simpl. apply elem_of_union. right. exact (IHl H4 _ H0 _ H1).
   * destruct v; try now inv H. simpl in *. generalize dependent l0.
     generalize dependent vs'.
-    induction l; intros; destruct l0; inv H. 1: inv H0. 1: destruct a; inv H2.
-    inv IHp. destruct p, a, H3. case_match; try congruence.
-    case_match; try congruence. case_match; try congruence. inv H2.
-    do 2 rewrite flat_union_app in H0. apply elem_of_union in H0 as [|].
-    2: apply elem_of_union in H0 as [|].
-    - apply elem_of_flat_union. eapply H in H3; try eassumption.
-      exists (v, v0); split. 2: apply elem_of_union; left; exact H3. by left.
-    - apply elem_of_flat_union. eapply H1 in H5; try eassumption.
-      exists (v, v0); split. 2: apply elem_of_union; right; exact H5. by left.
-    - apply IHl in H6; try assumption. clear IHl.
-      simpl. set_solver.
+    induction l; intros; destruct l0; inv H.
+    1: inv H0.
+    1: destruct a; inv H2.
+    inv IHp. destruct a as [p1 p2], p as [v1 v2], H3 as [Hp1 Hp2]. simpl in H2.
+    unfold match_and in H2 at 1 2.
+    repeat case_match; try congruence.
+    inv H2.
+    do 2 rewrite flat_union_app in H0.
+    apply elem_of_union in H0 as [H0|H0]; [apply elem_of_union in H0 as [H0|H0]|].
+    - eapply Hp1 in H3; [|exact H0]. simpl. set_solver.
+    - eapply Hp2 in H5; [|exact H0]. simpl. set_solver.
+    - simpl. apply elem_of_union. right. exact (IHl H4 _ H0 _ H1).
+  * destruct v; try now inv H. simpl in *.
+    generalize dependent vs'. generalize dependent bits.
+    induction l; intros bits vs' H H0.
+    - case_match; try congruence. inv H. inv H0.
+    - destruct a as [va sz un ty sg en]. inv IHp. specialize (IHl H4). clear H4.
+      assert (Hdec : ∀ b vs, bind_match (decode_bits b ty (N.of_nat un) sg en) (match_pattern va) = Matches vs ->
+                ι ∈ flat_union usedPIDsVal vs -> ι ∈ (∅ : gset PID)).
+      { intros b vs0 Hd Hi. unfold bind_match, decode_bits in Hd.
+        destruct ty; simpl in Hd; try congruence.
+        all: try exact (H3 _ _ _ Hd Hi).
+        destruct (bvn_n b `mod` N.of_nat un =? 0)%N; simpl in Hd; try congruence.
+        exact (H3 _ _ _ Hd Hi). }
+      clear H3.
+      repeat (case_match; subst; try congruence).
+      + exact (Hdec _ _ H H0).
+      + unfold match_and in H. repeat case_match; try congruence.
+        inv H. rewrite flat_union_app in H0.
+        apply elem_of_union in H0 as [H0|H0].
+        -- exact (Hdec _ _ H3 H0).
+        -- exact (IHl _ _ H4 H0).
 Qed.
 
 Lemma match_pattern_list_usedPIDs :
   forall lp vs vs' ι,
-    match_pattern_list lp vs = Some vs' ->
+    match_pattern_list lp vs = Matches vs' ->
     ι ∈ (flat_union usedPIDsVal vs') ->
     ι ∈ (flat_union usedPIDsVal vs).
 Proof.
   induction lp; destruct vs; intros; inv H. inv H0.
-  case_match. 2: congruence. case_match. 2: congruence. inv H2.
+  case_match; try congruence. case_match; try congruence. inv H2.
   rewrite flat_union_app in H0. apply elem_of_union in H0 as [|].
   - eapply match_pattern_usedPIDs in H. 2: eassumption.
     apply elem_of_union. by left.
@@ -2497,101 +2618,127 @@ Proof.
     apply elem_of_union. by right.
 Qed.
 
-Lemma flatten_list_concat_map :
-  forall {A B} (l : list (A * A)) (f : A -> list B),
-    flat_map f (flatten_list l) =
-    concat (flatten_list (map (prod_map f f) l)).
+(** These lemmas is used to speed up the compilation process of the following lemmas *)
+Lemma empty_2_subseteq {A} {Eqdec : EqDecision A} {count : Countable A} : forall S : gset A,
+  (∅ ∪ ∅) ⊆ S.
 Proof.
-  induction l; auto; intros; simpl.
-  destruct a; simpl. do 2 f_equal.
-  apply IHl.
+  intros. set_solver.
 Qed.
 
-Lemma in_flatten_list :
-  forall {A} (l : list (A * A)) x, In x (flatten_list l) ->
-    exists y, In (x, y) l \/ In (y, x) l.
+Lemma empty_3_subseteq {A} {Eqdec : EqDecision A} {count : Countable A} : forall S : gset A,
+  ∅ ∪ (∅ ∪ ∅) ⊆ S.
 Proof.
-  induction l; intros; simpl in H. destruct H.
-  destruct a. inv H. 2: inv H0.
-  * exists a0. left. by left.
-  * exists a. right. by left.
-  * apply IHl in H. firstorder.
+  intros. set_solver.
 Qed.
+
+Lemma empty_4_subseteq {A} {Eqdec : EqDecision A} {count : Countable A} : forall S : gset A,
+  ∅ ∪ (∅ ∪ (∅ ∪ ∅)) ⊆ S.
+Proof.
+  intros. set_solver.
+Qed.
+
+Lemma empty_5_subseteq {A} {Eqdec : EqDecision A} {count : Countable A} : forall S : gset A,
+  ∅ ∪ (∅ ∪ (∅ ∪ (∅ ∪ ∅))) ⊆ S.
+Proof.
+  intros. set_solver.
+Qed.
+
+Ltac empty_subseteq_tac :=
+  match goal with
+  | |- ∅ ∪ ∅ ⊆ _ => apply empty_2_subseteq
+  | |- ∅ ∪ (∅ ∪ ∅) ⊆ _ => apply empty_3_subseteq
+  | |- ∅ ∪ (∅ ∪ (∅ ∪ ∅)) ⊆ _ => apply empty_4_subseteq 
+  | |- ∅ ∪ (∅ ∪ (∅ ∪ (∅ ∪ ∅))) ⊆ _ => apply empty_5_subseteq
+  end.
 
 Lemma eval_io_usedPIDs :
   forall vl m f r eff',
     eval_io m f vl = (r, eff') ->
     usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
-  intros. unfold eval_io in H. case_match; try invSome...
+Proof.
+  intros. unfold eval_io in H. case_match; try invSome; simpl; try empty_subseteq_tac.
   all: clear H0.
-  all: destruct vl; try invSome...
-  all: simpl in *; destruct vl; try invSome...
-  simpl in *; destruct vl; try invSome...
+  all: destruct vl; try invSome; try set_solver.
+  all: simpl in *; destruct vl; try invSome; try set_solver.
+  simpl in *; destruct vl; try invSome; try set_solver.
 Qed.
 
 Lemma eval_logical_usedPIDs :
   forall vl m f,
     usedPIDsRed (eval_logical m f vl) ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
-  intros. unfold eval_logical. (repeat case_match)...
+Proof.
+  intros. unfold eval_logical.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; clear; set_solver.
 Qed.
 
 Lemma eval_equality_usedPIDs :
   forall vl m f,
     usedPIDsRed (eval_equality m f vl) ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
-  intros. unfold eval_equality. (repeat case_match; cbn)...
+Proof.
+  intros. unfold eval_equality.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; simpl; set_solver.
 Qed.
 
 Lemma eval_transform_list_usedPIDs :
   forall vl m f,
     usedPIDsRed (eval_transform_list m f vl) ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
-  intros. unfold eval_transform_list. (repeat case_match; cbn)...
+Proof.
+  intros. unfold eval_transform_list.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
   all: subst.
   {
     induction v; simpl.
-    1-3,5-9: set_solver.
-    repeat case_match...
+    1-3,5-10: set_solver.
+    repeat case_match; try set_solver.
   }
   {
     revert v.
-    induction v0; simpl; destruct v; try clear IHv1; simpl...
-    all: case_match; simpl; try rewrite eval_subtract_nil; simpl; try assumption...
-    case_match. clear H. simpl in *...
+    induction v0; simpl; destruct v; try clear IHv1; simpl; try empty_subseteq_tac.
+    (* remember + clear significantly speeds up set_solver *)
+    all: try by (try remember (flat_union _ _) as X; clear; set_solver).
+    all: case_match; simpl; try rewrite eval_subtract_nil; simpl; try assumption;
+        try by (try remember (flat_union _ _) as X; clear; set_solver).
+    case_match. clear H. simpl in *; try set_solver.
     assert (forall v v', usedPIDsVal (subtract_elem v v') ⊆ usedPIDsVal v). {
-      clear. induction v; intros; simpl...
-      case_match...
+      clear. induction v; intros; simpl; try set_solver.
+      case_match; try set_solver.
     }
     specialize (IHv0_2 (VCons v1 (subtract_elem v2 v0_1))). clear IHv0_1 H0 H.
     specialize (H2 (VCons v1 v2) v0_1). simpl in *. rewrite H1 in H2.
     set_solver.
   }
   {
-    destruct v; simpl. 1, 3-9: set_solver.
+    destruct v; simpl. 1, 3-10: clear; set_solver.
     destruct l. set_solver.
     break_match_goal. set_solver.
     remember (Z.to_nat x) as n. clear. case_match. 2: set_solver.
     destruct p. generalize dependent v0. revert v v1.
-    induction n; intros; simpl in *...
+    induction n; intros; simpl in *; try set_solver.
     destruct v0; try invSome. case_match; try invSome.
-    destruct p. invSome. apply IHn in H0...
+    destruct p. invSome. apply IHn in H0; try set_solver.
   }
 Qed.
 
 Lemma eval_list_tuple_usedPIDs :
   forall vl m f,
     usedPIDsRed (eval_list_tuple m f vl) ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
-  unfold eval_list_tuple. intros. (repeat case_match)...
+Proof.
+  unfold eval_list_tuple. intros.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  3: clear; set_solver.
   {
-    subst. clear. destruct v; simpl...
-    induction l...
+    subst. clear. destruct v; simpl; try set_solver.
+    induction l; try set_solver.
   }
   {
-    subst. generalize dependent l0. clear. induction v; intros; simpl in *; try invSome...
-    case_match...
+    subst. generalize dependent l0. clear. induction v; intros; simpl in *; try invSome; try set_solver.
+    case_match; try set_solver.
   }
 Qed.
 
@@ -2605,158 +2752,348 @@ Lemma eval_list_atom_usedPIDs :
   forall vl m f r eff,
     eval_convert m f vl = (r, eff) ->
     usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
+Proof.
   unfold eval_convert. intros.
   case_match; inv H; simpl.
-  1-23: set_solver.
-  3-30: set_solver.
+  all: try empty_subseteq_tac.
   * case_match.
-    1:inv H2; simpl...
+    1:inv H2; simpl; try set_solver.
     subst. case_match.
-    2:inv H2; simpl...
+    2:inv H2; simpl; try set_solver.
     case_match.
-    2:inv H2; simpl...
-    inv H2. simpl...
-  * case_match.
-    1:inv H2; simpl...
-    subst. case_match.
-    2:inv H2; simpl...
-    case_match; inv H2; simpl...
-    case_match; inv H4; simpl...
-    rewrite string_to_vcons_usedPIDs. set_solver.
+    2:inv H2; simpl; try set_solver.
+    inv H2. simpl; try set_solver.
+  * destruct vl as [|v1 [|v2 [|v3 vl]]]; simpl in H2; try invSome.
+    - clear. simpl. empty_subseteq_tac.
+    - destruct v1; try (destruct l); try simpl in H2; try invSome; simpl.
+      all: try empty_subseteq_tac.
+      all: try by (clear; set_solver).
+      rewrite string_to_vcons_usedPIDs. empty_subseteq_tac.
+    - destruct v1; try (destruct l); try simpl in H2; try invSome; simpl.
+      all: try by (clear; set_solver).
+      destruct v2; try (destruct l); try simpl in H2; try invSome; simpl.
+      all: try empty_subseteq_tac.
+      all: try by (clear; set_solver).
+      case_match; invSome; simpl.
+      1: empty_subseteq_tac.
+      rewrite string_to_vcons_usedPIDs. empty_subseteq_tac.
+    - destruct v1; try (destruct l); try simpl in H2; try invSome; simpl.
+      all: try empty_subseteq_tac.
+      destruct v2; try (destruct l); try simpl in H2; try invSome; simpl.
+      all: try empty_subseteq_tac.
 Qed.
 
 Lemma eval_cmp_usedPIDs :
   forall vl m f,
     usedPIDsRed (eval_cmp m f vl) ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
-  intros. unfold eval_cmp. (repeat case_match)...
+Proof.
+  intros. unfold eval_cmp.
+  case_match; try empty_subseteq_tac.
+  all: repeat case_match; simpl; try empty_subseteq_tac.
+  all: subst; clear; set_solver.
 Qed.
 
 Lemma eval_length_usedPIDs :
   forall vl, usedPIDsRed (eval_length vl) ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
+Proof.
   intros. unfold eval_length.
   case_match. set_solver.
   case_match. 2: set_solver.
   subst. case_match. 2: set_solver.
-  induction v...
+  induction v; try set_solver.
 Qed.
 
 Lemma eval_tuple_size_usedPIDs :
   forall vl, usedPIDsRed (eval_tuple_size vl) ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
-  intros. unfold eval_tuple_size. (repeat case_match)...
+Proof.
+  intros. unfold eval_tuple_size.
+  case_match; try empty_subseteq_tac.
+  all: repeat case_match; simpl; try empty_subseteq_tac.
+  all: subst; clear; set_solver.
 Qed.
 
 Lemma eval_hd_tl_usedPIDs :
   forall vl m f,
     usedPIDsRed (eval_hd_tl m f vl) ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
-  intros. unfold eval_hd_tl. (repeat case_match)...
+Proof.
+  intros. unfold eval_hd_tl.
+  case_match; try empty_subseteq_tac.
+  all: repeat case_match; simpl; try empty_subseteq_tac.
+  all: subst; clear; set_solver.
 Qed.
 
 Lemma eval_elem_tuple_usedPIDs :
   forall vl m f,
     usedPIDsRed (eval_elem_tuple m f vl) ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
+Proof.
   intros. unfold eval_elem_tuple.
-  case_match...
-  all: destruct vl...
-  all: destruct v...
-  all: try destruct vl...
-  all: try destruct vl...
-  4,8-14: destruct vl...
-  all: destruct l...
-  4: destruct vl...
-  all: destruct v...
-  2-5, 7-10: destruct vl...
-  all: clear H.
-  2: destruct vl...
-  all: destruct x...
-  {
-    case_match...
-    remember (_ (Pos.to_nat p)) as n. clear Heqn. cbn.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+  * remember (_ (Pos.to_nat p)) as n. clear Heqn. cbn.
     generalize dependent n.
-    induction l; destruct n; simpl...
-  }
-  {
-    case_match... simpl.
-    remember (_ (Pos.to_nat p)) as n. clear Heqn.
-    generalize dependent v0. revert n l0. induction l; destruct n; intros; simpl in *; try invSome.
-    * set_solver.
-    * case_match. apply IHl in H0; invSome... congruence.
-  }
+    induction l2; destruct n; simpl; set_solver.
+  * remember (_ (Pos.to_nat p)) as n. clear Heqn H.
+    generalize dependent l4. revert n. induction l2; destruct n; intros; simpl in *; try invSome.
+    - set_solver.
+    - case_match. apply IHl2 in H; invSome; try set_solver. congruence.
 Qed.
 
 Lemma eval_check_usedPIDs :
   forall vl m f,
     usedPIDsRed (eval_check m f vl) ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
-  intros. unfold eval_check. (repeat case_match)...
+Proof.
+  intros. unfold eval_check.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
 Qed.
 
 Lemma eval_concurrent_usedPIDs :
   forall vl m f r,
     eval_concurrent m f vl = Some r ->
     usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
-  intros. unfold eval_concurrent in H. (repeat case_match)...
+Proof.
+  intros. unfold eval_concurrent in H.
+  case_match; simpl; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
 Qed.
 
 Lemma eval_arith_usedPIDs :
   forall vl m f,
     usedPIDsRed (eval_arith m f vl) ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
-  intros. unfold eval_arith. (repeat case_match)...
+Proof.
+  intros. unfold eval_arith.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; clear; set_solver.
 Qed.
 
 Lemma eval_error_usedPIDs :
   forall vl m f r,
     eval_error m f vl = Some r ->
     usedPIDsRed (r) ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
-  intros. unfold eval_error in H. repeat case_match...
+Proof.
+  intros. unfold eval_error in H.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
 Qed.
 
 Lemma eval_funinfo_usedPIDs :
   forall vl,
     usedPIDsRed (eval_funinfo vl) ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
-  intros. unfold eval_funinfo. repeat case_match...
+Proof.
+  intros. unfold eval_funinfo.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+Qed.
+
+Lemma map_get_usedPIDs : forall l k v,
+  map_get k l = Some v -> usedPIDsVal v ⊆ usedPIDsVal (VMap l).
+Proof.
+  induction l as [|[k' v'] l IH]; intros; simpl in *. 1: discriminate.
+  destruct (Val_ltb k' k).
+  - apply IH in H. set_solver.
+  - destruct (Val_eqb k k'); inv H; set_solver.
+Qed.
+
+Lemma map_put_usedPIDs : forall l k v,
+  usedPIDsVal (VMap (map_put k v l)) ⊆ usedPIDsVal k ∪ usedPIDsVal v ∪ usedPIDsVal (VMap l).
+Proof.
+  induction l as [|[k' v'] l IH]; intros; simpl in *. 1: set_solver.
+  destruct (Val_ltb k k'); simpl; [set_solver|].
+  destruct (Val_eqb k k'); simpl; [set_solver|].
+  specialize (IH k v). simpl in IH. set_solver.
+Qed.
+
+Lemma mk_list_flat_union_usedPIDs : forall v l,
+  mk_list v = Some l -> flat_union usedPIDsVal l ⊆ usedPIDsVal v.
+Proof.
+  induction v; intros; simpl in *; try discriminate.
+  - inv H. set_solver.
+  - destruct (mk_list v2) eqn:E; inv H. specialize (IHv2 l0 eq_refl). simpl. set_solver.
+Qed.
+
+Lemma fold_map_put_usedPIDs : forall items value m,
+  usedPIDsVal (VMap (fold_left (λ m0 k, map_put k value m0) items m)) ⊆
+  flat_union usedPIDsVal items ∪ usedPIDsVal value ∪ usedPIDsVal (VMap m).
+Proof.
+  induction items; intros; simpl. 1: set_solver.
+  etrans. apply IHitems.
+  pose proof (map_put_usedPIDs m a value). set_solver.
 Qed.
 
 Lemma eval_map_bifs_usedPIDs :
   forall vl m f,
     usedPIDsRed (eval_map_bifs m f vl) ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
+Proof.
   intros. unfold eval_map_bifs.
-  case_match; simpl.
-  1-51: rewrite union_empty_r_L; apply empty_subseteq.
-  all: destruct vl; [|destruct vl; [|destruct vl;[|destruct vl]]]; simpl.
-  all: try by rewrite union_empty_r_L; apply empty_subseteq.
-  1-2: destruct v0. 19: destruct v1.
-  all: cbn; try by rewrite union_empty_r_L; apply empty_subseteq.
-  1-3, 5-8, 10-15, 17-19: set_solver.
-  * clear. induction l; simpl. set_solver.
-    destruct a. destruct Val_ltb.
-    - set_solver.
-    - destruct Val_eqb; simpl; set_solver.
-  * clear. induction l; simpl. set_solver.
-    destruct a. destruct Val_ltb.
-    - set_solver.
-    - destruct Val_eqb; simpl; set_solver.
-  * clear. induction l; simpl. set_solver.
-    destruct a. destruct Val_ltb.
-    - set_solver.
-    - destruct Val_eqb; simpl; set_solver.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+  * apply map_get_usedPIDs in H4. simpl in H4; set_solver.
+  * apply map_get_usedPIDs in H5. simpl in H5; set_solver.
+  * clear.
+    pose proof map_put_usedPIDs l2 v v0. simpl in H. set_solver.
+  * apply mk_list_flat_union_usedPIDs in H3.
+    pose proof (fold_map_put_usedPIDs l1 v0 []). simpl in H0.
+    clear H. remember (flat_union _ l1) as x. clear Heqx.
+    remember (flat_union _ _) as y. clear Heqy. set_solver.
+Qed.
+
+Lemma eval_bin_size_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_bin_size m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_bin_size.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+Qed.
+
+Lemma meta_to_cons_usedPIDs_empty :
+  forall l, Forall (fun v => usedPIDsVal v = ∅) l ->
+    usedPIDsVal (meta_to_cons l) = ∅.
+Proof.
+  induction l; intros H; simpl; try set_solver.
+  inv H. rewrite H2, IHl; auto.
+Qed.
+
+Lemma eval_bin_to_list_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_bin_to_list m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_bin_to_list.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+  - rewrite meta_to_cons_usedPIDs_empty; [set_solver|].
+    apply Forall_map. apply Forall_true. intros. reflexivity.
+  - rewrite meta_to_cons_usedPIDs_empty; [set_solver|].
+    apply Forall_app. split.
+    + apply Forall_map. apply Forall_true. intros. reflexivity.
+    + constructor.
+  - rewrite meta_to_cons_usedPIDs_empty; [set_solver|].
+    apply Forall_app. split.
+    + apply Forall_map. apply Forall_true. intros. reflexivity.
+    + by constructor.
+Qed.
+
+Lemma meta_to_cons_usedPIDs : forall l,
+  usedPIDsVal (meta_to_cons l) = flat_union usedPIDsVal l.
+Proof.
+  induction l; simpl; auto. now rewrite IHl.
+Qed.
+
+Lemma flat_union_rev : forall l : list Val,
+  flat_union usedPIDsVal (List.rev l) = flat_union usedPIDsVal l.
+Proof.
+  induction l; simpl. 1: reflexivity.
+  rewrite flat_union_app, IHl. simpl. set_solver.
+Qed.
+
+Lemma flat_union_take_drop : forall n (l : list Val),
+  flat_union usedPIDsVal (take n l) ∪ flat_union usedPIDsVal (drop n l) =
+  flat_union usedPIDsVal l.
+Proof.
+  intros. rewrite <- flat_union_app, take_drop. reflexivity.
+Qed.
+
+Lemma flat_union_repeat : forall n (v : Val),
+  flat_union usedPIDsVal (repeat v n) ⊆ usedPIDsVal v.
+Proof.
+  induction n; intros; simpl. 1: set_solver.
+  specialize (IHn v). set_solver.
+Qed.
+
+Lemma flat_union_fold_cons : forall (items : list Val) tail,
+  usedPIDsVal (fold_left (λ acc x, VCons x acc) items tail) ⊆
+  flat_union usedPIDsVal items ∪ usedPIDsVal tail.
+Proof.
+  induction items; intros; simpl. 1: set_solver.
+  specialize (IHitems (VCons a tail)). simpl in IHitems. set_solver.
+Qed.
+
+Lemma find_key_usedPIDs : forall items key n e,
+  find_key key n items = Some e -> usedPIDsVal e ⊆ flat_union usedPIDsVal items.
+Proof.
+  induction items; intros; unfold find_key in *; simpl in *. 1: discriminate.
+  destruct (match a with VTuple t => _ | _ => false end) eqn:E.
+  - inv H. set_solver.
+  - apply IHitems in H. set_solver.
+Qed.
+
+Lemma eval_lists_bifs_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_lists_bifs m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_lists_bifs.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+  * apply mk_list_flat_union_usedPIDs in H6.
+    destruct (1 <=? x)%Z; simpl; try set_solver.
+    apply find_key_usedPIDs in H8. set_solver.
+  * apply mk_list_flat_union_usedPIDs in H2.
+    rewrite meta_to_cons_usedPIDs, flat_union_rev. set_solver.
+  * apply mk_list_flat_union_usedPIDs in H3.
+    pose proof flat_union_fold_cons l1 v0.
+    set_solver.
+Qed.
+
+Lemma flat_union_drop_le : forall n m (l : list Val), n <= m ->
+  flat_union usedPIDsVal (drop m l) ⊆ flat_union usedPIDsVal (drop n l).
+Proof.
+  intros. replace m with (n + (m - n)) by lia.
+  rewrite <- (drop_drop l (m - n) n).
+  pose proof (flat_union_take_drop (m - n) (drop n l)). set_solver.
+Qed.
+
+Lemma eval_tuple_bifs_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_tuple_bifs m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_tuple_bifs.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+  { pose proof (flat_union_take_drop (Z.to_nat x - 1) l2).
+    pose proof (flat_union_drop_le (Z.to_nat x - 1) (Z.to_nat x) l2 ltac:(lia)).
+    clear H H6. rewrite flat_union_app. set_solver. }
+  { pose proof (flat_union_take_drop (Z.to_nat x - 1) l2).
+    rewrite flat_union_app. set_solver. }
+  { pose proof flat_union_repeat (Z.to_nat x) v0. set_solver. }
+Qed.
+
+Lemma eval_split_binary_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_split_binary m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_split_binary.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+Qed.
+
+Lemma eval_conversion_usedPIDs :
+  forall vl m f r eff,
+    eval_conversion m f vl = (r, eff) ->
+    usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
+Proof.
+  unfold eval_conversion. intros.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+  rewrite string_to_vcons_usedPIDs; set_solver.
 Qed.
 
 Lemma eval_usedPIDs :
   forall vl m f r eff',
     eval m f vl = Some (r, eff') ->
     usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
-Proof with try assumption; try by auto.
+Proof.
   intros. unfold eval in H.
   pose proof eval_io_usedPIDs vl m f.
   pose proof eval_logical_usedPIDs vl m f.
@@ -2775,53 +3112,65 @@ Proof with try assumption; try by auto.
   pose proof eval_arith_usedPIDs vl m f.
   pose proof eval_funinfo_usedPIDs vl.
   pose proof eval_map_bifs_usedPIDs vl m f.
-  case_match; try invSome...
-  all: try case_match; try invSome...
-  * by apply H0 in H19.
-  * by apply H0 in H19.
-  * by apply H5 in H19.
-  * by apply H5 in H19.
+  pose proof eval_bin_size_usedPIDs vl m f.
+  pose proof eval_bin_to_list_usedPIDs vl m f.
+  pose proof eval_lists_bifs_usedPIDs vl m f.
+  pose proof eval_tuple_bifs_usedPIDs vl m f.
+  pose proof eval_split_binary_usedPIDs vl m f.
+  pose proof eval_conversion_usedPIDs vl m f.
+  case_match; try invSome; try assumption; try by auto.
+  all: try case_match; try invSome; try assumption; try by auto.
+  * by eapply H0; eassumption.
+  * by eapply H0; eassumption.
+  * by eapply H5; eassumption.
+  * by eapply H5; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
 Qed.
 
 Lemma primop_eval_usedPIDs :
   forall vl f r eff',
     primop_eval f vl = Some (r, eff') ->
     usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
-Proof with try set_solver.
-  intros. unfold primop_eval in H. case_match; try invSome.
-  3: simpl...
-  1-2: case_match; try invSome...
-  1-2: unfold eval_primop_error in H1; rewrite H0 in *; destruct vl; cbn in *; try invSome.
-  1-2: destruct vl; cbn in *; try invSome...
-  destruct vl; cbn in *; try invSome...
+Proof.
+  intros. unfold primop_eval, eval_primop_error in H.
+  repeat case_match; try invSome; cbn in *; try congruence; set_solver.
 Qed.
 
 Lemma create_result_usedPIDs :
   forall ident vl r eff',
     create_result ident vl = Some (r, eff') ->
     usedPIDsRed r ⊆ flat_union usedPIDsVal vl ∪ usedPIDsFrameId ident.
-Proof with try set_solver.
-  intros. destruct ident; simpl in *; try invSome; simpl...
-  * induction vl using list_length_ind; destruct vl; simpl...
-    destruct vl...
+Proof.
+  intros. destruct ident; simpl in *; try invSome; simpl; try set_solver.
+  * induction vl using list_length_ind; destruct vl; simpl; try set_solver.
+    destruct vl; try set_solver.
     simpl. specialize (H vl ltac:(slia)).
-    assert (forall l, flat_union (fun x => usedPIDsVal x.1 ∪ usedPIDsVal x.2) (Maps.map_insert v v0 l) ⊆ usedPIDsVal v ∪ usedPIDsVal v0 ∪ flat_union (fun x => usedPIDsVal x.1 ∪ usedPIDsVal x.2) l)... {
-      clear. induction l; simpl...
-      destruct a. repeat break_match_goal...
+    assert (forall l, flat_union (fun x => usedPIDsVal x.1 ∪ usedPIDsVal x.2) (Maps.map_insert v v0 l) ⊆ usedPIDsVal v ∪ usedPIDsVal v0 ∪ flat_union (fun x => usedPIDsVal x.1 ∪ usedPIDsVal x.2) l); try set_solver. {
+      clear. induction l; simpl; try set_solver.
+      destruct a. repeat break_match_goal; try set_solver.
     }
-  * repeat break_match_hyp; try invSome...
+  * repeat break_match_hyp; try invSome; set_solver.
+  * repeat break_match_hyp; try invSome; try set_solver.
     subst. simpl.
-    apply eval_usedPIDs in H...
-  * apply primop_eval_usedPIDs in H...
-  * break_match_hyp; try invSome...
-    break_match_hyp; try invSome...
+    apply eval_usedPIDs in H; try set_solver.
+  * apply primop_eval_usedPIDs in H; try set_solver.
+  * break_match_hyp; try invSome; try set_solver.
+    break_match_hyp; try invSome; try set_solver.
+    (* arity mismatch: badarity carries the arguments *)
+    2: cbn; rewrite meta_to_cons_usedPIDs; set_solver.
     simpl. apply elem_of_subseteq. intros.
-    apply (proj1 subst_usedPIDs e x) in H as [|]...
+    apply (proj1 subst_usedPIDs e x) in H as [|]; try set_solver.
     destruct_hyps. apply list_subst_idsubst_inl in H.
     apply elem_of_app in H as [|].
     - apply elem_of_union_r, elem_of_union_r, elem_of_flat_union.
       apply elem_of_map_iff in H. destruct_hyps. destruct x2, p.
-      subst. simpl in *. apply elem_of_union in H0 as [|]...
+      subst. simpl in *. apply elem_of_union in H0 as [|]; try set_solver.
       by apply elem_of_flat_union in H.
     - apply elem_of_union_l, elem_of_flat_union. eexists; by split.
 Qed.
@@ -2876,6 +3225,8 @@ Proof.
       eapply match_pattern_list_usedPIDs in H1.
       2: { apply elem_of_flat_union. eexists; split; eassumption. }
       assumption.
+  * unfold segment_to_bitstring in H1. repeat case_match; invSome; simpl.
+    all: set_solver.
   * apply subst_usedPIDs in H as [|].
     - set_solver.
     - apply elem_of_union. right. apply elem_of_union.
@@ -3097,7 +3448,17 @@ Proof.
                      apply P4. apply elem_of_flat_union. eexists; split; eassumption.
                  *** eapply mk_list_not_usedPIDs in H6. 2: eassumption.
                      apply H6. apply elem_of_flat_union. eexists; split; eassumption.
-           -- case_match; set_solver.
+           -- case_match; simpl in *.
+              ++ clear - H_2 H0 H6 HXX.
+                 rewrite meta_to_cons_usedPIDs in H_2.
+                 assert (ι' ∉ usedPIDsVal v2) as Hv2 by set_solver.
+                 eapply mk_list_not_usedPIDs in Hv2. 2: eassumption.
+                 set_solver.
+              ++ clear - H_2 H0 H6 HXX.
+                 rewrite meta_to_cons_usedPIDs in H_2.
+                 assert (ι' ∉ usedPIDsVal v2) as Hv2 by set_solver.
+                 eapply mk_list_not_usedPIDs in Hv2. 2: eassumption.
+                 set_solver.
         ** right. exists ι'1, pp. setoid_rewrite lookup_delete_Some.
            intuition. setoid_rewrite lookup_insert_ne in H_12; auto.
     - right. right. eapply not_isUsedProc_step; try eauto.
@@ -4871,7 +5232,9 @@ Proof.
                    *** epose proof (proj2 (mk_list_usedPIDs _ ι'1 _ H) _).
                        set_solver.
                        Unshelve. apply elem_of_flat_union. eexists; split; eassumption.
-                ++ simpl in *. set_solver.
+                ++ simpl in *.
+                   pose proof meta_to_cons_usedPIDs l as Hmeta.
+                   pose proof mk_list_usedPIDs _ ι'1 _ H. set_solver.
               }
               { (* spawn_link *)
                 simpl in *.
@@ -4893,7 +5256,9 @@ Proof.
                    *** epose proof (proj2 (mk_list_usedPIDs _ ι'1 _ H) _).
                        set_solver.
                        Unshelve. apply elem_of_flat_union. eexists; split; eassumption.
-                ++ simpl in *. set_solver.
+                ++ simpl in *.
+                   pose proof meta_to_cons_usedPIDs l as Hmeta.
+                   pose proof mk_list_usedPIDs _ ι'1 _ H. set_solver.
               }
         ** congruence.
         ** apply H11. right. exists ι'0, p0. split. setoid_rewrite lookup_insert. by destruct_decide_eq.
@@ -4962,7 +5327,9 @@ Proof.
                      *** epose proof (proj2 (mk_list_usedPIDs _ ι' _ H9) _).
                          set_solver.
                          Unshelve. apply elem_of_flat_union. eexists; split; eassumption.
-                  ++ simpl in *. set_solver.
+                  ++ simpl in *.
+                     pose proof meta_to_cons_usedPIDs l0 as Hmeta.
+                     pose proof mk_list_usedPIDs _ ι' _ H9. set_solver.
                 }
                 { (* spawn_link *)
                   simpl in *.
@@ -4984,7 +5351,9 @@ Proof.
                      *** epose proof (proj2 (mk_list_usedPIDs _ ι' _ H9) _).
                          set_solver.
                          Unshelve. apply elem_of_flat_union. eexists; split; eassumption.
-                  ++ simpl in *. set_solver.
+                  ++ simpl in *.
+                     pose proof meta_to_cons_usedPIDs l0 as Hmeta.
+                     pose proof mk_list_usedPIDs _ ι' _ H9. set_solver.
                 }
           ** congruence.
           ** apply H1. right. exists ι, p. split. by setoid_rewrite lookup_insert; destruct_decide_eq.
@@ -4994,7 +5363,7 @@ Qed.
 Lemma insert_of_union :
   forall ι p Π Π2 prs,
   ι ↦ p ∥ prs = Π ∪ Π2 ->
-  Π = ι ↦ p ∥ Π \/ (ι ∉ dom Π /\ Π2 = ι ↦ p ∥ Π2).
+  Π = ι ↦ p ∥ Π \/ ((ι ∉ dom Π) /\ Π2 = ι ↦ p ∥ Π2).
 Proof.
   intros.
   put (lookup ι : ProcessPool -> _) on H as H'. simpl in H'.

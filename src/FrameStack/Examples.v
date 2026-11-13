@@ -5,6 +5,7 @@
 From CoreErlang.FrameStack Require Export CTX.
 
 Import ListNotations.
+Import Notations.
 
 Ltac extract_meta_eval H :=
   let r := fresh "r" in
@@ -111,7 +112,7 @@ end
         { (* v is true *)
           simpl in H10. destruct v; try congruence. break_match_hyp; try congruence.
           break_match_hyp; try congruence. destruct l; simpl in Heqb; try congruence.
-          break_match_hyp; try congruence. inv Heqo.
+          break_match_hyp; try congruence. inv Heqm.
           simpl in H11. do 2 deriv.
           unfold idiomatic.
           exists (S (16 + k2 + k0)). simpl. econstructor.
@@ -131,9 +132,6 @@ end
         }
         { (* v is not true *)
           deriv.
-          2: { (* no more cases *)
-            inv H12.
-          }
 
           simpl in H12. do 2 deriv.
           unfold idiomatic.
@@ -184,7 +182,7 @@ end
     split. 2: split.
     1-2: constructor; apply -> subst_preserves_scope_exp; eauto.
     clear H6 H3 H7. intros. simpl in H1.
-    do 4 deriv. simpl in H7. inv H7. deriv. 2: { inv H11. }
+    do 4 deriv. simpl in H7. inv H7. deriv.
     inv H11.
     simpl in H12. rewrite idsubst_is_id_val in H12. do 3 deriv.
     break_match_hyp.
@@ -203,7 +201,7 @@ end
       simpl. now rewrite idsubst_is_id_exp.
     }
     { (* e1 is false *)
-      do 2 deriv. 2: { inv H12. }
+      do 2 deriv.
       simpl in H13. do 2 deriv.
       exists (6 + k0). simpl.
       econstructor. rewrite Heqs. constructor. auto. constructor.
@@ -357,9 +355,8 @@ f(X)  -> E2.
         }
         { (* exception *)
           cbn in EQ, H7. rewrite EQ in H7. invSome. inv H10. inv H4.
-          simpl in H6. repeat deriv. 2: inv H10.
-          simpl in H10. repeat deriv. 2: { inv H10. }
-          2: { inv H11. }
+          simpl in H6. repeat deriv.
+          simpl in H10. repeat deriv.
           inv H11. simpl in *. repeat deriv.
           (* evaluation *)
           simpl. exists (5 + k + k2). simpl.
@@ -500,7 +497,7 @@ f(X)  -> E2.
         }
       }
       { (* pattern matching fails due to the degree of ˝vs˝ - in the concrete Core Erlang implementation this cannot happen, because such programs are filtered out by the compiler *)
-        inv H12. inv H13. simpl.
+        inv H12. congruence. inv H13. simpl.
         (* evaluation *)
         exists (5 + k2 + k). simpl.
         econstructor. eapply step_term_term.
@@ -575,6 +572,8 @@ Proof.
   do 2 do_step.
   do_step. constructor.
 Qed.
+
+Create HintDb examples.
 
 Section list_app_reverse.
 (* TODO
@@ -729,7 +728,7 @@ Proof.
       eexists.
       do 3 do_step.
       simpl. do_step. do_step.
-      replace (map (fun x : Exp => x.[ξ]) (map VVal vals)) with
+      replace (map (subst ξ) (map VVal vals)) with
         (map VVal (map (substVal ξ) vals)).
       2: {
         clear. do 2 rewrite map_map. now f_equal.
@@ -876,10 +875,56 @@ Qed. *)
 Proof.
  *)
 
-(* Theorem let_delay : forall Γ e x e',
-  EXP Γ ⊢ e -> EXPCLOSED e' -> | [], e' | ↓ ->
-  e ≈[Γ]≈ ELet x e' (rename (fun n => S n) e).
- *)
+Lemma shift_then_subst_exp : forall e v,
+  (rename (fun n => S n) e).[v/] = e.
+Proof.
+  intros. destruct renaming_is_subst as [Hr _]. rewrite Hr.
+  destruct subst_ren as [Hs _].
+  rewrite Hs.
+  replace ((v .: idsubst) ∘ (fun n => S n)) with idsubst.
+  * now apply idsubst_is_id.
+  * extensionality n. reflexivity.
+Qed.
+
+(** Delaying a let: binding an unused variable to a closed expression, which
+    evaluates to a single value, does not change the meaning of the body.
+    NOTE: it is not enough to require that [e'] terminates: if it evaluates to
+    an exception or to a value sequence of a different length, the [let]
+    raises (or propagates) it, while [e] does not. *)
+Theorem let_delay : forall Γ e e' v,
+  EXP Γ ⊢ e -> EXPCLOSED e' -> ⟨ [], e' ⟩ -->* RValSeq [v] ->
+  CIU_open Γ e (ELet 1 e' (rename (fun n => S n) e)) /\
+  CIU_open Γ (ELet 1 e' (rename (fun n => S n) e)) e.
+Proof.
+  intros Γ e e' v He He' Hev.
+  pose proof Hev as [k [Hres Hk]].
+  pose proof (step_any_closedness _ _ _ _ _ Hk ltac:(constructor) ltac:(auto)) as [Hv _].
+  assert (Hvc : VALCLOSED v) by (inv Hv; inv H0; assumption).
+  assert (Hvs : VAL Γ ⊢ v) by (eapply loosen_scope_val; [|exact Hvc]; lia).
+  assert (Hshift : EXP S Γ ⊢ rename (fun n => S n) e).
+  { apply -> ren_preserves_scope_exp; [exact He|]. unfold renscoped. intros x Hx. lia. }
+  pose proof (@CIU_beta_value Γ _ v Hshift Hvs) as [Hb1 Hb2].
+  rewrite shift_then_subst_exp in Hb1, Hb2.
+  (* e' is equivalent to the value it evaluates to *)
+  assert (Hce : CIU e' (˝v) /\ CIU (˝v) e').
+  { pose proof (CIU_eval (RExp e') (RValSeq [v]) ltac:(constructor; exact He') Hev) as [H1 H2].
+    pose proof (CIU_eval (˝v) (RValSeq [v]) ltac:(auto) ltac:(exists 1; split; [constructor | econstructor; [constructor | constructor]])) as [H3 H4].
+    split; eauto using CIU_transitive_closed. }
+  destruct (CIU_IsPreCtxRel) as (Rscope & Radequate & Rrefl & Rtrans & RFun & RValues & RCons & RTuple & RMap & RCall & RPrimOp & RApp & RCase & RLet & _).
+  assert (Hce' : CIU_open Γ e' (˝v) /\ CIU_open Γ (˝v) e').
+  { split; intros ξ Hξ; simpl;
+      rewrite (closed_ignores_sub e' ξ He'), (closed_ignores_sub_val v ξ Hvc);
+      apply Hce. }
+  destruct Hce' as [Hc1 Hc2].
+  assert (He'Γ : EXP Γ ⊢ e').
+  { eapply loosen_scope_exp; [|exact He']. lia. }
+  assert (Hvexp : EXP Γ ⊢ ˝v) by (constructor; exact Hvs).
+  split.
+  * eapply CIU_transitive; [exact Hb1|].
+    apply RLet; auto.
+  * eapply CIU_transitive; [|exact Hb2].
+    apply RLet; auto.
+Qed.
 
 
 Section map_foldr.
@@ -987,12 +1032,12 @@ Proof.
     eapply transitive_eval.
     rewrite <- app_nil_l at 1. apply frame_indep_nil.
     {
-      repeat rewrite vclosed_ignores_ren; auto.
-      rewrite vclosed_ignores_sub; auto.
+      repeat rewrite closed_ignores_ren_val; auto.
+      rewrite closed_ignores_sub_val; auto.
       exact IHD.
     }
-    repeat rewrite vclosed_ignores_ren; auto.
-    rewrite vclosed_ignores_sub; auto.
+    repeat rewrite closed_ignores_ren_val; auto.
+    rewrite closed_ignores_sub_val; auto.
     do 6 do_step_with_examples.
     econstructor. econstructor; auto. simpl. symmetry. exact HRes.
     eapply transitive_eval.
@@ -1051,9 +1096,9 @@ Proof.
     econstructor. econstructor; auto. cbn.
     do 2 do_step_with_examples.
     econstructor. apply eval_step_case_match. reflexivity.
-    repeat rewrite vclosed_ignores_ren; auto.
+    repeat rewrite closed_ignores_ren_val; auto.
     simpl.
-    repeat rewrite vclosed_ignores_sub; auto.
+    repeat rewrite closed_ignores_sub_val; auto.
     do 4 do_step_with_examples. scope_solver.
     do 4 do_step_with_examples.
     eapply transitive_eval.
@@ -1061,7 +1106,7 @@ Proof.
     - econstructor. econstructor; auto. simpl.
       do 2 do_step_with_examples.
       do 2 do_step_with_examples.
-      repeat rewrite vclosed_ignores_sub; auto.
+      repeat rewrite closed_ignores_sub_val; auto.
       do 4 do_step_with_examples.
       econstructor. econstructor. simpl. now rewrite H_sim.
       eapply frame_indep_core in HD.

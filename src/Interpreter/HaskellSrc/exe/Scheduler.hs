@@ -49,7 +49,7 @@ rrInit :: Int -> RoundRobin
 rrInit k = RoundRobin k k [] [] 0
 
 rrIsEmpty :: RoundRobin -> Bool
-rrIsEmpty (RoundRobin _ _ l _ _) = null l
+rrIsEmpty (RoundRobin _ _ l _ _) = Data.List.null l
 
 rrAddPID :: RoundRobin -> PID -> RoundRobin
 rrAddPID (RoundRobin k i l s ind) pid =

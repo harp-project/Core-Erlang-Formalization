@@ -8,6 +8,35 @@ From CoreErlang.FrameStack Require Export
 From stdpp Require Export list option.
 Import ListNotations.
 
+(** The only BIFs that create atoms are `list_to_atom` and `binary_to_atom`,
+    and both of them have a single atom as the side effect's argument *)
+Lemma eval_convert_ac : forall m f vl r l0,
+  eval_convert m f vl = (r, Some ((AtomCreation, l0) : SideEffect)) ->
+  exists av, l0 = [VLit (Atom av)].
+Proof.
+  intros. unfold eval_convert in H.
+  repeat break_match_hyp; inv H; try (by eexists).
+Qed.
+
+Lemma eval_conversion_ac : forall m f vl r l0,
+  eval_conversion m f vl = (r, Some ((AtomCreation, l0) : SideEffect)) ->
+  exists av, l0 = [VLit (Atom av)].
+Proof.
+  intros. unfold eval_conversion in H.
+  repeat break_match_hyp; inv H; try (by eexists).
+Qed.
+
+Lemma eval_ac : forall m f vl r l0,
+  eval m f vl = Some (r, Some ((AtomCreation, l0) : SideEffect)) ->
+  exists av, l0 = [VLit (Atom av)].
+Proof.
+  intros. unfold eval in H.
+  destruct (convert_string_to_code (m, f)); try (inv H; fail).
+  all: first [ (unfold eval_io in H; repeat break_match_hyp; inv H; fail)
+             | (inv H; eapply eval_convert_ac; eassumption)
+             | (inv H; eapply eval_conversion_ac; eassumption) ].
+Qed.
+
 Lemma side_effect_ac_value : forall fs r fs' r' l0,
   ⟨ fs, r ⟩ -⌊ Some ((AtomCreation, l0):SideEffect) ⌋->ₗ ⟨ fs', r' ⟩ ->
   exists av, l0 = [VLit (Atom av)].
@@ -15,78 +44,24 @@ Proof.
   intros. inversion H;
   unfold create_result in *; simpl in *; subst.
   - destruct ident; try discriminate.
+    + case_match; congruence.
     + destruct m; try discriminate.
       destruct l; try discriminate.
       destruct f; try discriminate.
       destruct l; try discriminate.
-      unfold eval in H1.
-      destruct (convert_string_to_code (s, s0)); try discriminate.
-      1-2: inversion H1; unfold eval_io in H3;
-           destruct (convert_string_to_code (s, s0)); try discriminate;
-           repeat (destruct vl; simpl in H3; try discriminate).
-      {
-        inversion H1. unfold eval_convert in H3.
-        destruct (convert_string_to_code (s, s0)); try discriminate.
-        * repeat (destruct vl; simpl in H3; try discriminate).
-          destruct (mk_ascii_list v); try discriminate.
-          inversion H3. exists (string_of_list_ascii l).
-          reflexivity.
-        * repeat (destruct vl; simpl in H3; try discriminate).
-          destruct v; try discriminate.
-          destruct l; discriminate.
-      }
-      {
-        inversion H1. unfold eval_convert in H3.
-        destruct (convert_string_to_code (s, s0)); try discriminate.
-        * repeat (destruct vl; simpl in H3; try discriminate).
-          destruct (mk_ascii_list v); try discriminate.
-          inversion H3. exists (string_of_list_ascii l).
-          reflexivity.
-        * repeat (destruct vl; simpl in H3; try discriminate).
-          destruct v; try discriminate.
-          destruct l; discriminate.
-      }
-      1-3: destruct (eval_error s s0 vl); try discriminate.
-      all: destruct (eval_concurrent s s0 vl); try discriminate.
+      eapply eval_ac. symmetry. exact H1.
     + unfold primop_eval in H1.
       destruct (convert_primop_to_code f); try discriminate.
       all: destruct (eval_primop_error f vl); try discriminate.
     + destruct v; try discriminate.
       destruct (params =? (length vl))%nat; try discriminate.
   - destruct ident; try discriminate.
+    + case_match; congruence.
     + destruct m; try discriminate.
       destruct l; try discriminate.
       destruct f; try discriminate.
       destruct l; try discriminate.
-      unfold eval in H0.
-      destruct (convert_string_to_code (s, s0)); try discriminate.
-      1-2: inversion H0; unfold eval_io in H2;
-           destruct (convert_string_to_code (s, s0)); try discriminate;
-           repeat (destruct vl; simpl in H2; try discriminate).
-      {
-        inversion H0. unfold eval_convert in H2.
-        destruct (convert_string_to_code (s, s0)); try discriminate.
-        - repeat (destruct vl; simpl in H2; try discriminate).
-          destruct (mk_ascii_list v); try discriminate.
-          inversion H2. exists (string_of_list_ascii l).
-          reflexivity.
-        - repeat (destruct vl; simpl in H2; try discriminate).
-          destruct v; try discriminate.
-          destruct l; discriminate.
-      }
-      {
-        inversion H0. unfold eval_convert in H2.
-        destruct (convert_string_to_code (s, s0)); try discriminate.
-        - repeat (destruct vl; simpl in H2; try discriminate).
-          destruct (mk_ascii_list v); try discriminate.
-          inversion H2. exists (string_of_list_ascii l).
-          reflexivity.
-        - repeat (destruct vl; simpl in H2; try discriminate).
-          destruct v; try discriminate.
-          destruct l; discriminate.
-      }
-      1-3: destruct (eval_error s s0 (vl ++ [v])); try discriminate.
-      all: destruct (eval_concurrent s s0 (vl ++ [v])); try discriminate.
+      eapply eval_ac. symmetry. exact H0.
     + unfold primop_eval in H0.
       destruct (convert_primop_to_code f); try discriminate.
       all: destruct (eval_primop_error f (vl ++ [v])); try discriminate.
@@ -121,9 +96,10 @@ Theorem step_determinism_labeled {e e' l fs fs'} :
   (forall {l' fs'' e''}, ⟨ fs, e ⟩ -⌊ l' ⌋->ₗ ⟨ fs'', e'' ⟩
   -> l = l' /\ fs'' = fs' /\ e'' = e').
 Proof.
-  intro H. inv H; intros; inv H; auto.
+  intro H. inv H; intros; inv H; auto; try congruence.
   - rewrite <- H1 in H9. now inv H9.
   - rewrite <- H0 in H8. now inv H8.
+  - rewrite H0 in H10. now inv H10.
 Qed.
 
 Lemma value_nostep_labeled v :
@@ -170,6 +146,11 @@ Proof.
     intros. specialize (Hall i H).
     replace VNil with (snd (VNil, VNil)) by auto. rewrite map_nth.
     destruct nth. apply Hall.
+  * case_match; inv Heq.
+    scope_solver.
+    unfold badarg. do 4 scope_solver_step.
+    constructor. by apply indexed_to_forall.
+    by scope_solver_step.
   * destruct m, f; try destruct l; try destruct l0; try invSome.
     all: inv Hi; try econstructor; auto; scope_solver.
     eapply eval_is_closed_result; try eassumption. eauto.
@@ -179,7 +160,7 @@ Proof.
       assumption.
     - inv Heq.
   * inversion Hi; subst; clear Hi. destruct v; unfold badfun; try invSome.
-    1-8: constructor; auto; constructor.
+    1-8, 10: scope_solver.
     break_match_hyp; invSome.
     - constructor. destruct_scopes.
       apply -> subst_preserves_scope_exp. exact H6.
@@ -191,7 +172,18 @@ Proof.
       }
       apply scoped_list_idsubst. apply Forall_app; split; auto.
       now apply closlist_scope.
-    - unfold badarity. constructor. constructor. auto.
+    - unfold badarity. constructor. scope_solver.
+      by apply meta_to_cons_closed. scope_solver.
+Qed.
+
+Lemma segment_to_bitstring_scope Γ v vsize unit type endian r:
+  VAL Γ ⊢ v ->
+  VAL Γ ⊢ vsize ->
+  segment_to_bitstring v vsize unit type endian = Some r ->
+  RED Γ ⊢ r.
+Proof.
+  intros. unfold segment_to_bitstring in H1; repeat case_match; invSome.
+  all: by scope_solver.
 Qed.
 
 Theorem step_closedness_labeled : forall F e F' e' l,
@@ -221,7 +213,7 @@ Proof.
     now apply scoped_list_idsubst.
   * constructor; auto. constructor.
     now rewrite Nat.add_0_r in H5.
-  * setoid_rewrite Nat.add_0_r in H4.
+  * setoid_rewrite Nat.add_0_r in H3.
     setoid_rewrite Nat.add_0_r in H5.
     do 2 (constructor; auto).
     now apply clause_scope.
@@ -234,6 +226,7 @@ Proof.
     erewrite match_pattern_list_length. 2: exact H.
     apply scoped_list_idsubst.
     eapply match_pattern_list_scope; eassumption.
+  * by eapply segment_to_bitstring_scope in H.
   * constructor. apply -> subst_preserves_scope_exp.
     eassumption.
     rewrite Nat.add_0_r.
@@ -346,7 +339,7 @@ Proof.
   * inversion H. subst. constructor.
   * inv H; inv H1.
     all: try now (simpl; econstructor; try constructor; auto).
-    20: { eapply IHk in H2; simpl in *. econstructor.
+    21: { eapply IHk in H2; simpl in *. econstructor.
       apply eval_step_case_not_match. auto. eassumption. reflexivity. }
     all: try (eapply IHk in H2; simpl in *; econstructor).
     all: try constructor.
@@ -400,15 +393,15 @@ Qed.
 
 Lemma terminates_in_k_step :
   forall fs e fs' e' k sl l, ⟨ fs, e ⟩ -⌊ l ⌋->ₗ ⟨ fs', e' ⟩ ->
-  | fs', e' | sl – k ↓ ->
-  | fs, e | (option_cons l sl) – S k ↓.
+  ⟨ fs', e' ⟩ sl – k ↓ ->
+  ⟨ fs, e ⟩ (option_cons l sl) – S k ↓.
 Proof.
   intros fs e fs' e' k sl l H. induction H.
   all: econstructor; eassumption.
 Qed.
 
 Theorem semantic_iff_termination :
-  forall k e fs l, terminates_in_k_sem_labeled fs e k l <-> | fs, e | l – k ↓.
+  forall k e fs l, terminates_in_k_sem_labeled fs e k l <-> ⟨ fs, e ⟩ l – k ↓.
 Proof.
   split.
   {
@@ -453,7 +446,12 @@ Proof.
         reflexivity.
     * eexists. split.
       - eassumption.
-      - constructor.
+      - econstructor. constructor; eassumption.
+        eassumption.
+        reflexivity.
+    * eexists. split.
+      - eassumption.
+      - econstructor.
   }
 Qed.
 
@@ -466,9 +464,9 @@ Definition option_tail {A} (l : option A) (sl : list A)
   end.
 
 Lemma terminates_step :
-  forall n fs e l, | fs, e | l – n ↓ -> forall fs' e' l', ⟨fs, e⟩ -⌊l'⌋->ₗ ⟨fs', e'⟩
+  forall n fs e l, ⟨ fs, e ⟩ l – n ↓ -> forall fs' e' l', ⟨fs, e⟩ -⌊l'⌋->ₗ ⟨fs', e'⟩
 ->
-  | fs', e' | (option_tail l' l) – n - 1↓.
+  ⟨ fs', e' ⟩ (option_tail l' l) – n - 1↓.
 Proof.
   intros. apply semantic_iff_termination in H. destruct H. destruct n.
   * destruct H. inv H.
@@ -484,10 +482,10 @@ Proof.
 Qed.
 
 Lemma term_step_term_no_skip :
-  forall k n fs e l1 l2, | fs, e | l1 ++ l2 – n ↓ 
+  forall k n fs e l1 l2, ⟨ fs, e ⟩ l1 ++ l2 – n ↓ 
   -> forall fs' e' , ⟨fs, e⟩ -[k , l1]->ₗ ⟨fs', e'⟩
 ->
-  | fs', e' | l2 – n - k ↓.
+  ⟨ fs', e' ⟩ l2 – n - k ↓.
 Proof.
   induction k; intros; inversion H0; subst; auto.
   * rewrite Nat.sub_0_r. auto.
@@ -501,10 +499,10 @@ Proof.
 Qed.
 
 Lemma term_step_term_labeled :
-  forall k n fs e l l1, | fs, e | l – n ↓ 
+  forall k n fs e l l1, ⟨ fs, e ⟩ l – n ↓ 
   -> forall fs' e' , ⟨fs, e⟩ -[k , l1]->ₗ ⟨fs', e'⟩
 ->
-  | fs', e' | skipn (length l1) l – n - k ↓.
+  ⟨ fs', e' ⟩ skipn (length l1) l – n - k ↓.
 Proof.
   induction k; intros; inversion H0; subst; auto.
   * rewrite Nat.sub_0_r. auto.
@@ -521,9 +519,9 @@ Qed.
 
 Lemma step_term_term_labeled :
   forall k n fs e fs' e' l1 l2,
-  ⟨fs, e⟩ -[k , l1]->ₗ ⟨fs', e'⟩ -> | fs', e' | l2 – n - k ↓ -> n >= k 
+  ⟨fs, e⟩ -[k , l1]->ₗ ⟨fs', e'⟩ -> ⟨ fs', e' ⟩ l2 – n - k ↓ -> n >= k 
 ->
-  | fs, e | l1 ++ l2 – n ↓.
+  ⟨ fs, e ⟩ l1 ++ l2 – n ↓.
 Proof.
   intros. apply semantic_iff_termination.
   apply semantic_iff_termination in H0. destruct H0, H0.
@@ -533,9 +531,9 @@ Qed.
 
 Lemma step_term_term_plus_labeled :
   forall k k2 fs e fs' e' l1 l2, 
-  ⟨fs, e⟩ -[k , l1]->ₗ ⟨fs', e'⟩ -> | fs', e' | l2 – k2 ↓
+  ⟨fs, e⟩ -[k , l1]->ₗ ⟨fs', e'⟩ -> ⟨ fs', e' ⟩ l2 – k2 ↓
 ->
-  | fs, e | l1 ++ l2 – k + k2 ↓.
+  ⟨ fs, e ⟩ l1 ++ l2 – k + k2 ↓.
 Proof.
   intros. apply semantic_iff_termination.
   apply semantic_iff_termination in H0. destruct H0, H0.
@@ -558,13 +556,17 @@ Proof.
   1-2: eapply List.Forall_map; apply make_val_map_keeps_prop.
   1-2: eapply Forall_impl; [|eapply deflatten_keeps_prop; eassumption].
   1-2: intros; destruct a; apply H1.
-  (****)
-  1: destruct m, f; try destruct l; try destruct l0; try invSome; try constructor; inv H; scope_solver.
-  1: symmetry in H1; eapply eval_is_closed_result in H1; auto.
+  * case_match; invSome.
+    scope_solver.
+    do 4 scope_solver_step.
+    constructor. by apply indexed_to_forall.
+    scope_solver.
+  * destruct m, f; try destruct l; try destruct l0; try invSome; try constructor; inv H; scope_solver.
+    symmetry in H1; eapply eval_is_closed_result in H1; auto.
   * destruct (primop_eval f vl) eqn: pe.
     - inv H1. eapply primop_eval_is_closed_result; eassumption.
     - inv H1.
-  * inv H. destruct v; try invSome; try now (constructor; auto).
+  * inv H. destruct v; try invSome; try now (scope_solver).
     break_match_hyp; invSome; auto.
     all: constructor; auto.
     inv H3.
@@ -577,6 +579,8 @@ Proof.
       split; auto.
       now apply closlist_scope.
     }
+    scope_solver.
+    apply meta_to_cons_closed. assumption.
 Qed.
 
 Lemma create_result_is_not_box :
@@ -586,9 +590,10 @@ Lemma create_result_is_not_box :
   (exists e, r = RExp e).
 Proof.
   destruct ident; intros; simpl in *; try invSome; auto.
-  1: destruct m, f; try destruct l; try destruct l0; try invSome.
+  1: destruct construct_bitstring; invSome.
+  3: destruct m, f; try destruct l; try destruct l0; try invSome.
   all: try now (do 2 constructor).
-  1: symmetry in H; eapply eval_is_result in H; auto.
+  * symmetry in H; eapply eval_is_result in H; auto.
   * symmetry in H. apply primop_eval_is_exception in H as [? ?].
     subst. left. destruct x as [[? ?] ?]; auto.
   * inv H. destruct v; try invSome; try now (do 2 constructor).
@@ -599,11 +604,11 @@ Qed.
 
 Lemma Private_params_exp_eval :
   forall exps ident vl Fs (e : Exp) n (l : SideEffectList),
-  | FParams ident vl exps :: Fs, e | l – n ↓ ->
+  ⟨ FParams ident vl exps :: Fs, e ⟩ l – n ↓ ->
   (forall m : nat,
   m < S n ->
   forall (Fs : FrameStack) (e : Exp) (ll : SideEffectList),
-  | Fs, e | ll – m ↓ ->
+  ⟨ Fs, e ⟩ ll – m ↓ ->
   exists (res : Redex) (k : nat) (l : SideEffectList),
     is_result res /\ ⟨ [], e ⟩ -[ k , l ]->ₗ ⟨ [], res ⟩ /\ k <= m) ->
   exists res k l, is_result res /\
@@ -694,11 +699,11 @@ Qed.
 
 Lemma Private_params_exp_eval_empty :
   forall exps ident vl Fs (e : Exp) n l,
-  | FParams ident vl exps :: Fs, e | l – n ↓ ->
+  ⟨ FParams ident vl exps :: Fs, e ⟩ l – n ↓ ->
   (forall m : nat,
   m < S n ->
   forall (Fs : FrameStack) (e : Exp) (l : SideEffectList),
-  | Fs, e | l – m ↓ ->
+  ⟨ Fs, e ⟩ l – m ↓ ->
   exists (res : Redex) (k : nat) (l' : SideEffectList),
     is_result res /\ ⟨ [], e ⟩ -[ k , l' ]->ₗ ⟨ [], res ⟩ /\ k <= m /\ l' `prefix_of` l) ->
   exists res k l', is_result res /\
@@ -807,9 +812,9 @@ Lemma Private_term_empty_case l:
   (forall (m : nat) ,
   m < n ->
   forall (Fs : FrameStack) (e : Exp) (lss : SideEffectList),
-  | Fs, e | lss – m ↓ -> exists (k : nat) (lsss : SideEffectList) , (| [], e | lsss – k ↓) /\ k <= m 
+  ⟨ Fs, e ⟩ lss – m ↓ -> exists (k : nat) (lsss : SideEffectList) , (⟨ [], e ⟩ lsss – k ↓) /\ k <= m 
       /\ lsss `prefix_of` lss )-> 
-  | FCase1 l :: Fs, vs | ls – n ↓ -> (* this has to be value sequence, because 
+  ⟨ FCase1 l :: Fs, vs ⟩ ls – n ↓ -> (* this has to be value sequence, because 
                                    in case of not matching patterns, only
                                    this is usable *)
   exists res k l1, is_result res /\
@@ -875,8 +880,8 @@ Proof.
 Qed.
 
 Theorem term_empty_labeled : forall x Fs (e : Exp) (l : SideEffectList),
-  | Fs, e | l – x ↓ ->
-  exists k l', | [], e | l' – k ↓ /\ k <= x /\ l' `prefix_of` l.
+  ⟨ Fs, e ⟩ l – x ↓ ->
+  exists k l', ⟨ [], e ⟩ l' – k ↓ /\ k <= x /\ l' `prefix_of` l.
 Proof.
   induction x using Wf_nat.lt_wf_ind; intros; inv H0.
   * do 2 eexists. split. constructor; auto. constructor. auto. split.
@@ -901,6 +906,23 @@ Proof.
   * destruct el. (* proof is same as above, tricks to avoid RBox *)
     - do 2 eexists. split. constructor.
       epose proof (cool_params_0_l [] ITuple [] _ None []). simpl in H0.
+      eapply H0.
+      congruence. reflexivity. do 4 constructor; auto. intros. inv H3.
+      split. lia. apply prefix_nil.
+    - inv H3. destruct_scopes.
+      eapply Private_params_exp_eval_empty in H9 as HH2; auto.
+      2: {
+        intros. epose proof (H m ltac:(slia) Fs0 e0 _ H1) as [j [l' [HD [Hj Hpref]]]].
+        apply semantic_iff_termination in HD as [res [Hres Hr]].
+        do 3 eexists. split. 2: split. 3: split. all: eassumption.
+      }
+      destruct HH2 as [res [k [l' [Hres [Hd [Hlt Hpref]]]]]].
+      do 2 eexists. split. do 2 constructor. congruence.
+      eapply semantic_iff_termination. eexists.
+      split. 2: exact Hd. auto. split. lia. assumption.
+  * destruct el. (* proof is same as above, tricks to avoid RBox *)
+    - do 2 eexists. split. constructor.
+      epose proof (cool_params_0_l [] IBin [] _ None []). simpl in H0.
       eapply H0.
       congruence. reflexivity. do 4 constructor; auto. intros. inv H3.
       split. lia. apply prefix_nil.
@@ -1292,6 +1314,82 @@ Proof.
            apply prefix_app. exact Hpref2.
       }
       now constructor.
+  * apply H in H3 as HH. 2: lia.
+    destruct HH as [i [li [Hi [Hlt Hprefi]]]].
+    apply semantic_iff_termination in Hi as [res [Hres Hr]].
+    eapply frame_indep_nil_labeled in Hr as Hlia1.
+    eapply frame_indep_nil_labeled in Hr.
+    eapply term_step_term_labeled in H3. 2: exact Hlia1.
+    inv Hres. (* tail exception or not *)
+    - exists (S i + 1). eexists.
+      split. 2: split. 2: inv H3; lia.
+      simpl. constructor. apply semantic_iff_termination.
+      exists (RExc (cl, v1, v2)). split; auto. eapply transitive_eval_labeled.
+      exact Hr. do 2 econstructor. reflexivity.
+      rewrite app_nil_r. assumption.
+    - inv H3. apply H in H9 as HH. 2: lia.
+      destruct HH as [j [lj [Hj [Hltj Hprefj]]]].
+      simpl in *. apply semantic_iff_termination in Hj as [sizeres [Hr2 Hd2]].
+      eapply frame_indep_nil_labeled in Hd2 as Hlia2.
+      eapply frame_indep_nil_labeled in Hd2.
+      eapply term_step_term_labeled in H9. 2: exact Hlia2.
+      inv Hr2. (* head exception or not *)
+      + exists (1 + (i + (1 + (j + 1) ))). eexists. split.
+        simpl. constructor. eapply step_term_term_labeled.
+        eapply transitive_eval_labeled.
+        exact Hr. constructor.
+        replace (i + S (j + 1) - (i + 0)) with (S (j + 1)) by lia.
+        constructor.
+        eapply step_term_term_labeled. exact Hd2.
+        replace (j + 1 - j) with 1 by lia.
+        constructor.
+        reflexivity. by constructor; auto.
+        lia.
+        lia.
+        split.
+        inv H9. simpl. lia.
+        repeat (rewrite app_nil_r).
+        destruct Hprefi. rewrite H0 in *. apply prefix_app.
+        destruct Hprefj. rewrite drop_app_length in H1. rewrite H1.
+        rewrite <- app_nil_r at 1. apply prefix_app. apply prefix_nil.
+      + inv H9. apply segment_to_bitstring_final in H8 as H8'.
+        destruct H8' as [[exc H8']|[bvn H8']]; subst.
+        ** exists (1 + (i + (1 + (j + 1)))). eexists. split.
+           simpl. constructor. eapply step_term_term_labeled.
+           exact Hr.
+           replace (i + S (j + 1) - i) with (S (j + (1))) by lia.
+           constructor.
+           eapply step_term_term_labeled. exact Hd2.
+           replace (j + 1 - j) with 1 by lia.
+           econstructor.
+           { exact H8. }
+           { constructor. by destruct exc as [[? ?] ?]. }
+           { lia. }
+           { lia. }
+           split.
+           { lia. }
+           { rewrite app_nil_r.
+             destruct Hprefi. subst. apply prefix_app. rewrite drop_app_length in Hprefj.
+             assumption.
+           }
+        ** exists (1 + (i + (1 + (j + 1)))). eexists. split.
+           simpl. constructor. eapply step_term_term_labeled.
+           exact Hr.
+           replace (i + S (j + 1) - i) with (S (j + (1))) by lia.
+           constructor.
+           eapply step_term_term_labeled. exact Hd2.
+           replace (j + 1 - j) with 1 by lia.
+           econstructor.
+           { exact H8. }
+           { by constructor. }
+           { lia. }
+           { lia. }
+           split.
+           { lia. }
+           { rewrite app_nil_r.
+             destruct Hprefi. subst. apply prefix_app. rewrite drop_app_length in Hprefj.
+             assumption.
+           }
   * do 2 eexists. split. now constructor. split. lia. apply prefix_nil.
 Qed.
 
@@ -1300,7 +1398,7 @@ Qed.
    exceptions terminate in 0/1 step by definition in the
    empty stack (and RBox does not terminate!). *)
 Corollary term_eval_empty_labeled : forall x Fs (e : Exp) (ls : SideEffectList) ,
-  | Fs, e | ls – x ↓ ->
+  ⟨ Fs, e ⟩ ls – x ↓ ->
   exists res k lss ,
     is_result res /\
     ⟨ [], e ⟩ -[k , lss]->ₗ ⟨ [], res ⟩ /\
@@ -1313,7 +1411,7 @@ Proof.
 Qed.
 
 Corollary term_eval_labeled : forall x Fs (e : Exp) (ls : SideEffectList) ,
-  | Fs, e | ls – x ↓ ->
+  ⟨ Fs, e ⟩ ls – x ↓ ->
   exists v k lss,
     is_result v /\
     ⟨ Fs, e ⟩ -[k , lss]->ₗ ⟨ Fs, v ⟩ /\
@@ -1329,7 +1427,7 @@ Qed.
 
 Corollary term_eval_both_labeled :
   forall x Fs (e : Exp) (l : SideEffectList) , 
-  | Fs, e | l – x ↓ ->
+  ⟨ Fs, e ⟩ l – x ↓ ->
   exists v k ls, is_result v /\
   ⟨ [], e ⟩ -[k , ls]->ₗ ⟨ [], v ⟩ /\
   ⟨ Fs, e ⟩ -[k , ls]->ₗ ⟨ Fs, v ⟩ /\
@@ -1398,6 +1496,16 @@ Proof.
         apply params_eval_labeled.
         all: reflexivity.
   (***)
+  * destruct vals; simpl.
+    - eexists. econstructor. constructor.
+      econstructor. constructor. congruence.
+      constructor.
+      all: reflexivity.
+    - eexists. econstructor. constructor.
+      econstructor. constructor. congruence.
+      econstructor. constructor.
+      apply params_eval_labeled.
+      all: reflexivity.
   * destruct vals; simpl.
     - eexists. econstructor. constructor.
       econstructor. constructor.
@@ -1552,7 +1660,9 @@ Proof.
       rewrite map_ext with (g := id). 2: {
         intros. destruct a as [[pl g] b].
         rewrite idsubst_upn.
-        by do 2 rewrite idsubst_is_id_exp.
+        do 2 rewrite idsubst_is_id_exp.
+        erewrite map_ext_Forall. by rewrite map_id.
+        apply Forall_forall. intros. by rewrite idsubst_is_id_pat.
       }
       rewrite map_id.
       econstructor. constructor.
@@ -1562,10 +1672,14 @@ Proof.
       apply params_eval_VValues_labeled. eassumption.
       all: try reflexivity. simpl.
       by rewrite <-HX, app_assoc, <-HX.
+  * eexists. econstructor. constructor. 2: reflexivity. simpl.
+    econstructor. constructor. 2: reflexivity.
+    econstructor. constructor. 2: reflexivity.
+    eassumption.
 Qed.
 
 Corollary put_back_term_labeled : forall F (e : Exp) Fs l, FrameWf F ->
-  | F :: Fs, e |ₗ l ↓ -> | Fs, plug_f F e |ₗ l ↓.
+  ⟨ F :: Fs, e ⟩ₗ l ↓ -> ⟨ Fs, plug_f F e ⟩ₗ l ↓.
 Proof.
   intros.
   destruct H0. apply semantic_iff_termination in H0.
@@ -1591,7 +1705,7 @@ Qed.
 
 Ltac inv_term_labeled :=
   match goal with
-  | [H : | _, _ | _ – _ ↓ |- _] => inv H
+  | [H : ⟨ _, _ ⟩ _ – _ ↓ |- _] => inv H
   end.
 
 Lemma transitive_contradiction_labeled :
@@ -1644,7 +1758,7 @@ Proof.
   * inv H1. inv_result. inv H2.
     inv H3. inv H1.
     inv H2. inv H1. simpl in H10. invSome.
-    inv H3. inv H1. simpl in *. invSome.
+    inv H3. inv H1. simpl in *. invMatch.
     simpl in *.
     do 2 rewrite idsubst_is_id_exp in H2.
     (* extract independent evaluation of e: *)
@@ -1679,7 +1793,7 @@ Proof.
       reflexivity.
     (* false *)
     - inv H3. inv H2.
-      simpl in H15. invSome. simpl in *.
+      simpl in H15. invMatch. simpl in *.
       rewrite map_ext with (g := id) in H4. 2: {
         intros. by rewrite idsubst_is_id_exp.
       }
@@ -1687,7 +1801,9 @@ Proof.
       rewrite map_ext with (g := id) in H4. 2: {
         intros. destruct a as [[pl g] b].
         rewrite idsubst_upn.
-        by do 2 rewrite idsubst_is_id_exp.
+        do 2 rewrite idsubst_is_id_exp.
+        erewrite map_ext_Forall. rewrite map_id. reflexivity.
+        apply Forall_forall. intros. by rewrite idsubst_is_id_pat.
       }
       rewrite map_id in H4. inv H4. inv H2.
       inv H3. inv H2.
@@ -1705,11 +1821,16 @@ Proof.
         simpl. by rewrite drop_0.
       (* k0 should be greater; therefore, this is a contradiction *)
       + by eapply transitive_contradiction_labeled in H2.
+  * inv H1. inv_result. inv H2.
+    simpl in *.
+    inv H3. inv H1.
+    inv H2. inv H1.
+    by eexists.
 Qed.
 
 
 Theorem put_back_rev_term_labeled : forall F e Fs l, FrameWf F ->
-  | Fs, plug_f F e |ₗ l ↓ -> | F :: Fs, e |ₗ l ↓.
+  ⟨ Fs, plug_f F e ⟩ₗ l ↓ -> ⟨ F :: Fs, e ⟩ₗ l ↓.
 Proof.
   intros.
   destruct H0. apply semantic_iff_termination in H0.

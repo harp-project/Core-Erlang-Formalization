@@ -207,6 +207,18 @@ Proof.
   rewrite H. reflexivity. slia.
 Qed.
 
+(** Mapping and deflattening can be swapped *)
+Theorem deflatten_map_prod_map :
+  forall T1 T2 (f : T1 -> T2) l,
+    map (prod_map f f) (deflatten_list l) =
+    deflatten_list (map f l).
+Proof.
+  induction l using list_length_ind; simpl; auto.
+  destruct l; simpl; auto.
+  destruct l; simpl; auto.
+  rewrite H. reflexivity. slia.
+Qed.
+
 (** Inserting a key-value pair into a map, all three respecting some proposition
     results in a map that still respects the proposition. *)
 Lemma map_insert_prop :
@@ -248,4 +260,25 @@ Theorem map_repeat {T Q : Type} :
   forall n (f : T -> Q) (x : T), map f (repeat x n) = repeat (f x) n.
 Proof.
   induction n; intros; cbn; auto; now rewrite IHn.
+Qed.
+
+Lemma flatten_list_concat_map :
+  forall {A B} (l : list (A * A)) (f : A -> list B),
+    flat_map f (flatten_list l) =
+    concat (flatten_list (map (prod_map f f) l)).
+Proof.
+  induction l; auto; intros; simpl.
+  destruct a; simpl. do 2 f_equal.
+  apply IHl.
+Qed.
+
+Lemma in_flatten_list :
+  forall {A} (l : list (A * A)) x, In x (flatten_list l) ->
+    exists y, In (x, y) l \/ In (y, x) l.
+Proof.
+  induction l; intros; simpl in H. destruct H.
+  destruct a. inv H. 2: inv H0.
+  * exists a0. left. by left.
+  * exists a. right. by left.
+  * apply IHl in H. firstorder.
 Qed.
