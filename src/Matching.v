@@ -285,7 +285,7 @@ Proof.
   (forall v l Γ, 
   VAL Γ ⊢ v -> match_pattern p2 v = Matches l
   -> Forall (fun v => VAL Γ ⊢ v) l)))
-  (T := Forall (fun seg => forall v l Γ, VAL Γ ⊢ v -> match_pattern (val seg) v = Matches l -> Forall (ValScoped Γ) l));
+  (T := Forall (fun seg => forall v l Γ, VAL Γ ⊢ v -> match_pattern (seg_val seg) v = Matches l -> Forall (ValScoped Γ) l));
   try intros v l' Γ HΓ Hmatch; simpl in *; unfold match_and, bind_match in *; try now constructor.
   * destruct v; try congruence. now inversion Hmatch.
   * destruct v; try congruence.
@@ -386,8 +386,8 @@ Proof.
     PatVars p1 = length l) /\
     (forall v l, match_pattern p2 v = Matches l ->
     PatVars p2 = length l)))
-    (T := Forall (fun seg => forall v l, match_pattern (val seg) v = Matches l ->
-    PatVars (val seg) = length l)); simpl; intros.
+    (T := Forall (fun seg => forall v l, match_pattern (seg_val seg) v = Matches l ->
+    PatVars (seg_val seg) = length l)); simpl; intros.
   * destruct v; now inv H.
   * destruct v; inv H. break_match_hyp; now inv H1.
   (* * destruct v; inv H. break_match_hyp; now inv H1. *)

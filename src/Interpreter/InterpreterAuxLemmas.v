@@ -73,8 +73,8 @@ Proof.
   (Z  := Forall (fun e => usedPIDsExp e.2 = usedPIDsExp_Interp e.2))
   (PQ := Forall (fun p => usedPIDsPat p = usedPIDsPat_Interp p))
   (PR := Forall (PBoth (fun p => usedPIDsPat p = usedPIDsPat_Interp p)))
-  (PT := Forall (fun seg => usedPIDsPat (val seg) = usedPIDsPat_Interp (val seg)
-                            /\ usedPIDsVal (Syntax.size seg) = usedPIDsVal_Interp (Syntax.size seg))); auto.
+  (PT := Forall (fun seg => usedPIDsPat (seg_val seg) = usedPIDsPat_Interp (seg_val seg)
+                            /\ usedPIDsVal (seg_size seg) = usedPIDsVal_Interp (seg_size seg))); auto.
   * simpl. unfold pids_union. rewrite IHe. rewrite IHe0. reflexivity.
   * simpl. unfold flat_union. unfold flat_union_Interp. unfold pids_union. unfold pids_empty.
     induction l.
@@ -228,7 +228,7 @@ Proof.
   induction p using Pat_ind_weakened with
     (Q := Forall (fun p => usedPIDsPat p = usedPIDsPat_Interp p))
     (R := Forall (PBoth (fun p => usedPIDsPat p = usedPIDsPat_Interp p)))
-    (T := Forall (fun seg => usedPIDsPat (val seg) = usedPIDsPat_Interp (val seg))); auto.
+    (T := Forall (fun seg => usedPIDsPat (seg_val seg) = usedPIDsPat_Interp (seg_val seg))); auto.
   * simpl. unfold pids_union. rewrite IHp1, IHp2. reflexivity.
   * simpl. unfold flat_union, flat_union_Interp, pids_union, pids_empty.
     induction l.
@@ -242,8 +242,8 @@ Proof.
     induction l.
     + simpl. reflexivity.
     + simpl. inv IHp.
-      assert (usedPIDsVal (Syntax.size a) = usedPIDsVal_Interp (Syntax.size a))
-        by (apply (usedPIDsExp_equiv (VVal (Syntax.size a)))).
+      assert (usedPIDsVal (seg_size a) = usedPIDsVal_Interp (seg_size a))
+        by (apply (usedPIDsExp_equiv (VVal (seg_size a)))).
       rewrite H1, H. apply IHl in H2. rewrite H2. reflexivity.
 Qed.
 

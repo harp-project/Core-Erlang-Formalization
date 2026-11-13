@@ -5,6 +5,7 @@
 From CoreErlang.FrameStack Require Export CTX.
 
 Import ListNotations.
+Import Notations.
 
 Ltac extract_meta_eval H :=
   let r := fresh "r" in

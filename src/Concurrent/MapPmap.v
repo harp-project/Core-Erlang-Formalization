@@ -7,6 +7,7 @@ From CoreErlang.Concurrent Require Import BisimReductions.
 From CoreErlang.FrameStack Require Import SubstSemantics Examples.
 
 Import ListNotations.
+Import Notations.
 
 Lemma etherAdd_lookup :
   forall ιs ιd ι1 ι2 t l eth,

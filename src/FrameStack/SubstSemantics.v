@@ -156,7 +156,7 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 (** Heating *)
 | eval_heat_seg seg xs :
   ⟨ xs, ESeg seg ⟩ -->
-  ⟨FSeg1 (size seg) (unit seg) (type seg) (sign seg) (endian seg) :: xs, val seg⟩
+  ⟨FSeg1 (seg_size seg) (seg_unit seg) (seg_type seg) (seg_sign seg) (seg_endian seg) :: xs, seg_val seg⟩
 
 (** Cooling *)
 | eval_cool_seg_val v size unit type sign endian xs :

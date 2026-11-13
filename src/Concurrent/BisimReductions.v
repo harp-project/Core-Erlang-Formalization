@@ -6,6 +6,7 @@
 From CoreErlang.Concurrent Require Export BisimRenaming.
 
 Import ListNotations.
+Import Notations.
 
 Theorem difference_O :
   forall O n n' a ι,

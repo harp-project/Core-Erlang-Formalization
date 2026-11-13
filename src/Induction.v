@@ -27,7 +27,7 @@ Hypotheses
  (H5 : forall (l:list (Segment Pat Val)), T l -> P (PBin l))
  (H' : forall v : Pat, P v -> forall l:list Pat, Q l -> Q (v :: l))
  (H0' : forall (v1 : Pat), P v1 -> forall (v2 : Pat), P v2 -> forall l:list (Pat * Pat), R l -> R ((v1, v2) :: l))
- (H1' : forall seg, P (val seg) ->
+ (H1' : forall seg, P (seg_val seg) ->
    forall l, T l -> T (seg::l))
  (H2' : Q [])
  (H3' : R [])
@@ -42,7 +42,7 @@ Fixpoint Pat_ind_weakened (v : Pat) : P v :=
   | PCons hd tl => H2 hd (Pat_ind_weakened hd) tl (Pat_ind_weakened tl)
   | PTuple l => H3 l (list_ind Q H2' (fun p ls => H' p (Pat_ind_weakened p) ls) l)
   | PMap l => H4 l (list_ind R H3' (fun '(p1, p2) ls => H0' p1 (Pat_ind_weakened p1) p2 (Pat_ind_weakened p2) ls) l)
-  | PBin l => H5 l (list_ind T H4' (fun seg ls => H1' seg (Pat_ind_weakened (val seg)) ls) l)
+  | PBin l => H5 l (list_ind T H4' (fun seg ls => H1' seg (Pat_ind_weakened (seg_val seg)) ls) l)
   end.
 
 End CorrectPatInd.
@@ -97,7 +97,7 @@ Section CorrectExpInd.
    forall (vl2 : nat) (e3 : Exp), P e3 -> PE (ETry e1 vl1 e2 vl2 e3))
 (*    (HE14 : forall l, W l -> PE (EReceive l)) *)
    (HE14: forall l : list Exp, Q l -> PE (EBin l))
-   (HE15: forall seg : Segment Exp Exp, P (val seg) -> P (size seg) -> PE (ESeg seg))
+   (HE15: forall seg : Segment Exp Exp, P (seg_val seg) -> P (seg_size seg) -> PE (ESeg seg))
    
    (HP : PP PNil)
    (HP0 : forall (l : Lit), PP (PLit l))
@@ -131,7 +131,7 @@ Section CorrectExpInd.
    (HP3' : PR [])
    (HP0' : forall (v1 : Pat), PP v1 -> forall (v2 : Pat), PP v2 -> forall l:list (Pat * Pat), PR l -> PR ((v1, v2) :: l))
    (HP4' : PT [])
-   (HP1' : forall seg, PP (val seg) -> PV (size seg) -> forall l, PT l -> PT (seg::l))
+   (HP1' : forall seg, PP (seg_val seg) -> PV (seg_size seg) -> forall l, PT l -> PT (seg::l))
    (*(HW2 : forall (e1 : Exp), P e1 -> forall (e2 : Exp), P e2 ->
     forall (lv : list ((list Pat) * Exp * Exp)), W lv -> 
     forall (l : list Pat), W ((l,e1,e2)::lv) ) *)
@@ -161,7 +161,7 @@ Section CorrectExpInd.
   | ETry e1 vl1 e2 vl2 e3 => HE13 e1 (Exp_ind2 e1) vl1 e2 (Exp_ind2 e2) vl2 e3 (Exp_ind2 e3)
 (*   | EReceive l => HE14 l (list_ind W HW1 (fun '(lp, e1, e2) ls => (HW2 lp e1 (Exp_ind2 e1) e2 (Exp_ind2 e2) ls)) l) *)
   | EBin l => HE14 l (list_ind Q HQ1 (fun e ls => HQ2 e (Exp_ind2 e) ls) l)
-  | ESeg seg => HE15 seg (Exp_ind2 (val seg)) (Exp_ind2 (size seg))
+  | ESeg seg => HE15 seg (Exp_ind2 (seg_val seg)) (Exp_ind2 (seg_size seg))
   end
   
   with Val_ind2 (ve : Val) : PV ve :=
@@ -186,7 +186,7 @@ Section CorrectExpInd.
   | PCons hd tl => HP2 hd (Pat_ind2 hd) tl (Pat_ind2 tl)
   | PTuple l => HP3 l (list_ind PQ HP2' (fun p ls => HP' p (Pat_ind2 p) ls) l)
   | PMap l => HP4 l (list_ind PR HP3' (fun '(p1, p2) ls => HP0' p1 (Pat_ind2 p1) p2 (Pat_ind2 p2) ls) l)
-  | PBin l => HP5 l (list_ind PT HP4' (fun seg ls => HP1' seg (Pat_ind2 (val seg)) (Val_ind2 (size seg)) ls) l)
+  | PBin l => HP5 l (list_ind PT HP4' (fun seg ls => HP1' seg (Pat_ind2 (seg_val seg)) (Val_ind2 (seg_size seg)) ls) l)
   end.
 
   Combined Scheme Exp_ind from Exp_ind2, NVal_ind2, Val_ind2, Pat_ind2.

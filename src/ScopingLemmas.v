@@ -529,8 +529,8 @@ Proof.
      (forall Γ, PAT Γ ⊢ nth i (map fst l) PNil <-> forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> PAT Γ' ⊢ renamePat ξ (nth i (map fst l) PNil)) /\
      (forall Γ, PAT Γ ⊢ nth i (map snd l) PNil <-> forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> PAT Γ' ⊢ renamePat ξ (nth i (map snd l) PNil)))
   (PT := fun l => forall i, i < length l ->
-     (forall Γ, PAT Γ ⊢ nth i (map val l) PNil <-> forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> PAT Γ' ⊢ renamePat ξ (nth i (map val l) PNil)) /\
-     (forall Γ, VAL Γ ⊢ nth i (map size l) VNil <-> forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> VAL Γ' ⊢ renameVal ξ (nth i (map size l) VNil)))
+     (forall Γ, PAT Γ ⊢ nth i (map seg_val l) PNil <-> forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> PAT Γ' ⊢ renamePat ξ (nth i (map seg_val l) PNil)) /\
+     (forall Γ, VAL Γ ⊢ nth i (map seg_size l) VNil <-> forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> VAL Γ' ⊢ renameVal ξ (nth i (map seg_size l) VNil)))
   ; try now (intros; simpl; split; constructor; auto).
   * intros. simpl. split.
     - intros. inversion H0. subst. specialize (H Γ). destruct H. constructor. now apply H.
@@ -1178,8 +1178,8 @@ Proof.
   (PQ := fun l => forall i, i < length l -> (forall Γ, PAT Γ ⊢ (nth i l PNil) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> PAT Γ' ⊢ (nth i l PNil).[ξ]ₚ))
   (PR := fun l => forall i, i < length l -> (forall Γ, PAT Γ ⊢ (nth i (map fst l) PNil) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> PAT Γ' ⊢ (nth i (map fst l) PNil).[ξ]ₚ) /\
                                              (forall Γ, PAT Γ ⊢ (nth i (map snd l) PNil) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> PAT Γ' ⊢ (nth i (map snd l) PNil).[ξ]ₚ))
-  (PT := fun l => forall i, i < length l -> (forall Γ, PAT Γ ⊢ (nth i (map val l) PNil) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> PAT Γ' ⊢ (nth i (map val l) PNil).[ξ]ₚ) /\
-                                             (forall Γ, VAL Γ ⊢ (nth i (map size l) VNil) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> VAL Γ' ⊢ (nth i (map size l) VNil).[ξ]ᵥ))
+  (PT := fun l => forall i, i < length l -> (forall Γ, PAT Γ ⊢ (nth i (map seg_val l) PNil) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> PAT Γ' ⊢ (nth i (map seg_val l) PNil).[ξ]ₚ) /\
+                                             (forall Γ, VAL Γ ⊢ (nth i (map seg_size l) VNil) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> VAL Γ' ⊢ (nth i (map seg_size l) VNil).[ξ]ᵥ))
   .
   * intros. split.
     - specialize (H Γ). destruct H. intros. simpl. constructor. apply H.
@@ -1728,9 +1728,9 @@ Module SUB_IMPLIES_SCOPE.
           (forall Γ Γ' a, VALCLOSED a -> 
           PAT Γ' ⊢ (nth i (map snd l) PNil).[magic_ξ Γ Γ' a]ₚ -> PAT Γ ⊢ nth i (map snd l) PNil))
     (PT := fun l => forall i, i < length l -> (forall Γ Γ' a, VALCLOSED a -> 
-          PAT Γ' ⊢ (nth i (map val l) PNil).[magic_ξ Γ Γ' a]ₚ -> PAT Γ ⊢ nth i (map val l) PNil) /\
+          PAT Γ' ⊢ (nth i (map seg_val l) PNil).[magic_ξ Γ Γ' a]ₚ -> PAT Γ ⊢ nth i (map seg_val l) PNil) /\
           (forall Γ Γ' a, VALCLOSED a -> 
-          VAL Γ' ⊢ (nth i (map size l) VNil).[magic_ξ Γ Γ' a]ᵥ -> VAL Γ ⊢ nth i (map size l) VNil))
+          VAL Γ' ⊢ (nth i (map seg_size l) VNil).[magic_ξ Γ Γ' a]ᵥ -> VAL Γ ⊢ nth i (map seg_size l) VNil))
     .
     * intros. constructor. inv H1. specialize (H Γ Γ' a H0 H4). assumption.
     * intros. constructor. inv H1. specialize (H Γ Γ' a H0 H4). assumption.
@@ -2135,8 +2135,8 @@ Module SUB_IMPLIES_SCOPE.
     (PQ := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> PAT Γ' ⊢ (nth i l PNil).[magic_ξ_2 Γ' a]ₚ -> (nth i l PNil).[magic_ξ (S Γ') Γ' a]ₚ = (nth i l PNil).[magic_ξ_2 Γ' a]ₚ))
     (PR := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> PAT Γ' ⊢ (nth i (map fst l) PNil).[magic_ξ_2 Γ' a]ₚ -> (nth i (map fst l) PNil).[magic_ξ (S Γ') Γ' a]ₚ = (nth i (map fst l) PNil).[magic_ξ_2 Γ' a]ₚ) /\
       (forall Γ' a, VALCLOSED a -> PAT Γ' ⊢ (nth i (map snd l) PNil).[magic_ξ_2 Γ' a]ₚ -> (nth i (map snd l) PNil).[magic_ξ (S Γ') Γ' a]ₚ = (nth i (map snd l) PNil).[magic_ξ_2 Γ' a]ₚ))
-    (PT := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> PAT Γ' ⊢ (nth i (map val l) PNil).[magic_ξ_2 Γ' a]ₚ -> (nth i (map val l) PNil).[magic_ξ (S Γ') Γ' a]ₚ = (nth i (map val l) PNil).[magic_ξ_2 Γ' a]ₚ) /\
-      (forall Γ' a, VALCLOSED a -> VAL Γ' ⊢ (nth i (map size l) VNil).[magic_ξ_2 Γ' a]ᵥ -> (nth i (map size l) VNil).[magic_ξ (S Γ') Γ' a]ᵥ = (nth i (map size l) VNil).[magic_ξ_2 Γ' a]ᵥ))
+    (PT := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> PAT Γ' ⊢ (nth i (map seg_val l) PNil).[magic_ξ_2 Γ' a]ₚ -> (nth i (map seg_val l) PNil).[magic_ξ (S Γ') Γ' a]ₚ = (nth i (map seg_val l) PNil).[magic_ξ_2 Γ' a]ₚ) /\
+      (forall Γ' a, VALCLOSED a -> VAL Γ' ⊢ (nth i (map seg_size l) VNil).[magic_ξ_2 Γ' a]ᵥ -> (nth i (map seg_size l) VNil).[magic_ξ (S Γ') Γ' a]ᵥ = (nth i (map seg_size l) VNil).[magic_ξ_2 Γ' a]ᵥ))
     .
     * intros. simpl. f_equal. inv H1. now apply H in H4.
     * intros. simpl. f_equal. inv H1. now apply H in H4.
@@ -2459,7 +2459,7 @@ Module SUB_IMPLIES_SCOPE.
     induction vl using list_length_ind.
     destruct (length vl) eqn:P; simpl; intros.
     * apply length_zero_iff_nil in P. subst. now rewrite idsubst_is_id_exp in H1.
-    * apply eq_sym, last_element_exists in P as P'. destruct P' as [l [x EQ]]. subst.
+    * destruct (exists_last (l := vl) ltac:(intros ->; discriminate P)) as [l [x EQ]]. subst.
       apply Forall_app in H0 as [H01 H02]. inv H02. clear H4.
       rewrite list_subst_app_2 in H1; auto. rewrite <- subst_comp_exp in H1.
       cbn in H1.

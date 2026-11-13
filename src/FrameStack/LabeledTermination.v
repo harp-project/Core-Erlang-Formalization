@@ -249,7 +249,7 @@ Inductive terminates_in_k : FrameStack -> Redex -> SideEffectList -> nat -> Prop
 (** segments *)
 (** Heating *)
 | heat_seg (seg : Segment Exp Exp) xs l k :
-  ⟨FSeg1 (size seg) (unit seg) (type seg) (sign seg) (endian seg) :: xs, val seg⟩ l – k ↓
+  ⟨FSeg1 (seg_size seg) (seg_unit seg) (seg_type seg) (seg_sign seg) (seg_endian seg) :: xs, seg_val seg⟩ l – k ↓
 ->
   ⟨ xs, ESeg seg ⟩ l – S k ↓
 

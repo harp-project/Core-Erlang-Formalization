@@ -7,6 +7,7 @@ showing the correctness of concrete refactorings.
 From CoreErlang.FrameStack Require Export Compatibility.
 
 Import ListNotations.
+Import Notations.
 
 Definition CIU (r1 r2 : Redex) : Prop :=
   REDCLOSED r1 /\ REDCLOSED r2 /\
@@ -321,7 +322,7 @@ Proof.
   4-8,10-13: epose proof (H [FCase1 [([PMap (repeat (PVar, PVar) (length l))], ˝ttrue, ˝VNil);([PVar], ˝ttrue , °inf)]] ltac:(scope_solver; repeat_scope) _) as H0; repeat deriv; inv H8; inv H7; simpl in H10; do 2 deriv; simpl in H6; apply inf_diverges in H6; contradiction.
 
   5-24: destruct_scopes; lia.
-  15-23: epose proof (H [FCase1 [([PBin [{| val := PVar; size := VLit (Atom "all"%string); type := IntType; unit := 1; sign := Unsigned; endian := BigEndian|}]], ˝ttrue, ˝VNil);([PVar], ˝ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H8; inv H7; simpl in H10; do 2 deriv; simpl in H6; apply inf_diverges in H6; contradiction.
+  15-23: epose proof (H [FCase1 [([PBin [{| seg_val := PVar; seg_size := VLit (Atom "all"%string); seg_type := IntType; seg_unit := 1; seg_sign := Unsigned; seg_endian := BigEndian|}]], ˝ttrue, ˝VNil);([PVar], ˝ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H8; inv H7; simpl in H10; do 2 deriv; simpl in H6; apply inf_diverges in H6; contradiction.
   Unshelve. (* evaluation in the omitted proofs *)
   16-24: now do 10 econstructor.
   16-24:

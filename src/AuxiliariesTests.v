@@ -1,4 +1,5 @@
 From CoreErlang Require Export Auxiliaries.
+Import Notations.
 
 Goal eval "erlang" "+" [VLit (Integer 1); VLit (Integer 2)] = Some (RValSeq [VLit (Integer 3)], None).
 Proof. reflexivity. Qed.

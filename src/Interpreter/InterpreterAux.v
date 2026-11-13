@@ -1,4 +1,5 @@
 From CoreErlang.Concurrent Require Export ProcessSemantics NodeSemantics.
+Import Notations.
 
 (** This file contains wrapper functions and auxiliary definitions
     for the interpreter.
@@ -169,7 +170,7 @@ match n with
                             (usedPIDsExp_Interp e1) 
                             (pids_union (usedPIDsExp_Interp e2) (usedPIDsExp_Interp e3))
  | EBin l => flat_union_Interp usedPIDsExp_Interp l
- | ESeg seg => pids_union (usedPIDsExp_Interp (val seg)) (usedPIDsExp_Interp (Syntax.size seg))
+ | ESeg seg => pids_union (usedPIDsExp_Interp (seg_val seg)) (usedPIDsExp_Interp (seg_size seg))
 end
 with usedPIDsPat_Interp (p : Pat) : gset PID :=
 match p with
@@ -179,8 +180,8 @@ match p with
  | PTuple l => flat_union_Interp usedPIDsPat_Interp l
  | PMap l => flat_union_Interp (fun x => pids_union (usedPIDsPat_Interp x.1) (usedPIDsPat_Interp x.2)) l
  | PNil => pids_empty
- | PBin segments => flat_union_Interp (fun x => pids_union (usedPIDsPat_Interp (val x))
-                                                           (usedPIDsVal_Interp (Syntax.size x))) segments
+ | PBin segments => flat_union_Interp (fun x => pids_union (usedPIDsPat_Interp (seg_val x))
+                                                           (usedPIDsVal_Interp (seg_size x))) segments
 end.
 
 Definition usedPIDsRed_Interp (r : Redex) : gset PID :=

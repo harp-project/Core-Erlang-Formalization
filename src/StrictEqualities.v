@@ -80,8 +80,8 @@ Proof.
     (Z  := Forall (fun '(_,e) => Exp_eqb_strict e e = true))
     (PQ := Forall (fun p => Pat_eqb_strict p p = true))
     (PR := Forall (PBoth (fun p => Pat_eqb_strict p p = true)))
-    (PT := Forall (fun seg : Segment Pat Val => Pat_eqb_strict (Syntax.val seg) (Syntax.val seg) = true
-                    /\ Val_eqb_strict (Syntax.size seg) (Syntax.size seg) = true))
+    (PT := Forall (fun seg : Segment Pat Val => Pat_eqb_strict (seg_val seg) (seg_val seg) = true
+                    /\ Val_eqb_strict (seg_size seg) (seg_size seg) = true))
   ; simpl; auto; intros.
   (* Val *)
   * apply Lit_eqb_refl.
@@ -163,8 +163,8 @@ Proof.
     (PQ := Forall (fun p1 => forall p2, Pat_eqb_strict p1 p2 = true -> p1 = p2))
     (PR := Forall (PBoth (fun p1 => forall p2, Pat_eqb_strict p1 p2 = true -> p1 = p2)))
     (PT := Forall (fun seg : Segment Pat Val =>
-             (forall p2, Pat_eqb_strict (Syntax.val seg) p2 = true -> Syntax.val seg = p2)
-             /\ (forall v2, Val_eqb_strict (Syntax.size seg) v2 = true -> Syntax.size seg = v2)))
+             (forall p2, Pat_eqb_strict (seg_val seg) p2 = true -> seg_val seg = p2)
+             /\ (forall v2, Val_eqb_strict (seg_size seg) v2 = true -> seg_size seg = v2)))
   ; simpl; auto; intros.
   (* Exp/NonVal wrappers *)
   * destruct e2; try discriminate. apply H in H0. subst. reflexivity.

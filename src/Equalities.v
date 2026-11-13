@@ -160,10 +160,10 @@ Section Basic_Eq_Dec.
     split.
     * intros. subst. apply Segment_eqb_refl.
       intros. by apply H. intros. by apply H0.
-    * intros. destruct s1, s2. simpl in *.
+    * intros. destruct s1 as [v1 sz1 u1 t1 sg1 en1], s2 as [v2 sz2 u2 t2 sg2 en2]. simpl in *.
       repeat (rewrite andb_true_iff in H1; destruct H1 as [H1 ?]).
-      rewrite (proj2 (H val val0)). 2: assumption.
-      rewrite (proj2 (H0 size size0)). 2: assumption.
+      rewrite (proj2 (H v1 v2)). 2: assumption.
+      rewrite (proj2 (H0 sz1 sz2)). 2: assumption.
       apply BinType_eqb_eq in H4.
       apply BinSign_eqb_eq in H3.
       apply BinEnd_eqb_eq in H2.
@@ -328,13 +328,13 @@ Section Equalities.
       * by right.
       * by right.
       * specialize (IHsegments segments0).
-        destruct a, s2; simpl in *.
-        destruct (Pat_eq_dec val val0). 2: by right; intro X; congruence.
-        destruct (Val_eq_dec size size0). 2: by right; intro X; congruence.
-        destruct (Nat.eq_dec unit unit0). 2: by right; intro X; congruence.
-        destruct (BinType_eq_dec type type0). 2: by right; intro X; congruence.
-        destruct (BinSign_eq_dec sign sign0). 2: by right; intro X; congruence.
-        destruct (BinEnd_eq_dec endian endian0). 2: by right; intro X; congruence.
+        destruct a as [v1 sz1 u1 t1 sg1 en1], s2 as [v2 sz2 u2 t2 sg2 en2]; simpl in *.
+        destruct (Pat_eq_dec v1 v2). 2: by right; intro X; congruence.
+        destruct (Val_eq_dec sz1 sz2). 2: by right; intro X; congruence.
+        destruct (Nat.eq_dec u1 u2). 2: by right; intro X; congruence.
+        destruct (BinType_eq_dec t1 t2). 2: by right; intro X; congruence.
+        destruct (BinSign_eq_dec sg1 sg2). 2: by right; intro X; congruence.
+        destruct (BinEnd_eq_dec en1 en2). 2: by right; intro X; congruence.
         destruct IHsegments. 2: by right; intro X; congruence.
         subst. by left.
     }

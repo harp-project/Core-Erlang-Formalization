@@ -48,8 +48,8 @@ match n with
                                  vl2 (renamePID from to e3)
  | EBin l => EBin (map (renamePID from to) l)
  | ESeg (Build_Segment v s u t sgn endi) =>
-    ESeg {| val := renamePID from to v; Syntax.size := renamePID from to s;
-            type := t; unit := u; sign := sgn; endian := endi |}
+    ESeg {| seg_val :=renamePID from to v; seg_size := renamePID from to s;
+            seg_type := t; seg_unit := u; seg_sign := sgn; seg_endian := endi |}
 end
 with renamePIDPat (from to : PID) (p : Pat) : Pat :=
 match p with
@@ -60,12 +60,12 @@ match p with
  | PMap l => PMap (map (prod_map (renamePIDPat from to) (renamePIDPat from to)) l)
  | PNil => PNil
  | PBin segments =>
-   PBin (map (fun seg => {| val := renamePIDPat from to (val seg);
-                            Syntax.size := renamePIDVal from to (Syntax.size seg);
-                            unit := unit seg;
-                            type := type seg;
-                            sign := sign seg;
-                            endian := endian seg |}) segments)
+   PBin (map (fun seg => {| seg_val :=renamePIDPat from to (seg_val seg);
+                            seg_size := renamePIDVal from to (seg_size seg);
+                            seg_unit := seg_unit seg;
+                            seg_type := seg_type seg;
+                            seg_sign := seg_sign seg;
+                            seg_endian := seg_endian seg |}) segments)
 end.
 
 Notation "e .⟦ x ↦ y ⟧" := (renamePID x y e) (at level 1, left associativity).
@@ -133,7 +133,7 @@ Proof.
   induction p using Pat_ind_weakened with
     (Q := fun l => Forall (fun p => PatVars (renamePIDPat from to p) = PatVars p) l)
     (R := fun l => Forall (PBoth (fun p => PatVars (renamePIDPat from to p) = PatVars p)) l)
-    (T := fun l => Forall (fun seg => PatVars (renamePIDPat from to (val seg)) = PatVars (val seg)) l);
+    (T := fun l => Forall (fun seg => PatVars (renamePIDPat from to (seg_val seg)) = PatVars (seg_val seg)) l);
   simpl; auto.
   * induction l; simpl; auto. inversion IHp; subst. rewrite H1. f_equal. auto.
   * induction l; simpl; auto. inversion IHp; subst. destruct H1 as [H1a H1b]. destruct a. simpl in *. rewrite H1a, H1b. f_equal. auto.
@@ -272,7 +272,7 @@ Proof.
     - rewrite map_map. rewrite length_map in H1.
       rewrite map_nth with (d := default_segment).
       cbn. specialize (H i H1 from to).
-      setoid_rewrite (map_nth val) with (d := default_segment) in H.
+      setoid_rewrite (map_nth seg_val) with (d := default_segment) in H.
       now cbn in H.
     - rewrite map_map. rewrite length_map in H1.
       rewrite map_nth with (d := default_segment).
@@ -305,10 +305,10 @@ Proof.
                       renamePIDPat from to (renamePat ρ p1) /\
          renamePat ρ (renamePIDPat from to p2) =
                       renamePIDPat from to (renamePat ρ p2)) l)
-    (PT := fun l => Forall (fun seg => forall ρ from to, renamePat ρ (renamePIDPat from to (val seg)) =
-                      renamePIDPat from to (renamePat ρ (val seg)) /\
-         renameVal ρ (renamePIDVal from to (Syntax.size seg)) =
-                      renamePIDVal from to (renameVal ρ (Syntax.size seg))) l)
+    (PT := fun l => Forall (fun seg => forall ρ from to, renamePat ρ (renamePIDPat from to (seg_val seg)) =
+                      renamePIDPat from to (renamePat ρ (seg_val seg)) /\
+         renameVal ρ (renamePIDVal from to (seg_size seg)) =
+                      renamePIDVal from to (renameVal ρ (seg_size seg))) l)
     (QV := fun l => Forall (fun e => forall ρ from to, renameVal ρ (renamePIDVal from to e) =
                       renamePIDVal from to (renameVal ρ e)) l)
     (Q := fun l => Forall (fun e => forall ρ from to, rename ρ (renamePID from to e) =
@@ -447,10 +447,10 @@ Proof.
        (renamePIDPat from to p1).[renamePID_subst from to σ]ₚ /\
          renamePIDPat from to p2.[σ]ₚ =
        (renamePIDPat from to p2).[renamePID_subst from to σ]ₚ) l)
-    (PT := fun l => Forall (fun seg => forall from to σ, renamePIDPat from to (val seg).[σ]ₚ =
-       (renamePIDPat from to (val seg)).[renamePID_subst from to σ]ₚ /\
-         renamePIDVal from to (Syntax.size seg).[σ]ᵥ =
-       (renamePIDVal from to (Syntax.size seg)).[renamePID_subst from to σ]ᵥ) l)
+    (PT := fun l => Forall (fun seg => forall from to σ, renamePIDPat from to (seg_val seg).[σ]ₚ =
+       (renamePIDPat from to (seg_val seg)).[renamePID_subst from to σ]ₚ /\
+         renamePIDVal from to (seg_size seg).[σ]ᵥ =
+       (renamePIDVal from to (seg_size seg)).[renamePID_subst from to σ]ᵥ) l)
     (QV := fun l => Forall (fun e => forall from to σ, renamePIDVal from to e.[σ]ᵥ = 
        (renamePIDVal from to e).[renamePID_subst from to σ]ᵥ) l)
     (Q := fun l => Forall (fun e => forall from to σ, renamePID from to e.[σ] = 
@@ -664,8 +664,8 @@ Qed.
 
 (** Matching a bitstring never binds PIDs, so renaming the bindings is a no-op. *)
 Lemma match_PBin_pidfree : forall l from to,
-  Forall (fun seg => forall v, match_pattern (val seg) (renamePIDVal from to v) =
-            fmap (map (renamePIDVal from to)) (match_pattern (val seg) v)) l ->
+  Forall (fun seg => forall v, match_pattern (seg_val seg) (renamePIDVal from to v) =
+            fmap (map (renamePIDVal from to)) (match_pattern (seg_val seg) v)) l ->
   forall bits,
     fmap (map (renamePIDVal from to)) (match_pattern (PBin l) (VBitstring bits)) =
     match_pattern (PBin l) (VBitstring bits).
@@ -692,8 +692,8 @@ Proof.
             fmap (map (renamePIDVal from to)) (match_pattern p v)))
     (R := Forall (PBoth (fun p => forall v from to, match_pattern p (renamePIDVal from to v) =
             fmap (map (renamePIDVal from to)) (match_pattern p v))))
-    (T := Forall (fun seg => forall v from to, match_pattern (val seg) (renamePIDVal from to v) =
-            fmap (map (renamePIDVal from to)) (match_pattern (val seg) v))).
+    (T := Forall (fun seg => forall v from to, match_pattern (seg_val seg) (renamePIDVal from to v) =
+            fmap (map (renamePIDVal from to)) (match_pattern (seg_val seg) v))).
   all: try (intros v from to; destruct v; simpl; auto).
   all: try (destruct (from =? p); reflexivity).
   * destruct Lit_beq; reflexivity.
@@ -763,8 +763,8 @@ Qed.
     contain values) does not influence matching: sizes only matter if they are
     literals, which are not changed by the renaming. *)
 Lemma match_PBin_renamePIDPat : forall l from to,
-  Forall (fun seg => forall v, match_pattern (renamePIDPat from to (val seg)) v =
-                               match_pattern (val seg) v) l ->
+  Forall (fun seg => forall v, match_pattern (renamePIDPat from to (seg_val seg)) v =
+                               match_pattern (seg_val seg) v) l ->
   forall bits,
     match_pattern (renamePIDPat from to (PBin l)) (VBitstring bits) =
     match_pattern (PBin l) (VBitstring bits).
@@ -790,7 +790,7 @@ Proof.
   intros p. induction p using Pat_ind_weakened with
     (Q := Forall (fun p => forall v from to, match_pattern (renamePIDPat from to p) v = match_pattern p v))
     (R := Forall (PBoth (fun p => forall v from to, match_pattern (renamePIDPat from to p) v = match_pattern p v)))
-    (T := Forall (fun seg => forall v from to, match_pattern (renamePIDPat from to (val seg)) v = match_pattern (val seg) v)).
+    (T := Forall (fun seg => forall v from to, match_pattern (renamePIDPat from to (seg_val seg)) v = match_pattern (seg_val seg) v)).
   all: try (intros v from to; destruct v; simpl; auto).
   * rewrite IHp1, IHp2. reflexivity.
   * revert l0. induction IHp; intros l0; destruct l0; simpl; try reflexivity.
@@ -1892,7 +1892,7 @@ match n with
  | ELetRec l e  => usedPIDsExp e ∪ flat_union (fun x => usedPIDsExp x.2) l
  | ETry e1 vl1 e2 vl2 e3 => usedPIDsExp e1 ∪ usedPIDsExp e2 ∪ usedPIDsExp e3
  | EBin l       => flat_union usedPIDsExp l
- | ESeg seg     => usedPIDsExp (val seg) ∪ usedPIDsExp (Syntax.size seg)
+ | ESeg seg     => usedPIDsExp (seg_val seg) ∪ usedPIDsExp (seg_size seg)
 end
 with usedPIDsPat (p : Pat) : gset PID :=
 match p with
@@ -1902,7 +1902,7 @@ match p with
  | PTuple l      => flat_union usedPIDsPat l
  | PMap l        => flat_union (fun x => usedPIDsPat x.1 ∪ usedPIDsPat x.2) l
  | PNil          => ∅
- | PBin segments => flat_union (fun x => usedPIDsPat (val x) ∪ usedPIDsVal (Syntax.size x)) segments
+ | PBin segments => flat_union (fun x => usedPIDsPat (seg_val x) ∪ usedPIDsVal (seg_size x)) segments
 end
 .
 
@@ -1990,8 +1990,8 @@ Proof.
         (from ∉ (usedPIDsPat p1) -> renamePIDPat from to p1 = p1) /\
         (from ∉ (usedPIDsPat p2) -> renamePIDPat from to p2 = p2)) l)
     (PT := fun l => Forall (fun seg => forall from to,
-        (from ∉ (usedPIDsPat (val seg)) -> renamePIDPat from to (val seg) = val seg) /\
-        (from ∉ (usedPIDsVal (Syntax.size seg)) -> renamePIDVal from to (Syntax.size seg) = Syntax.size seg)) l)
+        (from ∉ (usedPIDsPat (seg_val seg)) -> renamePIDPat from to (seg_val seg) = seg_val seg) /\
+        (from ∉ (usedPIDsVal (seg_size seg)) -> renamePIDVal from to (seg_size seg) = seg_size seg)) l)
     (QV := fun l => Forall (fun e => forall from to, from ∉ (usedPIDsVal e) -> renamePIDVal from to e = e) l)
     (Q := fun l => Forall (fun e => forall from to, from ∉ (usedPIDsExp e) -> renamePID from to e = e) l)
     (RV := fun l => Forall (fun '(e1, e2) => forall from to,
@@ -2291,9 +2291,9 @@ Proof.
         (to ∉ (usedPIDsPat p1) -> renamePIDPat to from (renamePIDPat from to p1) = p1) /\
         (to ∉ (usedPIDsPat p2) -> renamePIDPat to from (renamePIDPat from to p2) = p2)) l)
     (PT := fun l => Forall (fun seg => forall from to,
-        (to ∉ (usedPIDsPat (val seg)) -> renamePIDPat to from (renamePIDPat from to (val seg)) = val seg) /\
-        (to ∉ (usedPIDsVal (Syntax.size seg)) ->
-           (Syntax.size seg).⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = Syntax.size seg)) l)
+        (to ∉ (usedPIDsPat (seg_val seg)) -> renamePIDPat to from (renamePIDPat from to (seg_val seg)) = seg_val seg) /\
+        (to ∉ (usedPIDsVal (seg_size seg)) ->
+           (seg_size seg).⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = seg_size seg)) l)
     (QV := fun l => Forall (fun e => forall from to, to ∉ (usedPIDsVal e) -> e.⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = e) l)
     (Q := fun l => Forall (fun e => forall from to, to ∉ (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e) l)
     (RV := fun l => Forall (fun '(e1, e2) => forall from to,
@@ -2570,8 +2570,8 @@ Proof.
         (PAT Γ ⊢ renamePIDPat from to p1 -> PAT Γ ⊢ p1) /\
         (PAT Γ ⊢ renamePIDPat from to p2 -> PAT Γ ⊢ p2)) l)
     (PT := fun l => Forall (fun seg => forall Γ from to,
-        (PAT Γ ⊢ renamePIDPat from to (val seg) -> PAT Γ ⊢ val seg) /\
-        (VAL Γ ⊢ renamePIDVal from to (Syntax.size seg) -> VAL Γ ⊢ Syntax.size seg)) l)
+        (PAT Γ ⊢ renamePIDPat from to (seg_val seg) -> PAT Γ ⊢ seg_val seg) /\
+        (VAL Γ ⊢ renamePIDVal from to (seg_size seg) -> VAL Γ ⊢ seg_size seg)) l)
     (Q := fun l => Forall (fun e => forall Γ from to, EXP Γ ⊢ renamePID from to e -> EXP Γ ⊢ e) l)
     (QV := fun l => Forall (fun e => forall Γ from to, VAL Γ ⊢ renamePIDVal from to e -> VAL Γ ⊢ e) l)
     (R := fun l => Forall (fun '(e1, e2) => forall Γ from to, (EXP Γ ⊢ renamePID from to e1 -> EXP Γ ⊢ e1) /\ (EXP Γ ⊢ renamePID from to e2 -> EXP Γ ⊢ e2)) l)
@@ -2735,7 +2735,7 @@ Proof.
   apply Exp_ind with
     (PQ := fun l => Forall (fun pt => forall p, renamePIDPat p p pt = pt) l)
     (PR := fun l => Forall (fun '(p1, p2) => forall p, (renamePIDPat p p p1 = p1) /\ (renamePIDPat p p p2 = p2)) l)
-    (PT := fun l => Forall (fun seg => forall p, (renamePIDPat p p (val seg) = val seg) /\ (renamePIDVal p p (Syntax.size seg) = Syntax.size seg)) l)
+    (PT := fun l => Forall (fun seg => forall p, (renamePIDPat p p (seg_val seg) = seg_val seg) /\ (renamePIDVal p p (seg_size seg) = seg_size seg)) l)
     (Q := fun l => Forall (fun e => forall p, renamePID p p e = e) l)
     (QV := fun l => Forall (fun e => forall p, renamePIDVal p p e = e) l)
     (R := fun l => Forall (fun '(e1, e2) => forall p, (renamePID p p e1 = e1) /\ (renamePID p p e2 = e2)) l)
@@ -3035,22 +3035,22 @@ Qed.
 Local Lemma usedPIDsPatSeg_flat_union_helper :
   forall l p p',
   (Forall (fun seg => forall p p',
-      (usedPIDsPat (renamePIDPat p p' (val seg)) = if decide (p ∈ usedPIDsPat (val seg))
-                                        then {[p']} ∪ usedPIDsPat (val seg) ∖ {[p]}
-                                        else usedPIDsPat (val seg) ∖ {[p]}) /\
-      (usedPIDsVal (renamePIDVal p p' (Syntax.size seg)) = if decide (p ∈ usedPIDsVal (Syntax.size seg))
-                                        then {[p']} ∪ usedPIDsVal (Syntax.size seg) ∖ {[p]}
-                                        else usedPIDsVal (Syntax.size seg) ∖ {[p]})) l) ->
-  flat_union (fun x => usedPIDsPat (val x) ∪ usedPIDsVal (Syntax.size x))
-    (map (fun seg => {| val := renamePIDPat p p' (val seg);
-                        Syntax.size := renamePIDVal p p' (Syntax.size seg);
-                        unit := unit seg;
-                        type := type seg;
-                        sign := sign seg;
-                        endian := endian seg |}) l) =
-  if (decide (p ∈ flat_union (fun x => usedPIDsPat (val x) ∪ usedPIDsVal (Syntax.size x)) l))
-  then {[p']} ∪ flat_union (fun x => usedPIDsPat (val x) ∪ usedPIDsVal (Syntax.size x)) l ∖ {[p]}
-  else flat_union (fun x => usedPIDsPat (val x) ∪ usedPIDsVal (Syntax.size x)) l ∖ {[p]}.
+      (usedPIDsPat (renamePIDPat p p' (seg_val seg)) = if decide (p ∈ usedPIDsPat (seg_val seg))
+                                        then {[p']} ∪ usedPIDsPat (seg_val seg) ∖ {[p]}
+                                        else usedPIDsPat (seg_val seg) ∖ {[p]}) /\
+      (usedPIDsVal (renamePIDVal p p' (seg_size seg)) = if decide (p ∈ usedPIDsVal (seg_size seg))
+                                        then {[p']} ∪ usedPIDsVal (seg_size seg) ∖ {[p]}
+                                        else usedPIDsVal (seg_size seg) ∖ {[p]})) l) ->
+  flat_union (fun x => usedPIDsPat (seg_val x) ∪ usedPIDsVal (seg_size x))
+    (map (fun seg => {| seg_val :=renamePIDPat p p' (seg_val seg);
+                        seg_size := renamePIDVal p p' (seg_size seg);
+                        seg_unit := seg_unit seg;
+                        seg_type := seg_type seg;
+                        seg_sign := seg_sign seg;
+                        seg_endian := seg_endian seg |}) l) =
+  if (decide (p ∈ flat_union (fun x => usedPIDsPat (seg_val x) ∪ usedPIDsVal (seg_size x)) l))
+  then {[p']} ∪ flat_union (fun x => usedPIDsPat (seg_val x) ∪ usedPIDsVal (seg_size x)) l ∖ {[p]}
+  else flat_union (fun x => usedPIDsPat (seg_val x) ∪ usedPIDsVal (seg_size x)) l ∖ {[p]}.
 Proof.
   induction l; intros; simpl. set_solver.
   rewrite Forall_forall in H.
@@ -3153,12 +3153,12 @@ Proof.
                                         then {[p']} ∪ usedPIDsPat p2 ∖ {[p]}
                                         else usedPIDsPat p2 ∖ {[p]})) l)
     (PT := fun l => Forall (fun seg => forall p p',
-      (usedPIDsPat (renamePIDPat p p' (val seg)) = if decide (p ∈ usedPIDsPat (val seg))
-                                        then {[p']} ∪ usedPIDsPat (val seg) ∖ {[p]}
-                                        else usedPIDsPat (val seg) ∖ {[p]}) /\
-      (usedPIDsVal (renamePIDVal p p' (Syntax.size seg)) = if decide (p ∈ usedPIDsVal (Syntax.size seg))
-                                        then {[p']} ∪ usedPIDsVal (Syntax.size seg) ∖ {[p]}
-                                        else usedPIDsVal (Syntax.size seg) ∖ {[p]})) l)
+      (usedPIDsPat (renamePIDPat p p' (seg_val seg)) = if decide (p ∈ usedPIDsPat (seg_val seg))
+                                        then {[p']} ∪ usedPIDsPat (seg_val seg) ∖ {[p]}
+                                        else usedPIDsPat (seg_val seg) ∖ {[p]}) /\
+      (usedPIDsVal (renamePIDVal p p' (seg_size seg)) = if decide (p ∈ usedPIDsVal (seg_size seg))
+                                        then {[p']} ∪ usedPIDsVal (seg_size seg) ∖ {[p]}
+                                        else usedPIDsVal (seg_size seg) ∖ {[p]})) l)
     (Q := fun l => Forall (fun e => forall p p',
     usedPIDsExp (renamePID p p' e) = if decide (p ∈ usedPIDsExp e)
                                         then {[p']} ∪ usedPIDsExp e ∖ {[p]}
@@ -3417,10 +3417,10 @@ Proof.
                (renamePIDPat from1 to1 (renamePIDPat from2 to2 p2) =
                 renamePIDPat from2 to2 (renamePIDPat from1 to1 p2))) l)
     (PT := fun l => Forall (fun seg => forall from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
-               (renamePIDPat from1 to1 (renamePIDPat from2 to2 (val seg)) =
-                renamePIDPat from2 to2 (renamePIDPat from1 to1 (val seg))) /\
-               (renamePIDVal from1 to1 (renamePIDVal from2 to2 (Syntax.size seg)) =
-                renamePIDVal from2 to2 (renamePIDVal from1 to1 (Syntax.size seg)))) l)
+               (renamePIDPat from1 to1 (renamePIDPat from2 to2 (seg_val seg)) =
+                renamePIDPat from2 to2 (renamePIDPat from1 to1 (seg_val seg))) /\
+               (renamePIDVal from1 to1 (renamePIDVal from2 to2 (seg_size seg)) =
+                renamePIDVal from2 to2 (renamePIDVal from1 to1 (seg_size seg)))) l)
     (Q := fun l => Forall (fun e => forall from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
                renamePID from1 to1 (renamePID from2 to2 e) =
                renamePID from2 to2 (renamePID from1 to1 e)) l)

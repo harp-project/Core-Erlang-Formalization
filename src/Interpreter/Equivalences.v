@@ -3,6 +3,7 @@ From CoreErlang.Concurrent Require Export ProcessSemantics ClosednessLemmas.
 From CoreErlang.Interpreter Require Export StepFunctions InterpreterAuxLemmas.
 From CoreErlang Require Export StrictEqualities Equalities.
 From stdpp Require Export option list.
+Import Notations.
 
 (** This file contains the equivalence proofs between the inductive and functional
     definitions of the semantics. Note that the functional definitions don't account

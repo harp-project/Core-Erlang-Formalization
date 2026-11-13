@@ -107,8 +107,8 @@ Fixpoint seq_elim (e : Exp) : Exp :=
       | EBin l =>
           EExp (EBin (map (fun x => seq_elim x) l))
       | ESeg (Build_Segment val size u t s e) =>
-        EExp (ESeg {| val := seq_elim val; Syntax.size := seq_elim size;
-                      unit := u; type := t; sign := s; endian := e |})
+        EExp (ESeg {| seg_val := seq_elim val; seg_size := seq_elim size;
+                      seg_unit := u; seg_type := t; seg_sign := s; seg_endian := e |})
       end
     end
 (*   end *).
@@ -149,7 +149,7 @@ with size_nonval (nv : NonVal) : nat :=
     | ELetRec l e => list_sum (map (fun '(_, a) => size_exp a) l) + size_exp e
     | ETry e1 _ e2 _ e3 => size_exp e1 + size_exp e2 + size_exp e3
     | EBin l => list_sum (map size_exp l)
-    | ESeg seg => size_exp (val seg) + size_exp (Syntax.size seg)
+    | ESeg seg => size_exp (seg_val seg) + size_exp (seg_size seg)
   end.
 
 Ltac do_step := econstructor; [constructor;auto| simpl].

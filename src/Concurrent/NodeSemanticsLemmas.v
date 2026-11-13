@@ -614,8 +614,7 @@ Proof.
   induction l using list_length_ind.
   intros. destruct (length l) eqn:Hlen.
   * apply length_zero_iff_nil in Hlen. subst. set_solver.
-  * apply eq_sym, last_element_exists in Hlen as Hlen'.
-    destruct Hlen' as [l' [x ?]]; subst.
+  * destruct (exists_last (l := l) ltac:(intros ->; discriminate Hlen)) as [l' [x ?]]; subst.
     rename n' into n''.
     apply closureNodeSem_trans_rev in H0 as [n' [D1 D2]].
     rewrite length_app in Hlen. simpl in Hlen. inv D2. inv H6. inv H4.
@@ -735,7 +734,8 @@ Proof.
   destruct (length l) eqn:Hl; intros.
   * apply length_zero_iff_nil in Hl; subst. inv H0. auto.
   * pose proof Hl.
-    eapply eq_sym, last_element_exists in Hl as [l' [x Eq]]. subst.
+    destruct (exists_last (l := l) ltac:(intros ->; discriminate Hl)) as [l' [x Eq]].
+    clear Hl. subst.
     apply closureNodeSem_trans_rev in H0 as [n0' [D1 D2]].
     rewrite length_app in H2. simpl in *.
     inv D2. inv H7.
@@ -1028,7 +1028,8 @@ Proof.
   destruct (length l) eqn:Hl; intros.
   * apply length_zero_iff_nil in Hl; subst. inv H0. auto.
   * pose proof Hl.
-    eapply eq_sym, last_element_exists in Hl as [l' [x Eq]]. subst.
+    destruct (exists_last (l := l) ltac:(intros ->; discriminate Hl)) as [l' [x Eq]].
+    clear Hl. subst.
     apply closureNodeSem_trans_rev in H0 as [n0' [D1 D2]].
     rewrite length_app in H2. simpl in *.
     inv D2. inv H7. eapply compatibility_of_reduction_rev in H5.
@@ -2207,8 +2208,8 @@ Proof.
         (usedPIDsPat p1 = usedPIDsPat (renamePat ρ p1)) /\
         (usedPIDsPat p2 = usedPIDsPat (renamePat ρ p2))) l)
     (PT := fun l => Forall (fun seg => forall ρ,
-        (usedPIDsPat (val seg) = usedPIDsPat (renamePat ρ (val seg))) /\
-        (usedPIDsVal (Syntax.size seg) = usedPIDsVal (renameVal ρ (Syntax.size seg)))) l)
+        (usedPIDsPat (seg_val seg) = usedPIDsPat (renamePat ρ (seg_val seg))) /\
+        (usedPIDsVal (seg_size seg) = usedPIDsVal (renameVal ρ (seg_size seg)))) l)
     (QV := fun l => Forall (fun e => forall ρ, usedPIDsVal e = usedPIDsVal (renameVal ρ e)) l)
     (Q := fun l => Forall (fun e => forall ρ, usedPIDsExp e = usedPIDsExp (rename ρ e)) l)
     (RV := fun l => Forall (fun '(e1, e2) => forall ρ,
@@ -2315,8 +2316,8 @@ Proof.
         (ι ∈ (usedPIDsPat p1.[ξ]ₚ ) -> ι ∈ (usedPIDsPat p1) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) /\
         (ι ∈ (usedPIDsPat p2.[ξ]ₚ ) -> ι ∈ (usedPIDsPat p2) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))) l)
     (PT := fun l => Forall (fun seg => forall ι ξ,
-        (ι ∈ (usedPIDsPat (val seg).[ξ]ₚ ) -> ι ∈ (usedPIDsPat (val seg)) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) /\
-        (ι ∈ (usedPIDsVal (Syntax.size seg).[ξ]ᵥ ) -> ι ∈ (usedPIDsVal (Syntax.size seg)) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))) l)
+        (ι ∈ (usedPIDsPat (seg_val seg).[ξ]ₚ ) -> ι ∈ (usedPIDsPat (seg_val seg)) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) /\
+        (ι ∈ (usedPIDsVal (seg_size seg).[ξ]ᵥ ) -> ι ∈ (usedPIDsVal (seg_size seg)) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))) l)
     (QV := fun l => Forall (fun e => forall ι ξ, ι ∈ (usedPIDsVal e.[ξ]ᵥ ) -> ι ∈ (usedPIDsVal e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) l)
     (Q := fun l => Forall (fun e => forall ι ξ, ι ∈ (usedPIDsExp e.[ξ]) -> ι ∈ (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) l)
     (RV := fun l => Forall (fun '(e1, e2) => forall ι ξ,
@@ -2505,7 +2506,7 @@ Proof.
     destruct y as [v s u t sg en]. simpl in *.
     apply elem_of_union in P2 as [H0 | H0]; [apply (proj1 (P3' _ _)) in H0 | apply (proj2 (P3' _ _)) in H0];
       destruct_or!; auto; left; apply elem_of_flat_union;
-      exists {| val := v; Syntax.size := s; unit := u; type := t; sign := sg; endian := en |}; split; auto; simpl; set_solver.
+      exists {| seg_val := v; seg_size := s; seg_unit := u; seg_type := t; seg_sign := sg; seg_endian := en |}; split; auto; simpl; set_solver.
   * (* clauses of ECase *)
     constructor; [|assumption].
     intros ι ξ. split; [|split]; [| apply H0 | apply H1].
@@ -2543,7 +2544,7 @@ Proof.
     (forall v vs' ι, match_pattern p2 v = Matches vs' ->
     ι ∈ (flat_union usedPIDsVal vs') ->
     ι ∈ (usedPIDsVal v)) ) l)
-    (T := fun l => Forall (fun seg => forall v vs' ι, match_pattern (val seg) v = Matches vs' ->
+    (T := fun l => Forall (fun seg => forall v vs' ι, match_pattern (seg_val seg) v = Matches vs' ->
     ι ∈ (flat_union usedPIDsVal vs') ->
     ι ∈ (usedPIDsVal v)) l).
   all: intros; try now (constructor; auto).

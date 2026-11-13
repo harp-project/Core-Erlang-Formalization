@@ -6,6 +6,7 @@ From CoreErlang.FrameStack Require Import Examples. *)
 Open Scope string_scope.
 
 Import ListNotations.
+Import Notations.
 
 (*Function formalizations*)
 

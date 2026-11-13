@@ -617,9 +617,9 @@ Proof.
            VALCLOSED v1 -> VALCLOSED v2 -> forall l1,
            match_pattern p1 v1 = Matches l1 ->
            exists l2, match_pattern p2 v2 = Matches l2 /\ list_biforall (Vrel n) l1 l2)))
-    (T := Forall (fun seg => forall p2 v1 v2 n, Vrel n v1 v2 -> Prel n (val seg) p2 ->
+    (T := Forall (fun seg => forall p2 v1 v2 n, Vrel n v1 v2 -> Prel n (seg_val seg) p2 ->
            VALCLOSED v1 -> VALCLOSED v2 -> forall l1,
-           match_pattern (val seg) v1 = Matches l1 ->
+           match_pattern (seg_val seg) v1 = Matches l1 ->
            exists l2, match_pattern p2 v2 = Matches l2 /\ list_biforall (Vrel n) l1 l2)); unfold Prel in *.
   8-13: by constructor.
   (* PNil *)
@@ -752,7 +752,7 @@ Proof.
         unfold match_and, bind_match in *.
         destruct decode_bits eqn:X2 in H0; try congruence.
         2: { break_match_hyp; congruence. }
-        destruct (match_pattern val v) eqn:X3; try congruence.
+        destruct (match_pattern seg_val v) eqn:X3; try congruence.
         2: { break_match_hyp; congruence. }
         break_match_hyp; try congruence.
         inv H0.
@@ -937,8 +937,8 @@ Proof.
       fun seg =>
       forall (p2 : Pat) (v1 v2 : Val) n,
       Vrel n v1 v2 ->
-      Prel n (val seg) p2 ->
-      match_pattern (val seg) v1 = NotMatches ->
+      Prel n (seg_val seg) p2 ->
+      match_pattern (seg_val seg) v1 = NotMatches ->
       match_pattern p2 v2 = NotMatches
     )); intros.
   8-13: by constructor.
@@ -1138,8 +1138,8 @@ Proof.
               case_match; try congruence.
               ++ (* Trick to avoid helper lemmas: *)
                  opose proof* (match_pattern_Vrel (PBin l) (PBin segments)
-                   (VBitstring (bv_extract 0 (bvn_n bits0 - Z.to_N x * N.of_nat unit0) (bvn_val bits0)))
-                   (VBitstring (bv_extract 0 (bvn_n bits0 - Z.to_N x * N.of_nat unit0) (bvn_val bits0)))
+                   (VBitstring (bv_extract 0 (bvn_n bits0 - Z.to_N x * N.of_nat seg_unit0) (bvn_val bits0)))
+                   (VBitstring (bv_extract 0 (bvn_n bits0 - Z.to_N x * N.of_nat seg_unit0) (bvn_val bits0)))
                  ) as [? [D2 Hl2]].
                  { by apply Vrel_Bitstring_compat_closed. }
                  { simpl. exact H8. }
@@ -1149,8 +1149,8 @@ Proof.
                  reflexivity. assumption.
         ** case_match; try congruence.
            -- opose proof* (match_pattern_Vrel (PBin l) (PBin segments)
-                 (VBitstring (bv_extract 0 (bvn_n bits0 - Z.to_N x * N.of_nat unit0) (bvn_val bits0)))
-                 (VBitstring (bv_extract 0 (bvn_n bits0 - Z.to_N x * N.of_nat unit0) (bvn_val bits0)))
+                 (VBitstring (bv_extract 0 (bvn_n bits0 - Z.to_N x * N.of_nat seg_unit0) (bvn_val bits0)))
+                 (VBitstring (bv_extract 0 (bvn_n bits0 - Z.to_N x * N.of_nat seg_unit0) (bvn_val bits0)))
               ) as [? [D2 Hl2]].
               { by apply Vrel_Bitstring_compat_closed. }
               { simpl. exact H8. }
@@ -1186,7 +1186,7 @@ Proof.
   intros n. induction p1 using Pat_ind_weakened with
             (Q := Forall (fun p => forall p2, Prel n p p2 -> PatVars p = PatVars p2))
             (R := Forall (PBoth (fun p => forall p2, Prel n p p2 -> PatVars p = PatVars p2)))
-            (T := Forall (fun seg => forall p2, Prel n (val seg) p2 -> PatVars (val seg) = PatVars p2))
+            (T := Forall (fun seg => forall p2, Prel n (seg_val seg) p2 -> PatVars (seg_val seg) = PatVars p2))
     .
   8-13: by constructor.
   all: intro p2; destruct p2; intros H; simpl in H; try congruence.
@@ -1314,7 +1314,7 @@ Proof.
   induction H0; split; intros; try split; intros.
   * inv H1. destruct H as [_ [_ [_ H]]].
     eapply H in H4. destruct H4 as [k2 D]. eexists. constructor. exact D.
-    lia. unfold if_clause. split; auto. intros. split; apply Vrel_Lit_compat_closed.
+    lia. unfold if_clause. split; auto.
   * inv H1. destruct H as [_ [_ [_ H]]].
     eapply H in H7. destruct H7 as [k2 D]. eexists. constructor. 
     congruence. exact D.
@@ -2186,7 +2186,7 @@ Proof.
     induction IHv; destruct l0; auto; intros. contradiction.
     simpl. rewrite H. 2: now rewrite Vrel_Fix_eq.
     destruct H0.
-    apply go_is_biforall in H1 as H1'. apply biforall_length in H1'.
+    apply list_biforall_fix_1 in H1 as H1'. apply biforall_length in H1'.
     apply IHIHv in H1.
     rewrite H1' in *. rewrite Nat.eqb_refl in *.
     rewrite Nat.ltb_irrefl in *. simpl in *.
@@ -2361,8 +2361,11 @@ Lemma Excrel_badmap m v v' :
   Vrel m v v' -> Excrel m (badmap v) (badmap v').
 Proof.
   intros. unfold badmap, Excrel, exc_rel. split; auto. intros m0 Hmn. split.
-  * apply Vrel_Lit_compat_closed.
-  * apply (@Vrel_downclosed m m0 Hmn). assumption.
+  * apply Vrel_Tuple_compat_closed. constructor. 2: constructor.
+    - apply Vrel_Lit_compat_closed.
+    - apply (@Vrel_downclosed m m0 Hmn). assumption.
+    - constructor.
+  * apply Vrel_Nil_compat_closed.
 Qed.
 
 Lemma Excrel_badfun m v v' :
@@ -3343,11 +3346,9 @@ Proof.
   {
     inv H2. 2: inv H3; try solve_complex_Excrel.
     all: apply Vrel_possibilities in H as H'; intuition; destruct_hyps; subst; try by solve_complex_Excrel.
-    1,2,4,5,6,8: right; do 2 eexists; repeat split; try reflexivity; split; try reflexivity; intros; split; try downclose_Vrel;
-      by choose_compat_lemma.
     * apply Vrel_Map_compat_rev in H.
       clear mname f.
-      induction H; simpl. solve_complex_Excrel. downclose_Vrel.
+      induction H; simpl. solve_complex_Excrel.
       destruct hd0 as [k1 v1].
       destruct hd'0 as [k2 v2], H.
       pose proof Vrel_Val_eqb _ _ _ H as EQk.
@@ -3371,7 +3372,7 @@ Proof.
           rewrite Val_eqb_sym in EQ2.
           pose proof Val_eqb_neqb _ _ _ EQ2 EQhd as EQ3.
           rewrite Val_eqb_sym in EQ3. rewrite EQ3.
-          solve_complex_Excrel. downclose_Vrel.
+          solve_complex_Excrel.
     (** almost the same as before, but with the
         default value; therefore, solve_complex_Vrel is
         used instead of solve_complex_Excrel *)
@@ -3405,7 +3406,11 @@ Proof.
   }
   {
     inv H3; try solve_complex_Excrel.
-    apply Vrel_possibilities in H1 as H'; intuition; destruct_hyps; subst; try by solve_complex_Excrel. left.
+    apply Vrel_possibilities in H1 as H'; intuition; destruct_hyps; subst; try by solve_complex_Excrel.
+    1-5, 7-8: right; do 2 eexists; split; [|split; reflexivity]; apply Excrel_badmap;
+      apply Vrel_Tuple_compat_closed; constructor; [apply Vrel_Lit_compat_closed|];
+      repeat (constructor; [assumption|]); constructor.
+    left.
     apply Vrel_Map_compat_rev in H1 as IND.
     clear mname f.
     induction IND; simpl.
@@ -4600,12 +4605,12 @@ Qed.
 
 Lemma Erel_Seg_compat_closed :
   forall m seg seg',
-  (type seg) = (type seg') ->
-  (unit seg) = (unit seg') ->
-  (sign seg) = (sign seg') ->
-  (endian seg) = (endian seg') ->
-  Erel m (val seg) (val seg') ->
-  Erel m (size seg) (size seg') ->
+  (seg_type seg) = (seg_type seg') ->
+  (seg_unit seg) = (seg_unit seg') ->
+  (seg_sign seg) = (seg_sign seg') ->
+  (seg_endian seg) = (seg_endian seg') ->
+  Erel m (seg_val seg) (seg_val seg') ->
+  Erel m (seg_size seg) (seg_size seg') ->
   Erel m (ESeg seg) (ESeg seg').
 Proof.
   intros. destruct seg, seg'; simpl in *; subst.
@@ -4677,12 +4682,12 @@ Global Hint Resolve Erel_Seg_compat_closed : core.
 
 Lemma Erel_Seg_compat :
   forall Γ seg seg',
-  (type seg) = (type seg') ->
-  (unit seg) = (unit seg') ->
-  (sign seg) = (sign seg') ->
-  (endian seg) = (endian seg') ->
-  Erel_open Γ (val seg) (val seg') ->
-  Erel_open Γ (size seg) (size seg') ->
+  (seg_type seg) = (seg_type seg') ->
+  (seg_unit seg) = (seg_unit seg') ->
+  (seg_sign seg) = (seg_sign seg') ->
+  (seg_endian seg) = (seg_endian seg') ->
+  Erel_open Γ (seg_val seg) (seg_val seg') ->
+  Erel_open Γ (seg_size seg) (seg_size seg') ->
   Erel_open Γ (ESeg seg) (ESeg seg').
 Proof.
   intros. unfold Erel_open. intros.
@@ -5145,12 +5150,12 @@ Global Hint Resolve Prel_Map_compat : core.
 
 Lemma Prel_Bin_compat_closed n l l':
   list_biforall (fun seg seg' =>
-    Prel n (val seg) (val seg') /\
-    Vrel n (size seg) (size seg') /\
-    type seg = type seg' /\
-    unit seg = unit seg' /\
-    sign seg = sign seg' /\
-    endian seg = endian seg'
+    Prel n (seg_val seg) (seg_val seg') /\
+    Vrel n (seg_size seg) (seg_size seg') /\
+    seg_type seg = seg_type seg' /\
+    seg_unit seg = seg_unit seg' /\
+    seg_sign seg = seg_sign seg' /\
+    seg_endian seg = seg_endian seg'
   ) l l' ->
   Prel n (PBin l) (PBin l').
 Proof.
@@ -5164,12 +5169,12 @@ Global Hint Resolve Prel_Bin_compat_closed : core.
 Lemma Prel_Bin_compat :
   forall Γ l l',
   list_biforall (fun seg seg' =>
-    Prel_open Γ (val seg) (val seg') /\
-    Vrel_open Γ (size seg) (size seg') /\
-    type seg = type seg' /\
-    unit seg = unit seg' /\
-    sign seg = sign seg' /\
-    endian seg = endian seg'
+    Prel_open Γ (seg_val seg) (seg_val seg') /\
+    Vrel_open Γ (seg_size seg) (seg_size seg') /\
+    seg_type seg = seg_type seg' /\
+    seg_unit seg = seg_unit seg' /\
+    seg_sign seg = seg_sign seg' /\
+    seg_endian seg = seg_endian seg'
   ) l l' ->
   Prel_open Γ (PBin l) (PBin l').
 Proof.
@@ -5206,8 +5211,8 @@ Proof.
     (W := Forall (fun '(p, g, e) => (Forall (fun p0 => forall Γ, PAT Γ ⊢ p0 -> Prel_open Γ p0 p0) p) /\ (forall Γ, EXP Γ ⊢ g -> Erel_open Γ g g) /\ (forall Γ, EXP Γ ⊢ e -> Erel_open Γ e e)))
     (PQ := Forall (fun p => forall Γ, PAT Γ ⊢ p -> Prel_open Γ p p))
     (PR := Forall (PBoth (fun p => forall Γ, PAT Γ ⊢ p -> Prel_open Γ p p)))
-    (PT := Forall (fun seg => (forall Γ, PAT Γ ⊢ val seg  -> Prel_open Γ (val seg) (val seg)) /\
-                              (forall Γ, VAL Γ ⊢ size seg -> Vrel_open Γ (size seg) (size seg)))); intros; auto; try destruct_scopes.
+    (PT := Forall (fun seg => (forall Γ, PAT Γ ⊢ seg_val seg  -> Prel_open Γ (seg_val seg) (seg_val seg)) /\
+                              (forall Γ, VAL Γ ⊢ seg_size seg -> Vrel_open Γ (seg_size seg) (seg_size seg)))); intros; auto; try destruct_scopes.
   - apply Erel_Val_compat. now apply H.
   - now apply H.
   - apply Vrel_Cons_compat; auto.

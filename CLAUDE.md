@@ -135,9 +135,10 @@ On top of that:
 ### stdpp
 
 The development leans heavily on `stdpp` (`From stdpp Require ...`) rather than only vanilla Rocq
-stdlib — e.g. `Forall`/list lemmas, `bvn`/bitvector support for bitstrings, and its `Scheme All for`
-mechanism (used in `Syntax.v` for `list`/`prod`/`Segment`) to get nested-container induction hypotheses
-where possible.
+stdlib — e.g. `Forall`/list lemmas and `bvn`/bitvector support for bitstrings. Rocq's `Scheme All`
+mechanism for nested-container induction hypotheses is deliberately *not* used: `Syntax.v` silences
+the corresponding `register-all` warning, and the induction principles are hand-written in
+`Induction.v` instead (see the note in `Syntax.v`).
 
 ### Rocq-mcp
 

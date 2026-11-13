@@ -791,12 +791,12 @@ Fixpoint Prel_rec (vrel : nat -> Val -> Val -> Prop) (n : nat) (p1 p2 : Pat) :=
     (fix go l1 l2 :=
       match l1, l2 with
       | [], [] => True
-      | seg1::l1, seg2::l2 => Prel_rec vrel n (val seg1) (val seg2) /\
-                              vrel n (size seg1) (size seg2) /\
-                              unit seg1 = unit seg2 /\
-                              type seg1 = type seg2 /\
-                              sign seg1 = sign seg2 /\
-                              endian seg1 = endian seg2 /\
+      | seg1::l1, seg2::l2 => Prel_rec vrel n (seg_val seg1) (seg_val seg2) /\
+                              vrel n (seg_size seg1) (seg_size seg2) /\
+                              seg_unit seg1 = seg_unit seg2 /\
+                              seg_type seg1 = seg_type seg2 /\
+                              seg_sign seg1 = seg_sign seg2 /\
+                              seg_endian seg1 = seg_endian seg2 /\
                               go l1 l2
       | _, _ => False
       end
@@ -833,7 +833,7 @@ Proof.
   intros n. induction p1 using Pat_ind_weakened with
             (Q := Forall (fun p => forall p2, Prel n p p2 -> PATCLOSED p /\ PATCLOSED p2))
             (R := Forall (PBoth (fun p => forall p2, Prel n p p2 -> PATCLOSED p /\ PATCLOSED p2)))
-            (T := Forall (fun seg => forall p2, Prel n (val seg) p2 -> PATCLOSED (val seg) /\ PATCLOSED p2))
+            (T := Forall (fun seg => forall p2, Prel n (seg_val seg) p2 -> PATCLOSED (seg_val seg) /\ PATCLOSED p2))
     .
   8-13: by constructor.
   all: intro p2; destruct p2; intros H; simpl in H; try congruence.
@@ -865,8 +865,8 @@ Proof.
       try specialize (X2 _ Hl) as [X2_1 X2_2];
       rewrite map_nth with (d := (PNil, PNil)); eassumption.
     Unshelve. all: exact (PNil, PNil).
-  * assert (Forall (fun seg => PATCLOSED (val seg) /\ VALCLOSED (size seg)) l
-         /\ Forall (fun seg => PATCLOSED (val seg) /\ VALCLOSED (size seg)) segments) as [X1 X2]. {
+  * assert (Forall (fun seg => PATCLOSED (seg_val seg) /\ VALCLOSED (seg_size seg)) l
+         /\ Forall (fun seg => PATCLOSED (seg_val seg) /\ VALCLOSED (seg_size seg)) segments) as [X1 X2]. {
       revert segments H.
       induction l; destruct segments; try destruct a; intros H; simpl in H; try contradiction.
       * by split.
@@ -972,7 +972,7 @@ Proof.
   induction p1 using Pat_ind_weakened
     with (Q := Forall (fun p => forall p2, Prel n p p2 -> Prel m p p2))
          (R := Forall (PBoth (fun p => forall p2, Prel n p p2 -> Prel m p p2)))
-         (T := Forall (fun seg => forall p2, Prel n (val seg) p2 -> Prel m (val seg) p2)).
+         (T := Forall (fun seg => forall p2, Prel n (seg_val seg) p2 -> Prel m (seg_val seg) p2)).
   * intros p2 H. destruct p2; simpl in *; try congruence.
   * intros p2 H. destruct p2; simpl in *; try congruence.
   * intros p2 H. destruct p2; simpl in *; try congruence.
@@ -1029,8 +1029,8 @@ Proof.
             (forall a b, R n a b -> Q n a b) -> Prel_rec Q n p p2))
     (R := Forall (PBoth (fun p => forall p2, Prel_rec R n p p2 ->
             (forall a b, R n a b -> Q n a b) -> Prel_rec Q n p p2)))
-    (T := Forall (fun seg => forall p2, Prel_rec R n (val seg) p2 ->
-            (forall a b, R n a b -> Q n a b) -> Prel_rec Q n (val seg) p2)).
+    (T := Forall (fun seg => forall p2, Prel_rec R n (seg_val seg) p2 ->
+            (forall a b, R n a b -> Q n a b) -> Prel_rec Q n (seg_val seg) p2)).
   * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
   * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
   * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
@@ -1085,8 +1085,8 @@ Proof.
             (forall a b, R Γ a b -> Q n a.[ξ1]ᵥ b.[ξ2]ᵥ) -> Prel_rec Q n p.[ξ1]ₚ p2.[ξ2]ₚ))
     (R := Forall (PBoth (fun p => forall p2, Prel_rec R Γ p p2 ->
             (forall a b, R Γ a b -> Q n a.[ξ1]ᵥ b.[ξ2]ᵥ) -> Prel_rec Q n p.[ξ1]ₚ p2.[ξ2]ₚ)))
-    (T := Forall (fun seg => forall p2, Prel_rec R Γ (val seg) p2 ->
-            (forall a b, R Γ a b -> Q n a.[ξ1]ᵥ b.[ξ2]ᵥ) -> Prel_rec Q n (val seg).[ξ1]ₚ p2.[ξ2]ₚ)).
+    (T := Forall (fun seg => forall p2, Prel_rec R Γ (seg_val seg) p2 ->
+            (forall a b, R Γ a b -> Q n a.[ξ1]ᵥ b.[ξ2]ᵥ) -> Prel_rec Q n (seg_val seg).[ξ1]ₚ p2.[ξ2]ₚ)).
   * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
   * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
   * intros p2 H HRQ. destruct p2; simpl in *; try congruence.

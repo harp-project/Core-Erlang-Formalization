@@ -3,6 +3,7 @@ From CoreErlang.Concurrent Require Export NodeSemantics.
 From CoreErlang.Concurrent Require Export ProcessSemantics.
 From CoreErlang.Interpreter Require Export InterpreterAux.
 From CoreErlang Require Export StrictEqualities.
+Import Notations.
 
 (** This file contains the functional definitions equivalent to the three
     layers of semantics, found in "FrameStack/SubstSemantics.v",
@@ -172,8 +173,8 @@ Definition sequentialStepFunc : FrameStack -> Redex -> option (FrameStack * Rede
       | EBin el => Some ((FParams IBin [] el)::fs, RBox )
 
       (* eval_heat_seg *)
-      | ESeg seg => Some ((FSeg1 (Syntax.size seg) (unit seg) (type seg) (sign seg) (endian seg))::fs,
-                          RExp (val seg))
+      | ESeg seg => Some ((FSeg1 (seg_size seg) (seg_unit seg) (seg_type seg) (seg_sign seg) (seg_endian seg))::fs,
+                          RExp (seg_val seg))
 
       (* eval_heat_map_0 *)
       | EMap [] => Some (fs, RValSeq [VMap []] )

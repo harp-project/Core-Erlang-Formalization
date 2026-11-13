@@ -55,7 +55,6 @@ src/Interpreter/InterpreterAuxLemmas.v
 src/Interpreter/StepFunctions.v
 src/Interpreter/Scheduler.v
 src/Interpreter/Equivalences.v
-src/Interpreter/ExampleASTs
 src/Interpreter/Tests.v
 
 src/Symbolic/SymbTheorems.v

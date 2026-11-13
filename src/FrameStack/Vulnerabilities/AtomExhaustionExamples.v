@@ -6,6 +6,7 @@ From stdpp Require Import gmap sets.
 
 From CoreErlang.FrameStack.Vulnerabilities Require Import AtomExhaustion.
 From Stdlib Require Import List.
+Import Notations.
 
 Open Scope string_scope.
 

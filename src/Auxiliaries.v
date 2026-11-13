@@ -24,6 +24,7 @@ From Stdlib Require Export Ascii.
 From Stdlib Require Export Numbers.DecimalString Decimal.
 
 Import ListNotations.
+Import Notations.
 
 (**
   Built-in function simulation
@@ -1605,6 +1606,7 @@ Proof.
   all: try now do 3 constructor.
   5-8: apply eval_lists_bifs_closed; assumption.
   9-15: eapply eval_conversion_closed; eassumption.
+  26-30, 32-33: apply indexed_to_forall; repeat constructor; auto.
   30-33: apply eval_tuple_bifs_closed; assumption.
   31: apply eval_split_binary_closed; assumption.
   * rewrite Forall_nth in H. specialize (H 1 ErrorVal ltac:(lia)).

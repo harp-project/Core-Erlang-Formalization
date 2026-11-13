@@ -18,7 +18,7 @@ match p with
  | PTuple l => foldr (fun x y => (PatVars x) + y) 0 l
  | PMap l => foldr (fun '(a,b) y => (PatVars a) + (PatVars b) + y) 0 l
  | PNil => 0
- | PBin l => foldr (fun seg acc => (PatVars (val seg)) + acc) 0 l
+ | PBin l => foldr (fun seg acc => (PatVars (seg_val seg)) + acc) 0 l
 end.
 
 (** Pattern list scopes for `case` expressions. *)
@@ -171,7 +171,7 @@ with NonValScoped : nat -> NonVal -> Prop :=
   NVAL n ⊢ EBin l
 
 | scoped_eseg (n : nat) (seg : Segment Exp Exp) :
-  EXP n ⊢ val seg -> EXP n ⊢ size seg
+  EXP n ⊢ seg_val seg -> EXP n ⊢ seg_size seg
 ->
   NVAL n ⊢ ESeg seg
 
@@ -198,8 +198,8 @@ with PatScoped : nat -> Pat -> Prop :=
   PAT Γ ⊢ PMap l
 
 | scoped_pbin Γ (l : list (Segment Pat Val)) :
-  (forall i, i < length l -> PAT Γ ⊢ nth i (map val l) PNil) ->
-  (forall i, i < length l -> VAL Γ ⊢ nth i (map size l) VNil)
+  (forall i, i < length l -> PAT Γ ⊢ nth i (map seg_val l) PNil) ->
+  (forall i, i < length l -> VAL Γ ⊢ nth i (map seg_size l) VNil)
 ->
   PAT Γ ⊢ PBin l
 
@@ -346,9 +346,9 @@ Section tests.
 
   Local Definition t1 e1 e2 e3 e4 e5 e6:=
     ECase (ETuple [°ECons (˝VNil) (˝VNil); e1; °ELet 1 e2 e3])
-      [([PBin [{| val := PCons PVar PVar; size := e6;
-                  unit := 1; type := IntType; sign := Signed;
-                  endian := LittleEndian |}]], e4, e5)
+      [([PBin [{| seg_val := PCons PVar PVar; seg_size := e6;
+                  seg_unit := 1; seg_type := IntType; seg_sign := Signed;
+                  seg_endian := LittleEndian |}]], e4, e5)
       ].
 
   Goal forall Γ e1 e2 e3 e4 e5 e6,

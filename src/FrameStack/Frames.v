@@ -4,6 +4,7 @@
 From CoreErlang Require Export ScopingLemmas Maps Matching Auxiliaries.
 
 Import ListNotations.
+Import Notations.
 
 (** FrameStack *)
 (** Based on [Pitts' work](https://www.cl.cam.ac.uk/~amp12/papers/opespe/opespe-lncs.pdf) *)

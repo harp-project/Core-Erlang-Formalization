@@ -10,6 +10,7 @@ Require Export Stdlib.Sorting.Permutation.
 From stdpp Require Export option gmap.
 
 Import ListNotations.
+Import Notations.
 
 (** destruct_decide is taken *)
 Ltac destruct_decide_eq :=

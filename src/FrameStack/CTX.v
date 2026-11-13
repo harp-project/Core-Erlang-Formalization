@@ -150,16 +150,16 @@ Definition CompatibleBin (R : nat -> Exp -> Exp -> Prop) :=
 
 Definition CompatibleSeg (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ seg seg',
-    EXP Γ ⊢ (val seg)  ->
-    EXP Γ ⊢ (val seg') ->
-    EXP Γ ⊢ (size seg)  ->
-    EXP Γ ⊢ (size seg') ->
-    type seg = type seg' ->
-    unit seg = unit seg' ->
-    sign seg = sign seg' ->
-    endian seg = endian seg' ->
-    R Γ (val seg) (val seg') ->
-    R Γ (size seg) (size seg') ->
+    EXP Γ ⊢ (seg_val seg)  ->
+    EXP Γ ⊢ (seg_val seg') ->
+    EXP Γ ⊢ (seg_size seg)  ->
+    EXP Γ ⊢ (seg_size seg') ->
+    seg_type seg = seg_type seg' ->
+    seg_unit seg = seg_unit seg' ->
+    seg_sign seg = seg_sign seg' ->
+    seg_endian seg = seg_endian seg' ->
+    R Γ (seg_val seg) (seg_val seg') ->
+    R Γ (seg_size seg) (seg_size seg') ->
     R Γ (ESeg seg) (ESeg seg').
 
 
@@ -447,12 +447,12 @@ match C with
 | CTry1   c vl1 e2 vl2 e3  => EExp ( ETry (plug c p) vl1 e2 vl2 e3 )
 | CTry2   e1 vl1 c vl2 e3  => EExp ( ETry e1 vl1 (plug c p) vl2 e3 )
 | CTry3   e1 vl1 e2 vl2 c  => EExp ( ETry e1 vl1 e2 vl2 (plug c p) )
-| CSeg1   c size type unit sign endian => ESeg {| val := plug c p; size := size;
-                                                  type := type; unit := unit;
-                                                  sign := sign; endian := endian |}
-| CSeg2   val c type unit sign endian => ESeg {| val := val; size := plug c p;
-                                                  type := type; unit := unit;
-                                                  sign := sign; endian := endian |}
+| CSeg1   c size type unit sign endian => ESeg {| seg_val := plug c p; seg_size := size;
+                                                  seg_type := type; seg_unit := unit;
+                                                  seg_sign := sign; seg_endian := endian |}
+| CSeg2   val c type unit sign endian => ESeg {| seg_val := val; seg_size := plug c p;
+                                                  seg_type := type; seg_unit := unit;
+                                                  seg_sign := sign; seg_endian := endian |}
 end.
 
 Fixpoint plugc (C : Ctx) (p : Ctx) :=
@@ -1352,7 +1352,7 @@ Proof.
       now inv H0.
   * unfold CompatibleSeg. intros. unfold CTX in *. intuition.
     destruct seg as [v s u t sg en], seg' as [v' s' u' t' sg' en']. simpl in *. subst.
-    replace (plug C (° ESeg {| val := v; size := s; unit := u'; type := t'; sign := sg'; endian := en' |})) with
+    replace (plug C (° ESeg {| seg_val := v; seg_size := s; seg_unit := u'; seg_type := t'; seg_sign := sg'; seg_endian := en' |})) with
             (plug (plugc C (CSeg1 CHole s t' u' sg' en')) v) in H14 by now rewrite <- plug_assoc.
     apply H10 in H14.
     2: { eapply plugc_preserves_scope_exp; eauto; constructor; auto; constructor. }
