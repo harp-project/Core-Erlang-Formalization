@@ -2637,14 +2637,14 @@ Proof.
   * eapply Val_eqb_ltb_trans in EQ; [| rewrite Val_eqb_sym; eassumption].
     eapply Val_ltb_eqb_trans in EQ; [| eassumption].
     rewrite EQ. solve_complex_Vrel.
-  * eapply Val_geb_eqb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
-    eapply Val_eqb_geb_trans in EQ. 2: eassumption. rewrite EQ.
+  * eapply Val_eqb_geb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
+    eapply Val_geb_eqb_trans in EQ. 2: eassumption. rewrite EQ.
     solve_complex_Vrel.
   * simpl. eapply Val_eqb_ltb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
     eapply Val_ltb_eqb_trans in EQ. 2: eassumption. rewrite EQ. simpl.
     solve_complex_Vrel.
-  * simpl. eapply Val_geb_eqb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
-    eapply Val_eqb_geb_trans in EQ. 2: eassumption. rewrite EQ. simpl.
+  * simpl. eapply Val_eqb_geb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
+    eapply Val_geb_eqb_trans in EQ. 2: eassumption. rewrite EQ. simpl.
     break_match_goal.
     - eapply Val_eqb_trans in H'. 2: eassumption.
       eapply Val_eqb_trans in H0'. 2: rewrite Val_eqb_sym; eassumption.
@@ -2655,14 +2655,14 @@ Proof.
   * eapply Val_eqb_ltb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
     eapply Val_ltb_eqb_trans in EQ. 2: eassumption.
     rewrite EQ. solve_complex_Vrel.
-  * eapply Val_eqb_geb_trans in EQ. 2: eassumption.
-    eapply Val_geb_eqb_trans in EQ. 2: rewrite Val_eqb_sym;eassumption.
+  * eapply Val_geb_eqb_trans in EQ. 2: eassumption.
+    eapply Val_eqb_geb_trans in EQ. 2: rewrite Val_eqb_sym;eassumption.
     rewrite EQ. solve_complex_Vrel.
   * simpl. eapply Val_eqb_ltb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
     eapply Val_ltb_eqb_trans in EQ. 2: eassumption. rewrite EQ. simpl.
     solve_complex_Vrel.
-  * simpl. eapply Val_geb_eqb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
-    eapply Val_eqb_geb_trans in EQ. 2: eassumption. rewrite EQ. simpl.
+  * simpl. eapply Val_eqb_geb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
+    eapply Val_geb_eqb_trans in EQ. 2: eassumption. rewrite EQ. simpl.
     break_match_goal.
     - eapply Val_eqb_trans in H'. 2: eassumption.
       eapply Val_eqb_trans in H0'. 2: rewrite Val_eqb_sym; eassumption.
@@ -2674,15 +2674,15 @@ Proof.
   * eapply Val_eqb_ltb_trans in EQ; [| rewrite Val_eqb_sym; eassumption].
     eapply Val_ltb_eqb_trans in EQ; [| eassumption].
     rewrite EQ. solve_complex_Vrel.
-  * eapply Val_geb_eqb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
-    eapply Val_eqb_geb_trans in EQ. 2: eassumption. rewrite EQ.
+  * eapply Val_eqb_geb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
+    eapply Val_geb_eqb_trans in EQ. 2: eassumption. rewrite EQ.
     solve_complex_Vrel.
   (* min *)
   * eapply Val_eqb_ltb_trans in EQ; [| rewrite Val_eqb_sym; eassumption].
     eapply Val_ltb_eqb_trans in EQ; [| eassumption].
     rewrite EQ. solve_complex_Vrel.
-  * eapply Val_geb_eqb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
-    eapply Val_eqb_geb_trans in EQ. 2: eassumption. rewrite EQ.
+  * eapply Val_eqb_geb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
+    eapply Val_geb_eqb_trans in EQ. 2: eassumption. rewrite EQ.
     solve_complex_Vrel.
 Unshelve.
   all: try assumption; lia.
@@ -3358,8 +3358,8 @@ Proof.
       - pose proof Val_eqb_ltb_trans _ _ _ EQk LT as LT2.
         pose proof Val_ltb_eqb_trans _ _ _ LT2 EQhd as X.
         rewrite X. assumption.
-      - pose proof Val_geb_eqb_trans _ _ _ EQk LT as LT3.
-        pose proof Val_eqb_geb_trans _ _ _ LT3 EQhd as X.
+      - pose proof Val_eqb_geb_trans _ _ _ EQk LT as LT3.
+        pose proof Val_geb_eqb_trans _ _ _ LT3 EQhd as X.
         rewrite X.
         destruct (Val_eqb hd k1) eqn:EQ.
         + rewrite Val_eqb_sym in EQk, EQhd.
@@ -3388,8 +3388,8 @@ Proof.
       - pose proof Val_eqb_ltb_trans _ _ _ EQk LT as LT2.
         pose proof Val_ltb_eqb_trans _ _ _ LT2 EQhd as X.
         rewrite X. assumption.
-      - pose proof Val_geb_eqb_trans _ _ _ EQk LT as LT3.
-        pose proof Val_eqb_geb_trans _ _ _ LT3 EQhd as X.
+      - pose proof Val_eqb_geb_trans _ _ _ EQk LT as LT3.
+        pose proof Val_geb_eqb_trans _ _ _ LT3 EQhd as X.
         rewrite X.
         destruct (Val_eqb hd k1) eqn:EQ.
         + rewrite Val_eqb_sym in EQk, EQhd.
@@ -3434,8 +3434,8 @@ Proof.
       do 2 eexists; repeat split; try reflexivity.
       constructor. 2: by auto.
       choose_compat_lemma. by repeat constructor.
-    - pose proof Val_geb_eqb_trans _ _ _ EQhd LT as LT3.
-      pose proof Val_eqb_geb_trans _ _ _ LT3 EQk as X.
+    - pose proof Val_eqb_geb_trans _ _ _ EQhd LT as LT3.
+      pose proof Val_geb_eqb_trans _ _ _ LT3 EQk as X.
       rewrite X.
       destruct (Val_eqb hd k1) eqn:EQ.
       + pose proof Val_eqb_trans _ _ _ EQhd EQ as EQ2.

@@ -108,12 +108,19 @@ conjunction's shape changed upstream without updating every call site.
 
 ### Module layering
 
-Within `src/` (core, syntax-level):
-`Basics` → `Syntax` → `Induction` → `Equalities`/`SideEffects` → `Scoping` (static semantics /
-well-scopedness judgement, `EXP Γ ⊢ e` notation) → `Auxiliaries`/`Maps` → `Manipulation` (renaming and
-substitution + their algebraic properties) → `ScopingLemmas` (proves the static semantics and
-substitution commute, e.g. substituting a well-scoped closing substitution into a well-scoped term
-preserves well-scopedness) → `Matching` (pattern matching) → `StrictEqualities`.
+Within `src/` (core, syntax-level), in compilation order (the order of `_CoqProject`):
+`Basics` → `Bitstrings` (bitstring primitives on stdpp's `bvn`: equality, ordering, byte conversions)
+→ `Syntax` → `Induction` → `Equalities` (boolean value equality/ordering, weakened for PIDs and
+closures) → `StrictEqualities` (strict syntactic boolean equality, for the interpreter) →
+`SideEffects` → `Scoping` (static semantics /
+well-scopedness judgement, `EXP Γ ⊢ e` notation) → `Manipulation` (renaming and substitution + their
+algebraic properties) → `ScopingLemmas` (proves the static semantics and substitution commute, e.g.
+substituting a well-scoped closing substitution into a well-scoped term preserves well-scopedness)
+→ `Maps` → `Auxiliaries` (simulated BIFs and primops; tests in `AuxiliariesTests`) → `Matching`
+(pattern matching).
+
+`_CoqProject` lists the files in a valid compilation order (every file after its dependencies); keep
+it that way when adding files.
 
 On top of that:
 - **`FrameStack/`** — the primary sequential semantics (substitution-based, reduction/frame-stack style)

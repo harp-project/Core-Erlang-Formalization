@@ -1,9 +1,21 @@
-From CoreErlang Require Export Auxiliaries.
-From stdpp Require Export gmap.
+(**
+  This file defines strict (i.e., syntactic) boolean equality for the syntax
+  of Core Erlang, and proves that it coincides with definitional equality.
 
-Import Stdlib.Lists.List.
+  Unlike the value equality `Val_eqb` of `Equalities.v` (which simulates
+  Erlang's term equality, and is weakened: all PIDs are considered equal, and
+  closures are compared based on their reference number), this equality
+  compares every component of the syntax. It is a boolean function (instead
+  of the decision procedure `Exp_eq_dec`), so that it can be used in the
+  extracted interpreter.
+*)
+
+From CoreErlang Require Export Equalities.
+
 Import ListNotations.
 
+(** Strict boolean equality of expressions, non-value expressions, values
+    and patterns. *)
 Fixpoint Exp_eqb_strict (e1 e2 : Exp) : bool :=
   match e1, e2 with
   | VVal a, VVal a' => Val_eqb_strict a a'
@@ -20,8 +32,7 @@ with NonVal_eqb_strict (e1 e2 : NonVal) : bool :=
       list_eqb Exp_eqb_strict l l'
   | EPrimOp f l, EPrimOp f' l' => String.eqb f f' && list_eqb Exp_eqb_strict l l'
   | EApp exp l, EApp exp' l' => Exp_eqb_strict exp exp' && list_eqb Exp_eqb_strict l l'
-  | ECase e l, ECase e' l' => Exp_eqb_strict e e' 
-      && Nat.eqb (length l) (length l')
+  | ECase e l, ECase e' l' => Exp_eqb_strict e e'
       && list_eqb (prod_eqb (prod_eqb (list_eqb Pat_eqb_strict) Exp_eqb_strict) Exp_eqb_strict) l l'
   | ELet l e1 e2, ELet l' e1' e2' => 
       Nat.eqb l l' && Exp_eqb_strict e1 e1' && Exp_eqb_strict e2 e2'
@@ -63,6 +74,7 @@ match p1, p2 with
 | _, _ => false
 end.
 
+(** Reflexivity of strict equality (with its projections below). *)
 Theorem Private_eqb_strict_refl :
      (forall e, Exp_eqb_strict e e = true)
   /\ (forall e, NonVal_eqb_strict e e = true)
@@ -106,7 +118,7 @@ Proof.
   * rewrite String.eqb_refl. simpl. induction H; auto. simpl. rewrite H, IHForall. reflexivity.
   * rewrite H. simpl.
     clear -H0. induction H0; auto. simpl. rewrite H, IHForall. reflexivity.
-  * rewrite H, Nat.eqb_refl. simpl. induction H0; auto.
+  * rewrite H. simpl. induction H0; auto.
     destruct x as [[lp e1] e2]. destruct H0 as [Hlp [He1 He2]].
     assert (Hlpres : list_eqb Pat_eqb_strict lp lp = true).
     { clear -Hlp. induction Hlp; auto. simpl. rewrite H, IHHlp. reflexivity. }
@@ -143,6 +155,7 @@ Proof. now apply Private_eqb_strict_refl. Qed.
 Corollary eqb_strict_refl_pat : forall p, Pat_eqb_strict p p = true.
 Proof. now apply Private_eqb_strict_refl. Qed.
 
+(** Strict equality implies definitional equality. *)
 Lemma Private_eqb_strict_eq_fwd :
      (forall e1 e2, Exp_eqb_strict e1 e2 = true -> e1 = e2)
   /\ (forall e1 e2, NonVal_eqb_strict e1 e2 = true -> e1 = e2)
@@ -265,8 +278,8 @@ Proof.
         subst. reflexivity. }
     subst. reflexivity.
   * destruct e2; try discriminate.
-    apply andb_prop in H1. destruct H1. apply andb_prop in H1. destruct H1.
-    apply H in H1. subst e. clear H3.
+    apply andb_prop in H1. destruct H1.
+    apply H in H1. subst e.
     assert (l = l0).
     { clear -H0 H2. revert H2. revert l0. induction H0; intros.
       - destruct l0; try discriminate. reflexivity.
@@ -351,6 +364,8 @@ Proof.
     subst. reflexivity.
 Qed.
 
+(** Strict equality coincides with definitional equality (with its
+    projections below). *)
 Theorem Private_eqb_strict_eq :
      (forall e1 e2, Exp_eqb_strict e1 e2 = true <-> e1 = e2)
   /\ (forall e1 e2, NonVal_eqb_strict e1 e2 = true <-> e1 = e2)
@@ -378,6 +393,7 @@ Proof. apply Private_eqb_strict_eq. Qed.
 Corollary eqb_strict_eq_pat : forall p1 p2, Pat_eqb_strict p1 p2 = true <-> p1 = p2.
 Proof. apply Private_eqb_strict_eq. Qed.
 
+(** For literals, strict equality and (weakened) value equality agree. *)
 Lemma Val_eqb_strict_lit_eqb: forall v l, Val_eqb_strict v (VLit l) = Val_eqb v (VLit l).
 Proof.
   intros. destruct v; reflexivity.

@@ -15,26 +15,9 @@ Import ListNotations.
   - ``When used in a bit string matching, Size must be a guard expression that evaluates to an integer. All variables in the guard expression must be already bound.''
 *)
 
-Definition bvn_split (n : N) (b : bvn) : (bvn * bvn) :=
-  let front := bv_extract (bvn_n b - n) n (bvn_val b) in
-  let rest  := bv_extract 0 (bvn_n b - n) (bvn_val b) in
-  (bv_to_bvn front, bv_to_bvn rest).
-
-(** Reinterprets the physical (big-endian-laid-out) bits of an [n]-bit
-    value as little-endian: bytes are stored LSB-chunk-first, with the
-    final (possibly ragged, < 8 bits) chunk holding the high-order bits.
-    This is the inverse of the little-endian construction used on the
-    encoding side (segment_to_bitstring); it agrees with the byte-aligned
-    case when [n] is a multiple of 8. *)
-Definition little_bv_to_Z (n : N) (bits : bv n) : Z :=
-  let k := N.div (n + 7) 8 in
-  let last_width := (n - 8 * (k - 1))%N in
-  let v := bv_unsigned bits in
-  let last_digit := (v mod 2 ^ Z.of_N last_width)%Z in
-  let high_part := (v / 2 ^ Z.of_N last_width)%Z in
-  let high_bytes := reverse (Z_to_little_endian (Z.of_N (k - 1)) 8 high_part) in
-  little_endian_to_Z 8 (high_bytes ++ [last_digit]).
-
+(** Decodes the bits of an integer segment according to its signedness and
+    endianness (`NativeEndian` is treated as big-endian). It depends on
+    the segment specifiers of the syntax, thus it is not in `Bitstrings.v`. *)
 Definition decode_int (w : N) (sign : BinSign) (endi : BinEnd) (bits : bv w) : Z :=
   let raw :=
     match endi with
@@ -47,6 +30,11 @@ Definition decode_int (w : N) (sign : BinSign) (endi : BinEnd) (bits : bv w) : Z
   | Unsigned => bv_unsigned raw
   end.
 
+(** The result of pattern matching: either a successful match (with the
+    bindings), a failed match, or `NotSupported`, when matching would need a
+    feature that is not formalised (e.g., floats or UTF segments of binaries).
+    The latter is different from a failed match: the semantics gets stuck
+    instead of trying the next clause. *)
 Inductive Match A :=
 | Matches (v : A)
 | NotMatches
@@ -55,6 +43,22 @@ Inductive Match A :=
 Arguments Matches {A} v.
 Arguments NotMatches {A}.
 Arguments NotSupported {A}.
+
+(** Inverts an equality between two `Match` results built from constructors:
+    it either solves the goal (different constructors), or substitutes the
+    results (`Matches`). *)
+Ltac invMatch :=
+match goal with
+| [ H : Matches _ = Matches _ |- _] => inv H
+| [ H : Matches _ = NotMatches |- _] => inv H
+| [ H : Matches _ = NotSupported |- _] => inv H
+| [ H : NotMatches = Matches _ |- _] => inv H
+| [ H : NotMatches = NotMatches |- _] => inv H
+| [ H : NotMatches = NotSupported |- _] => inv H
+| [ H : NotSupported = Matches _ |- _] => inv H
+| [ H : NotSupported = NotMatches |- _] => inv H
+| [ H : NotSupported = NotSupported |- _] => inv H
+end.
 
 (** Sequences a [Match] result into a function producing another [Match],
     short-circuiting on [NotMatches]/[NotSupported]. *)
@@ -75,6 +79,10 @@ Definition match_and {A B C} (f : A -> B -> C) (r1 : Match A) (r2 : Match B) : M
   | _, _ => NotMatches
   end.
 
+(** Decodes the bits of a segment into a value based on its type: integer
+    segments are decoded as integers, binary and bitstring segments as
+    bitstrings (for binaries, the size has to be a multiple of the unit).
+    Float and UTF segments are not supported. *)
 Definition decode_bits (bits : bvn) (type : BinType) (unit : N)
                                     (sign : BinSign) (endi : BinEnd) : Match Val :=
 match type with
@@ -96,10 +104,6 @@ end.
 Fixpoint match_pattern (p : Pat) (e : Val) {struct p} : Match (list Val) :=
 match p with
 | PVar => Matches [e]
-(* | PPid x => match e with
-            | VPid p => if Nat.eqb p x then Some [] else None
-            | _      => None
-            end *)
 | PNil => match e with
           | VNil => Matches []
           | _    => NotMatches
@@ -116,11 +120,6 @@ match p with
   end
 | PTuple pl => match e with
               | VTuple vl =>
-                (* let res := foldr (match_and app) (Matches []) (zip_with match_pattern pl vl)
-                in match res with
-                   | Matches _ => if length pl =? length vl then res else NotMatches
-                   | r => r
-                   end *)
                  (fix match_and_bind_elements pl vl :=
                         match pl with
                         | [] => 
@@ -140,14 +139,7 @@ match p with
               | _ => NotMatches
               end
 | PMap pl => match e with
-              | VMap vl => 
-                (* let res := foldr (match_and app) (Matches []) (zip_with (fun '(p1, p2) '(v1, v2) =>
-                                                                 match_and app (match_pattern p1 v1)
-                                                                   (match_pattern p2 v2)) pl vl)
-                in match res with
-                   | Matches _ => if length pl =? length vl then res else NotMatches
-                   | r => r
-                   end *)
+              | VMap vl =>
                  (fix match_and_bind_elements pl vl :=
                           match pl with
                           | [] =>
@@ -175,17 +167,17 @@ match p with
       | [] => if N.eqb (bvn_n bits) 0
               then Matches []
               else NotMatches
-      | Build_Segment val (VLit size) unit type sign endi :: segs =>
-        if null segs && Lit_beq size (Atom "all"%string)
-        then bind_match (decode_bits bits type (N.of_nat unit) sign endi) (match_pattern val)
-        else match size with
-        | Integer size =>
-          let total := (Z.to_N size * N.of_nat unit)%N in
-          if (size <? 0)%Z || (bvn_n bits <? total)%N then NotMatches
+      | Build_Segment pv (VLit sz) u ty sg endi :: segs =>
+        if null segs && Lit_beq sz (Atom "all"%string)
+        then bind_match (decode_bits bits ty (N.of_nat u) sg endi) (match_pattern pv)
+        else match sz with
+        | Integer n =>
+          let total := (Z.to_N n * N.of_nat u)%N in
+          if (n <? 0)%Z || (bvn_n bits <? total)%N then NotMatches
           else
             let '(front, rest) := bvn_split total bits in
             match_and (fun pats restpats => pats ++ restpats)
-                      (bind_match (decode_bits front type (N.of_nat unit) sign endi) (match_pattern val))
+                      (bind_match (decode_bits front ty (N.of_nat u) sg endi) (match_pattern pv))
                       (match_segs segs rest)
          | _ => NotMatches
          end
@@ -195,6 +187,9 @@ match p with
   end
 end.
 
+(** The following two goals show that the inline loops of tuple and map
+    patterns in `match_pattern` are equivalent to formulations based on
+    `foldr` and `zip_with` (with an additional length check). *)
 Goal
   forall pl vl,
   (fix match_and_bind_elements pl vl :=
@@ -255,16 +250,14 @@ Proof.
   repeat case_match; simpl; try reflexivity; try congruence.
 Qed.
 
-(** Pattern matching for pattern lists to value sequences *)
+(** Pattern matching for pattern lists to value sequences. The results of the
+    individual patterns are combined with `match_and` (similarly to the
+    elements of tuple patterns), thus `NotSupported` dominates over
+    `NotMatches`. *)
 Fixpoint match_pattern_list (pl : list Pat) (vl : ValSeq) : Match (list Val) :=
 match pl,vl with
-  | (p::ps), (v::vs) => match match_pattern p v with
-                        | Matches vs' => match match_pattern_list ps vs with
-                                         | Matches vs'' => Matches (vs'++vs'')
-                                         | r            => r
-                                         end
-                        | r => r
-                        end
+  | (p::ps), (v::vs) => match_and (fun vs' vs'' => vs' ++ vs'')
+                                  (match_pattern p v) (match_pattern_list ps vs)
   | [], [] => Matches []
   | _, _ => NotMatches
 end.
@@ -290,7 +283,6 @@ Proof.
   * destruct v; try congruence. now inversion Hmatch.
   * destruct v; try congruence.
     destruct Lit_beq in Hmatch; inversion Hmatch. auto.
-  (* * destruct v; try congruence. break_match_hyp; now invSome. *)
   * inversion Hmatch. now constructor.
   * destruct v; try congruence.
     break_match_hyp; try congruence. break_match_hyp; try congruence. inversion Hmatch. inversion HΓ. subst. apply Forall_app. split.
@@ -349,15 +341,15 @@ Proof.
         case_match; try congruence. inv H3. by constructor.
 Qed.
 
+(** The scope of pattern list matching: the bindings are scoped in the same
+    context as the matched values. *)
 Lemma match_pattern_list_scope Γ vs :
   forall lp vs', match_pattern_list lp vs = Matches vs' ->
     Forall (fun v => VAL Γ ⊢ v) vs ->
     Forall (fun v => VAL Γ ⊢ v) vs'.
 Proof.
-  induction vs; destruct lp; intros vs' H Hall; inv H.
-  1: auto.
-  repeat break_match_hyp; try congruence.
-  inversion H1; subst.
+  induction vs; destruct lp; intros vs' H Hall; simpl in H; try invMatch; auto.
+  unfold match_and in H. repeat break_match_hyp; invMatch.
   inversion Hall; subst.
   apply Forall_app; split.
   - eapply match_pattern_scope; eassumption.
@@ -390,7 +382,6 @@ Proof.
     PatVars (seg_val seg) = length l)); simpl; intros.
   * destruct v; now inv H.
   * destruct v; inv H. break_match_hyp; now inv H1.
-  (* * destruct v; inv H. break_match_hyp; now inv H1. *)
   * now inv H.
   * unfold match_and in H; destruct_all_hyps. inv H. rewrite length_app.
     apply IHp1 in Heqm; apply IHp2 in Heqm0; lia.
@@ -434,16 +425,19 @@ Proof.
   * by constructor.
 Qed.
 
+(** The number of bindings of pattern list matching is the number of
+    variables in the patterns. *)
 Lemma match_pattern_list_length vs :
   forall lp vs', match_pattern_list lp vs = Matches vs' ->
     PatListVars lp = length vs'.
 Proof.
-  induction vs; destruct lp; intros vs' H; inversion H.
-  * reflexivity.
-  * repeat break_match_hyp; try congruence.
-    inv H1. apply IHvs in Heqm0. cbn. rewrite length_app.
-    rewrite <- Heqm0. erewrite match_pattern_length. reflexivity.
-    eassumption.
+  induction vs; destruct lp; intros vs' H; simpl in H; try invMatch; auto.
+  unfold match_and in H. repeat break_match_hyp; invMatch.
+  cbn. rewrite length_app.
+  match goal with
+  | [Hl : match_pattern_list _ _ = Matches _ |- _] => apply IHvs in Hl; rewrite <- Hl
+  end.
+  erewrite match_pattern_length; [reflexivity | eassumption].
 Qed.
 
 (** Matching only variables against a value seq. gives back the value seq. *)
@@ -451,20 +445,24 @@ Lemma match_pattern_list_vars :
   forall l, match_pattern_list (repeat PVar (length l)) l = Matches l.
 Proof.
   induction l; simpl; auto.
-  break_match_goal; congruence.
+  rewrite IHl. reflexivity.
+Qed.
+
+(** Matching a single pattern as a list is the same as matching the pattern. *)
+Lemma match_pattern_list_single :
+  forall p v, match_pattern_list [p] [v] = match_pattern p v.
+Proof.
+  intros. simpl. unfold match_and.
+  destruct match_pattern; auto. by rewrite app_nil_r.
 Qed.
 
 (** Matching with variables inside a tuple, gives back the elements of the tuple *)
 Lemma match_pattern_list_tuple_vars :
   forall l, match_pattern_list [PTuple (repeat PVar (length l))] [VTuple l] = Matches l.
 Proof.
+  intros. rewrite match_pattern_list_single.
   induction l; simpl; auto.
-  break_match_goal; break_match_hyp; try congruence.
-  - inversion Heqm. simpl in IHl.
-    rewrite Heqm0 in IHl. inv IHl. reflexivity.
-  - simpl in IHl. rewrite Heqm0 in IHl. congruence.
-  - exfalso. clear IHl a Heqm. induction l; simpl in Heqm0. congruence.
-    simpl in Heqm0. case_match; try congruence.
+  simpl in IHl. rewrite IHl. reflexivity.
 Qed.
 
 (** Concrete consequence of the previous theorem for map. (length_map is needed) *)
@@ -476,19 +474,18 @@ Proof.
   assumption.
 Qed.
 
-(** The previous property expressed slightly strenghtened. *)
+(** The previous property expressed slightly strengthened. *)
 Lemma match_pattern_list_tuple_vars_length :
   forall m l0 vs, match_pattern_list [PTuple (repeat PVar m)] [VTuple l0] = Matches vs ->
   m = length l0 /\ vs = l0.
 Proof.
-  induction m; destruct l0; intros; simpl in *; inv H; auto.
-  break_match_hyp; try congruence.
-  inv H1. rewrite app_nil_r in *.
-  break_match_hyp; try congruence. inv Heqm0.
-  specialize (IHm l0 v1). break_match_hyp; try congruence.
-  inv Heqm0. clear -IHm.
-  rewrite app_nil_r in IHm. specialize (IHm eq_refl) as [IHm1 IHm2].
-  split; subst; auto.
+  intros m l0 vs H. rewrite match_pattern_list_single in H.
+  revert l0 vs H. induction m; destruct l0; intros; simpl in *; try (invMatch; auto; fail).
+  unfold match_and in H. break_match_hyp; invMatch.
+  match goal with
+  | [Hr : _ = Matches _ |- _] => apply IHm in Hr as [? ?]
+  end.
+  subst. auto.
 Qed.
 
 (** Matching property for maps containing only pattern variables. *)
@@ -496,27 +493,26 @@ Lemma match_pattern_list_map_vars_length :
   forall m l0 vs, match_pattern_list [PMap (repeat (PVar, PVar) m)] [VMap l0] = Matches vs ->
   m = length l0 /\ vs = flatten_list l0.
 Proof.
-  induction m; destruct l0; intros; simpl in *; inv H; auto.
-  break_match_hyp; try congruence.
-  inv H1. rewrite app_nil_r in *.
-  do 2 break_match_hyp; try congruence. inv Heqm0.
-  specialize (IHm l0 v2). break_match_hyp; try congruence.
-  inv Heqm0. clear -IHm.
-  rewrite app_nil_r in IHm. specialize (IHm eq_refl) as [IHm1 IHm2].
-  split; subst; auto.
+  intros m l0 vs H. rewrite match_pattern_list_single in H.
+  revert l0 vs H. induction m; destruct l0; intros; simpl in *; try (invMatch; auto; fail).
+  destruct p. unfold match_and in H. break_match_hyp; invMatch.
+  match goal with
+  | [Hr : _ = Matches _ |- _] => apply IHm in Hr as [? ?]
+  end.
+  subst. auto.
 Qed.
 
+(** Matching a map pattern containing only variables gives back the keys and
+    values of the map. *)
 Lemma match_pattern_list_map_vars :
   forall l, match_pattern_list [PMap (repeat (PVar , PVar) (length l))] [VMap l] = Matches (flatten_list l).
 Proof.
-  induction l; simpl; auto.
-  break_match_goal; break_match_hyp; try congruence.
-  - destruct a. inv Heqp. simpl in IHl. break_match_hyp; try congruence.
-    inv Heqm. inv IHl. reflexivity.
-  - destruct a. inv Heqp. simpl in IHl. break_match_hyp; congruence.
-  - destruct a. inv Heqp. simpl in IHl. break_match_hyp; congruence.
+  intros. rewrite match_pattern_list_single.
+  induction l; simpl; auto. destruct a.
+  simpl in IHl. rewrite IHl. reflexivity.
 Qed.
 
+(** Consequences of the previous lemma for mapped maps. *)
 Corollary match_pattern_list_map_vars_map :
   forall l (f : Val*Val -> Val*Val), match_pattern_list [PMap (repeat (PVar , PVar) (length l))] [VMap (map f l)] = Matches (flatten_list (map f l)).
 Proof.
@@ -533,21 +529,10 @@ Proof.
   assumption.
 Qed.
 
+(** Mapping both components of a pair with a pattern-matching lambda is
+    `prod_map`. *)
 Lemma map_prod_map {A B} (f : A -> B) :
   (fun '(a, b) => (f a, f b)) = prod_map f f.
 Proof.
   extensionality x. by destruct x.
 Qed.
-
-Ltac invMatch :=
-match goal with
-| [ H : Matches _ = Matches _ |- _] => inv H
-| [ H : Matches _ = NotMatches |- _] => inv H
-| [ H : Matches _ = NotSupported |- _] => inv H
-| [ H : NotMatches = Matches _ |- _] => inv H
-| [ H : NotMatches = NotMatches |- _] => inv H
-| [ H : NotMatches = NotSupported |- _] => inv H
-| [ H : NotSupported = Matches _ |- _] => inv H
-| [ H : NotSupported = NotMatches |- _] => inv H
-| [ H : NotSupported = NotSupported |- _] => inv H
-end.

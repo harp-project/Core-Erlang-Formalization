@@ -875,7 +875,7 @@ Proof.
         apply Nat.ltb_nlt in H0. rewrite H0. simpl.
         apply H.
   * repeat rewrite length_map. do 3 f_equal. 2: f_equal.
-    (* prove separately, by induction that list_equal and list_less are preserved *)
+    (* prove separately, by induction that list_eqb and list_less are preserved *)
     {
       revert l0. induction IHv; intros; destruct l0; simpl.
       * reflexivity.

@@ -7,13 +7,13 @@
 From CoreErlang Require Export Syntax.
 Import ListNotations.
 
-(** A pattern's scope is the sum of its variables. *)
+(** The number of variables bound by a pattern (i.e., the number of `PVar`s in
+    it). The sizes of binary segments do not bind variables, thus they are not
+    counted. *)
 Fixpoint PatVars (p : Pat) : nat :=
 match p with
- (*| PVar v => 1*)
  | PVar   => 1
  | PLit l => 0
-(*  | PPid p => 0 *)
  | PCons hd tl => PatVars hd + PatVars tl
  | PTuple l => foldr (fun x y => (PatVars x) + y) 0 l
  | PMap l => foldr (fun '(a,b) y => (PatVars a) + (PatVars b) + y) 0 l
@@ -21,7 +21,8 @@ match p with
  | PBin l => foldr (fun seg acc => (PatVars (seg_val seg)) + acc) 0 l
 end.
 
-(** Pattern list scopes for `case` expressions. *)
+(** The number of variables bound by a list of patterns (e.g., the patterns of a
+    `case` clause). *)
 Definition PatListVars (pl : list Pat) : nat :=
   foldr (fun x y => (PatVars x) + y) 0 pl.
 
@@ -30,10 +31,16 @@ Reserved Notation "'NVAL' Γ ⊢ e" (at level 69, no associativity).
 Reserved Notation "'VAL' Γ ⊢ v" (at level 69, no associativity).
 Reserved Notation "'EXP' Γ ⊢ e" (at level 69, no associativity).
 Reserved Notation "'PAT' Γ ⊢ e" (at level 69, no associativity).
-Open Scope program_scope. (* needed for "∘" *)
 
-(** For language elements involving lists (e.g. tuples) we originally used
-    Forall in the constructors (which lead to nested induction). This was
+(** The static semantics (scoping judgements) of expressions, values,
+    non-value expressions and patterns. `EXP Γ ⊢ e` (resp. `VAL`, `NVAL`,
+    `PAT`) expresses that `e` is well-scoped in a context of `Γ` variables,
+    i.e., all of its free variables (and function identifiers) are de Bruijn
+    indices less than `Γ`. Binders (e.g., `fun`, `let`, `case` clauses,
+    `letrec`) extend the context with the number of variables they bind.
+
+    For language elements involving lists (e.g. tuples) we originally used
+    Forall in the constructors (which led to nested induction). This was
     easier to read, but Rocq failed to generate strong enough induction
     hypotheses for proofs, thus we use indexing to mitigate this issue.
  *)
@@ -79,7 +86,7 @@ with ValScoped : nat -> Val -> Prop :=
   EXP (length ext + vl + n) ⊢ e->
   VAL n ⊢ (VClos ext id vl e)
 
-| scoped_vbitstring n (b : bvn) :
+| scoped_vbitstring (b : bvn) n :
   VAL n ⊢ VBitstring b
 
 where "'VAL' Γ ⊢ e" := (ValScoped Γ e)
@@ -165,12 +172,12 @@ with NonValScoped : nat -> NonVal -> Prop :=
 ->
   NVAL n ⊢ (ETry e1 vl1 e2 vl2 e3)
 
-| scoped_ebin (n : nat) (l : list Exp) :
+| scoped_ebin (l : list Exp) (n : nat) :
   (forall i, i < length l -> EXP n ⊢ (nth i l (VVal VNil)))
 ->
   NVAL n ⊢ EBin l
 
-| scoped_eseg (n : nat) (seg : Segment Exp Exp) :
+| scoped_eseg (seg : Segment Exp Exp) (n : nat) :
   EXP n ⊢ seg_val seg -> EXP n ⊢ seg_size seg
 ->
   NVAL n ⊢ ESeg seg
@@ -205,13 +212,13 @@ with PatScoped : nat -> Pat -> Prop :=
 
 where "'PAT' Γ ⊢ e" := (PatScoped Γ e).
 
-(** Special notations for closed *)
+(** Special notations for closed (i.e., scoped in the empty context) syntax. *)
 Notation "'EXPCLOSED' e"    := (EXP 0 ⊢ e) (at level 5).
 Notation "'VALCLOSED' v"    := (VAL 0 ⊢ v) (at level 5).
 Notation "'NVALCLOSED' v" := (NVAL 0 ⊢ v) (at level 5).
 Notation "'PATCLOSED' p"    := (PAT 0 ⊢ p) (at level 5).
 
-(** Mutual induction scheme for the expression/value/non-value scopes *)
+(** Mutual induction scheme for the expression/value/non-value/pattern scopes *)
 Scheme ExpScoped_ind2     := Induction for ExpScoped Sort Prop
   with ValScoped_ind2     := Induction for ValScoped Sort Prop
   with NonValScoped_ind2  := Induction for NonValScoped Sort Prop
@@ -223,7 +230,7 @@ Combined Scheme scoped_ind from ExpScoped_ind2,
 
 (** Scopes extended for redexes *)
 Reserved Notation "'RED' Γ ⊢ e" (at level 69, no associativity).
-Inductive RedexScope : Redex -> nat -> Prop :=
+Inductive RedexScope : nat -> Redex -> Prop :=
 | boxScope Γ : RED Γ ⊢ RBox
 | expScope Γ e : EXP Γ ⊢ e -> RED Γ ⊢ RExp e
 | excScope Γ class reason details :
@@ -234,55 +241,26 @@ Inductive RedexScope : Redex -> nat -> Prop :=
   Forall (fun v => VAL Γ ⊢ v) vl
 ->
   RED Γ ⊢ RValSeq vl
-where "'RED' Γ ⊢ e" := (RedexScope e Γ).
+where "'RED' Γ ⊢ e" := (RedexScope Γ e).
 
 Notation "'REDCLOSED' v" := (RED 0 ⊢ v) (at level 5).
 
-Coercion RExp : Exp >-> Redex.
-Coercion RValSeq : ValSeq  >-> Redex. (* This only seems to work for printing *)
-Coercion RExc : Exception >-> Redex.
-
 #[global]
-Hint Constructors RedexScope : core. 
+Hint Constructors RedexScope : core.
 
-Lemma forall_cons {A : Type} :
-  forall (P : A -> Prop) (l : list A) (x : A) (d : A),
-  (forall i, i < length (x::l) -> P (nth i (x::l) d)) ->
-  (forall i, i < length l -> P (nth i l d)).
-Proof.
-  intros. by specialize (H (S i) ltac:(slia)).
-Qed.
-
-
-Lemma scoped_case_Forall : forall Γ e l,
-  EXP Γ ⊢ e ->
-  Forall (fun '(p, g, b) => Forall (PatScoped Γ) p /\ EXP PatListVars p + Γ ⊢ g /\ EXP PatListVars p + Γ ⊢ b) l ->
-  EXP Γ ⊢ ° ECase e l.
-Proof.
-  intros Γ e l He H1.
-  rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H1.
-  do 2 constructor; auto.
-  all: intros i Hi.
-  all: specialize (H1 i Hi).
-  all: assert (E1 : nth i (map (fst ∘ fst) l) [] = (fst ∘ fst) (nth i l ([], ˝VNil, ˝VNil))) by exact (map_nth (fst ∘ fst) l ([], ˝VNil, ˝VNil) i).
-  all: assert (E2 : nth i (map (snd ∘ fst) l) (˝VNil) = (snd ∘ fst) (nth i l ([], ˝VNil, ˝VNil))) by exact (map_nth (snd ∘ fst) l ([], ˝VNil, ˝VNil) i).
-  all: assert (E3 : nth i (map snd l) (˝VNil) = snd (nth i l ([], ˝VNil, ˝VNil))) by exact (map_nth snd l ([], ˝VNil, ˝VNil) i).
-  all: rewrite ?E1, ?E2, ?E3.
-  all: destruct (nth i l ([], ˝VNil, ˝VNil)) as [[p g] b]; simpl in *.
-  - apply H1.
-  - apply H1.
-  - intros j Hj. destruct H1 as [H1 _]. rewrite indexed_to_forall with (def := PNil) in H1. apply H1. exact Hj.
-Qed.
-
-(* TODO: develop lemmas like above with Forall-style premises for automatic 
-   scope-solving. We also need their opposite direction. *)
-
+(** `specialize_indices x H` instantiates an indexed hypothesis
+    `H : forall i, i < k -> P i` (with a concrete bound `k`) for all indices
+    from `x` to `k - 1`, then clears `H`. *)
 Ltac specialize_indices x H :=
   let Spec := fresh "Spec" in
   tryif pose proof (H x ltac:(lia)) as Spec
   then (simpl in Spec; specialize_indices (S x) H)
   else (clear H).
 
+(** `specialize_forall` finds an indexed hypothesis (as in the scoping
+    judgements) over a list of known length, and instantiates it for all
+    indices with `specialize_indices`. Hypotheses over empty lists are
+    cleared. *)
 Ltac specialize_forall :=
   match goal with
   | [H : forall i, i < length (_ :: ?l) -> ?P |- _] =>
@@ -293,7 +271,9 @@ Ltac specialize_forall :=
   | [H : forall i, i < 0 -> _ |- _] => clear H
   end.
 
-(** Scope deconstruction tactics: *)
+(** Scope deconstruction tactics: `destruct_redex_scope` inverts one scoping
+    hypothesis of a known syntactic shape (hypotheses without premises are
+    cleared). *)
 Ltac destruct_redex_scope :=
   match goal with
   | [H : RED _ ⊢ (RExp _) |- _] => inversion H; subst; clear H
@@ -311,7 +291,7 @@ Ltac destruct_redex_scope :=
   | [H : VAL _ ⊢ VVar _ |- _] => inversion H; subst; clear H
   | [H : VAL _ ⊢ VFunId _ |- _] => inversion H; subst; clear H
   | [H : VAL _ ⊢ VClos _ _ _ _ |- _] => inversion H; subst; clear H
-  | [H : VAL _ ⊢ VBitstring _ |- _] => inversion H; subst; clear H
+  | [H : VAL _ ⊢ VBitstring _ |- _] => clear H
   | [H : NVAL _ ⊢ EFun _ _ |- _] => inversion H; subst; clear H
   | [H : NVAL _ ⊢ EValues _ |- _] => inversion H; subst; clear H
   | [H : NVAL _ ⊢ ECons _ _ |- _] => inversion H; subst; clear H
@@ -336,12 +316,17 @@ Ltac destruct_redex_scope :=
   | [H : PAT _ ⊢ PBin _ |- _] => inversion H; subst; clear H
   end.
 
+(** `destruct_redex_scopes` deconstructs all scoping hypotheses as far as
+    possible: it alternates `destruct_redex_scope` and `specialize_forall` (to
+    access the scoping of list elements) until neither makes progress. *)
 Ltac destruct_redex_scopes :=
   repeat (
     repeat destruct_redex_scope;
     repeat specialize_forall
   ).
 
+(** A test for `destruct_redex_scopes`: it should deconstruct the scoping of
+    every subexpression of a nested expression. *)
 Section tests.
 
   Local Definition t1 e1 e2 e3 e4 e5 e6:=
@@ -367,6 +352,8 @@ Hint Constructors ValScoped : core.
 Hint Constructors ExpScoped : core.
 #[global]
 Hint Constructors NonValScoped : core.
+#[global]
+Hint Constructors PatScoped : core.
 
 
 (** We define which redexes are valid results (value sequences, exceptions). *)
@@ -377,13 +364,15 @@ Inductive is_result : Redex -> Prop :=
 #[global]
 Hint Constructors is_result : core.
 
-(** Inversion tactic for `is_result` *)
+(** Inversion tactic for `is_result`: it eliminates impossible `is_result`
+    hypotheses (about `RBox` and `RExp`). *)
 Ltac inv_result :=
   match goal with
   | [H : is_result RBox |- _] => inv H
   | [H : is_result (RExp _) |- _] => inv H
   end.
 
+(** Closed results: results that do not contain free variables. *)
 Definition is_closed_result (r : Redex) :=
   REDCLOSED r /\ is_result r.
 

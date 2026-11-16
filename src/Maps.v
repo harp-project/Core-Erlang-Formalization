@@ -17,6 +17,7 @@
 *)
 
 From CoreErlang Require Export Equalities.
+From CoreErlang Require Import Scoping.
 Import ListNotations.
 
 
@@ -281,4 +282,42 @@ Proof.
   * exists a0. left. by left.
   * exists a. right. by left.
   * apply IHl in H. firstorder.
+Qed.
+
+(** Putting a closed key-value pair into a closed map results in a closed
+    map. *)
+Lemma map_put_is_closed (v v0 : Val)
+(l2 : list (Val * Val)) :
+  VALCLOSED v -> VALCLOSED v0 ->
+  (forall i : nat,
+  i < Datatypes.length l2 -> VALCLOSED (nth i (map fst l2) VNil)) ->
+  (forall i : nat,
+  i < Datatypes.length l2 -> VALCLOSED (nth i (map snd l2) VNil))
+  ->
+VALCLOSED (VMap (map_put v v0 l2)).
+Proof.
+  intros. induction l2; simpl.
+  * constructor; simpl; destruct i; try lia; now intros.
+  * destruct a as [k' v']. simpl in *.
+    break_match_goal. 2: break_match_goal.
+    - constructor; intros.
+      all: destruct i; [|destruct i]; simpl; try assumption.
+      1: apply (H1 0); lia.
+      1: apply (H1 (S i)); simpl in H3; lia.
+      1: apply (H2 0); lia.
+      1: apply (H2 (S i)); simpl in H3; lia.
+    - constructor; intros.
+      all: destruct i; simpl; try assumption.
+      1: apply (H1 (S i)); simpl in H3; lia.
+      1: apply (H2 (S i)); simpl in H3; lia.
+    - unshelve (epose proof (IHl2 _ _)).
+      1: intros. apply (H1 (S i)); simpl in H3; lia.
+      1: intros. apply (H2 (S i)); simpl in H3; lia.
+      inv H3.
+      constructor; intros.
+      all: destruct i; simpl; try assumption.
+      1: apply (H1 0); lia.
+      2: apply (H2 0); lia.
+      1: apply H5; simpl in H3; lia.
+      1: apply H7; simpl in H3; lia.
 Qed.

@@ -1,8 +1,22 @@
 (**
   This file contains function definitions that simulate the behaviour of
   built-in and standard functions (and primitive operations) of Core Erlang.
-  In also includes a number of theorems about their properties and many unit
-  tests.
+  It also includes a number of theorems about their properties. The unit tests
+  of these functions are in `AuxiliariesTests.v`.
+
+  Known deviations from Erlang:
+  - There are no floats: `/` is integer division (rounding towards negative
+    infinity), e.g., `7/2` evaluates to `3` (instead of `3.5`) and `-7/2` to
+    `-4`. Float and UTF segments of binaries are not supported.
+  - The functions based on value equality and ordering (`==`, `=:=`, `<`,
+    `--`, `lists:member`, `lists:keyfind`, map operations, etc.) consider all
+    PIDs equal (see `Val_eqb` in `Equalities.v`).
+  - Strings and atoms consist of ASCII characters, thus character codes
+    above 255 are rejected (e.g., by `list_to_atom`), and `binary_to_atom`
+    does not decode multi-byte UTF-8 characters.
+  - Only a subset of the arities is supported for some functions (e.g.,
+    `io:fwrite/1`, `binary_to_atom/2`), and `io:fread/2` does not read any
+    input (see `eval_io`).
 *)
 
 (**
@@ -31,18 +45,15 @@ Import Notations.
 
   PrimopCode and BIFCode is used to enable better pattern-matching on strings
  *)
+(** Codes of the primitive operations: `match_fail` and `raise` (errors), the
+    message receipt primops (handled by the process-local semantics), and
+    `PNothing` for undefined primops. *)
 Inductive PrimopCode :=
 | PMatchFail | PRaise | PNothing
 | PRecvNext | PPeekMsg | PRemoveMsg | PRecvWaitTimeout
 .
 
-(* Erlang module:
-   is_binary, is_bitstring
-   byte_size, bit_size
-   binary_to_list
-   bitstring_to_list
-   
-   *)
+(** Codes of the simulated built-in and standard functions. *)
 Inductive BIFCode :=
 (** arithmetics *)
 | BPlus | BMinus | BMult | BDivide | BRem | BDiv
@@ -131,6 +142,9 @@ Definition convert_primop_to_code (s : string) : PrimopCode :=
   else PNothing
 .
 
+(** The string conversion functions are made opaque for the proofs of this
+    file, to avoid unfolding the long chains of string comparisons (they are
+    made transparent again at the end of the file). *)
 Opaque convert_primop_to_code.
 
 Definition convert_string_to_code : (string * string) -> BIFCode :=
@@ -263,7 +277,8 @@ match convert_string_to_code (mname, fname), params with
 (** multiplication *)
 | BMult, [VLit (Integer a); VLit (Integer b)] => RValSeq [VLit (Integer (a * b))]
 | BMult, [a; b]                               => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
-(** division *)
+(** division: NOTE: there are no floats, thus this is integer division
+    (rounding towards negative infinity), unlike in Erlang *)
 | BDivide, [VLit (Integer a); VLit (Integer 0)] => RExc (badarith (VTuple [VLit (Atom fname); VLit (Integer a); VLit (Integer 0)]))
 | BDivide, [VLit (Integer a); VLit (Integer b)] => RValSeq [VLit (Integer (a / b))]
 | BDivide, [a; b]                               => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
@@ -301,7 +316,9 @@ match convert_string_to_code (mname, fname), params with
 | _         , _                              => RExc (undef (VLit (Atom fname)))
 end.
 
-(** For IO maniputaion: *)
+(** For IO manipulation. Only `io:fwrite/1` and `io:fread/2` are supported.
+    Input is not modelled: `io:fread(Prompt, Format)` returns
+    `{ok, Format}`; the call is recorded in the side-effect trace. *)
 Definition eval_io (mname : string) (fname : string) (params : list Val)
    : (Redex * option SideEffect) :=
 match convert_string_to_code (mname, fname), length params, params with
@@ -401,8 +418,8 @@ match convert_string_to_code (mname, fname), params with
 | _ , _ => RExc (undef (VLit (Atom fname)))
 end.
 
-(** In Erlang, there are not proper lists, e.g., [1|2] => VCons (VLit 1) (VLit 2)
-*)
+(** Checks whether a value is a proper list. In Erlang, there are improper
+    lists, e.g., [1|2] => VCons (VLit 1) (VLit 2). *)
 Fixpoint is_shallow_proper_list (v : Val) : bool :=
 match v with
 | VNil => true
@@ -422,7 +439,8 @@ match v1, v2 with
 | _, _ => RExc (badarg (VTuple [VLit (Atom "++"); v1; v2]))
 end.
 
-(** List subtraction *)
+(** Removes the first occurrence of `v2` from the list `v1` (`v1` is expected
+    to be a proper list). *)
 Fixpoint subtract_elem (v1 v2 : Val) : Val :=
 match v1 with
 | VNil => VNil
@@ -430,6 +448,8 @@ match v1 with
 | _ => ErrorVal
 end.
 
+(** List subtraction (`--`): removes the first occurrence of each element of
+    `v2` from `v1`. Both arguments have to be proper lists. *)
 Fixpoint eval_subtract (v1 v2 : Val) : Redex :=
 if andb (is_shallow_proper_list v1) (is_shallow_proper_list v2) then
   match v2 with
@@ -456,15 +476,16 @@ end.
           module, and not as a simulated function.
     We use this function to define concurrent map in `MapPmap.v`. *)
 Definition eval_split (v1 v2 : Val) : Redex :=
-match v1 with
-| VLit (Integer i) => if Z.ltb i 0
+match v1, v2 with
+| VLit (Integer i), (VNil | VCons _ _) =>
+                      if Z.ltb i 0
                       then RExc (badarg (VTuple [VLit (Atom "split"); v1; v2]))
-                      else 
+                      else
                         match split_cons (Z.to_nat i) v2 with
-                        | Some (v1, v2) => RValSeq [VTuple [v1;v2]]
+                        | Some (l1, l2) => RValSeq [VTuple [l1;l2]]
                         | None => RExc (badarg (VTuple [VLit (Atom "split"); v1; v2]))
                         end
-| _ => RExc (badarg (VTuple [VLit (Atom "split"); v1; v2]))
+| _, _ => RExc (badarg (VTuple [VLit (Atom "split"); v1; v2]))
 end.
 
 (** List transformation functions *)
@@ -513,19 +534,41 @@ match convert_string_to_code (mname, fname), params with
 | _                     , _   => RExc (undef (VLit (Atom fname)))
 end.
 
-(** TODO: Revise the definition as the badarg exceptions (not a proper list / not a char list)
+(** Converts a proper list of character codes (0-255) into a list of
+    characters.
+    TODO: Revise the definition as the badarg exceptions (not a proper list / not a char list)
     are not distinguished from each other *)
 Fixpoint mk_ascii_list (l : Val) : option (list ascii) :=
 match l with
 | VNil => Some []
 | VCons (VLit (Integer v1)) v2 =>
-  match mk_ascii_list v2 with
+  if ((0 <=? v1)%Z && (v1 <=? 255)%Z)
+  then
+    match mk_ascii_list v2 with
     | Some s => Some ((Ascii.ascii_of_nat (Z.to_nat(v1))) :: s)
     | _ => None
     end
+  else None
 | _ => None
 end.
 
+(** Converts a proper list of integers into a list of characters, keeping only
+    the lowest byte of each integer. This is how `list_to_integer` treats
+    character codes in Erlang, e.g., `list_to_integer([305])` evaluates to `1`
+    (`305 band 255` is the code of `$1`), while `list_to_integer([-1])` raises
+    `badarg`. *)
+Fixpoint mk_byte_list (l : Val) : option (list ascii) :=
+match l with
+| VNil => Some []
+| VCons (VLit (Integer v1)) v2 =>
+  match mk_byte_list v2 with
+  | Some s => Some ((Ascii.ascii_of_nat (Z.to_nat (Z.land v1 255))) :: s)
+  | _ => None
+  end
+| _ => None
+end.
+
+(** Converts a string into a Core Erlang list of character codes. *)
 Fixpoint string_to_vcons (s : string) : Val :=
 match s with
  | EmptyString => VNil
@@ -540,6 +583,8 @@ Definition digit_value (c : ascii) : option nat :=
   else if (65 <=? n) && (n <=? 90) then Some (n - 65 + 10)
   else None.
 
+(** Parses a sequence of digits in the given base, accumulating the value in
+    `acc`. Fails, if a character is not a digit of the base. *)
 Fixpoint parse_digits (base : nat) (l : list ascii) (acc : Z) : option Z :=
 match l with
 | [] => Some acc
@@ -569,6 +614,8 @@ Definition parse_integer (base : nat) (l : list ascii) : option Z :=
                else parse_digits base l 0
   end.
 
+(** The character of a digit (`0-9`, then upper case letters, as in
+    `integer_to_list/2`). *)
 Definition digit_char (d : Z) : ascii :=
   if (d <? 10)%Z then ascii_of_nat (48 + Z.to_nat d) else ascii_of_nat (55 + Z.to_nat d).
 
@@ -581,6 +628,7 @@ match fuel with
              if (n <? base)%Z then acc' else integer_digits fuel' base (n / base) acc'
 end.
 
+(** The textual representation of an integer in the given base. *)
 Definition integer_to_digits (base : Z) (z : Z) : list ascii :=
   let digits := integer_digits (S (Z.to_nat (Z.log2 (Z.abs z)))) base (Z.abs z) [] in
   if (z <? 0)%Z then "-"%char :: digits else digits.
@@ -681,7 +729,7 @@ match convert_string_to_code (mname, fname), params with
                  | None    => RExc (badarg (VTuple [VLit (Atom fname); VLit (Integer i); VTuple l; val]))
                  | Some l' => RValSeq [VTuple l']
                  end
-    | _       => RExc (badarg (VTuple [VLit (Atom fname); VLit (Integer i); VTuple l]))
+    | _       => RExc (badarg (VTuple [VLit (Atom fname); VLit (Integer i); VTuple l; val]))
     end
 | BSetElement, [v1; v2; v3] => RExc (badarg (VTuple [VLit (Atom fname); v1; v2; v3]))
 | _, _ => RExc (undef (VLit (Atom fname)))
@@ -708,9 +756,9 @@ match convert_string_to_code (mname, fname), params with
     else RExc (badarg (VTuple [VLit (Atom fname); VLit (Integer n); v]))
 | BMakeTuple, [v1; v2] => RExc (badarg (VTuple [VLit (Atom fname); v1; v2]))
 | BSize, [VTuple l] => RValSeq [VLit (Integer (Z.of_nat (length l)))]
+(** `size/1` returns the number of whole bytes of a bitstring (rounded down) *)
 | BSize, [VBitstring b] =>
-    RValSeq [VLit (Integer (Z.of_N (N.div (bvn_n b) 8 +
-                 if N.eqb (N.modulo (bvn_n b) 8%N) 0%N then 0 else 1)))]
+    RValSeq [VLit (Integer (Z.of_N (N.div (bvn_n b) 8)))]
 | BSize, [v] => RExc (badarg (VTuple [VLit (Atom fname); v]))
 | _, _ => RExc (undef (VLit (Atom fname)))
 end.
@@ -813,37 +861,44 @@ end.
     the equivalence relations: in `CIU_Val_compat_closed_reverse` (`CIU.v`). *)
 Definition eval_funinfo (params : list Val) : Redex :=
 match params with
-| [VClos ext id params e;v] =>
+| [VClos ext id arity e;v] =>
   if v =ᵥ VLit "arity"%string
-  then RValSeq [VLit (Z.of_nat params)]
-  else RExc (badarg (VTuple [VLit "fun_info"%string;VClos ext id params e;v]))
+  then RValSeq [VLit (Z.of_nat arity)]
+  else RExc (badarg (VTuple [VLit "fun_info"%string;VClos ext id arity e;v]))
 | [v1;v2] => RExc (badarg (VTuple [VLit "fun_info"%string;v1;v2]))
 | _ => RExc (undef (VLit "fun_info"%string))
 end.
 
-(** This function returns None, for the correct parametherisation of the
-    concurrent BIFs, otherwise an exception is created. *)
+(** This function returns None for the supported arities of the concurrent
+    BIFs (their semantics is defined in `Concurrent/ProcessSemantics.v`),
+    otherwise an `undef` exception is created. *)
 Definition eval_concurrent (mname : string) (fname : string) (params : list Val) : option Exception :=
 match convert_string_to_code (mname, fname) with
 | BSend                          => match params with
-                                    | _ :: _ :: _ => None
-                                    | _           => Some (undef (VLit (Atom fname)))
+                                    | [_; _] => None
+                                    | _      => Some (undef (VLit (Atom fname)))
                                     end
 | BSpawn | BSpawnLink            => match params with (* TODO: 1, 3 parameter spawn versions *)
-                                    | _ :: _ :: _ => None
-                                    | _           => Some (undef (VLit (Atom fname)))
+                                    | [_; _] => None
+                                    | _      => Some (undef (VLit (Atom fname)))
                                     end
 | BSelf                          => match params with
                                     | [] => None
                                     | _  => Some (undef (VLit (Atom fname)))
                                     end
-| BLink | BUnLink | BProcessFlag => match params with
-                                    | _ :: _ => None
+| BLink | BUnLink                => match params with
+                                    | [_] => None
+                                    | _   => Some (undef (VLit (Atom fname)))
+                                    end
+| BProcessFlag                   => match params with
+                                    | [_; _] => None
                                     | _      => Some (undef (VLit (Atom fname)))
                                     end
 | _                              => Some (undef (VLit (Atom fname)))
 end.
 
+(** Map functions: `maps:put/3`, `maps:get/2,3`, `map_size/1` and
+    `maps:from_keys/2` *)
 Definition eval_map_bifs (mname fname : string)
                          (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname) with
@@ -851,7 +906,7 @@ match convert_string_to_code (mname, fname) with
           | key :: value :: map :: [] =>
             match map with
             | VMap contents => RValSeq [VMap (map_put key value contents)]
-            | _ => RExc (badmap (VTuple [VLit "put"%string;key;value;map]))
+            | _ => RExc (badmap map)
             end
           | _ => RExc (undef (VLit (Atom fname)))
           end
@@ -892,37 +947,33 @@ match convert_string_to_code (mname, fname) with
 | _ => RExc (undef (VLit (Atom fname)))
 end.
 
+(** `byte_size/1` (rounded up) and `bit_size/1` of bitstrings *)
 Definition eval_bin_size (mname fname : string)
                          (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
 | BByteSize, [VBitstring b] =>
-    RValSeq [VLit (Integer (Z.of_N (N.div (bvn_n b) 8 +
-                 if N.eqb (N.modulo (bvn_n b) 8%N) 0%N then 0 else 1)))]
+    RValSeq [VLit (Integer (Z.of_N (bvn_byte_size b)))]
 | BByteSize, [v]            => RExc (badarg (VTuple [VLit (Atom fname); v]))
 | BBitSize, [VBitstring b]  => RValSeq [VLit (Integer (Z.of_N (bvn_n b)))]
 | BBitSize, [v]             => RExc (badarg (VTuple [VLit (Atom fname); v]))
 | _, _                      => RExc (undef (VLit (Atom fname)))
 end.
 
-Definition Z_to_bv_little (n : N) (z : Z) : bv n :=
-  let k := N.div (n + 7) 8 in (* number of bytes = ceil(n/8) *)
-  let last_width := (n - 8 * (k - 1))%N in  (* bits of the last chunk *)
-  let high_bytes := Z_to_little_endian (Z.of_N (k - 1)) 8 z in   (* d0..d_{k-2}, LSB-first, all full bytes *)
-  let high_part := little_endian_to_Z 8 (reverse high_bytes) in  (* re-assembled MSB-first, d0 highest *)
-  let last_digit := (Z.shiftr z (Z.of_N (8 * (k - 1))) mod 2 ^ Z.of_N last_width)%Z in
-  Z_to_bv n (high_part * 2 ^ Z.of_N last_width + last_digit).
-
-Goal Z_to_bv_little 16 10000 = 4135%bv. vm_compute. by apply bv_eq. Qed.
-Goal Z_to_bv_little 13 10000 = 519%bv. vm_compute. by apply bv_eq. Qed.
-Goal Z_to_bv 13 10000 = 1808%bv. vm_compute. by apply bv_eq. Qed.
-
+(** The size of a binary/bitstring segment in bits: its size value multiplied
+    by the unit, or `default` (the size of the whole value) for `'all'`.
+    Fails for negative or non-integer sizes. *)
 Definition get_bin_size (v : Val) (unit : nat) (default : N) : option N :=
 match v with
 | VLit (Integer x) => if (x <? 0)%Z then None else Some (Z.abs_N x * N.of_nat unit)%N
-| VLit (Atom a)    => if string_dec a "all"%string then Some default else None
+| VLit (Atom a)    => if String.eqb a "all"%string then Some default else None
 | _ => None
 end.
 
+(** The evaluation of a segment of a binary construction: it converts the
+    value `v` to a bitstring based on its size, unit, type and endianness.
+    `NativeEndian` is treated as big-endian. For erroneous segments, a
+    `badarg` exception is created. Float and UTF segments are not supported:
+    for these, the result is `None`. *)
 Definition segment_to_bitstring (v size : Val) (unit : nat) (type : BinType)
   (* (sign : BinSign) - "Signedness - The signedness specification can be either signed or unsigned. Notice that signedness only matters for matching." (https://www.erlang.org/doc/system/bit_syntax.html) *)
   (endian : BinEnd) : option Redex :=
@@ -972,13 +1023,9 @@ Definition segment_to_bitstring (v size : Val) (unit : nat) (type : BinType)
   | FloatType | Utf8Type | Utf16Type | Utf32Type => None
   end.
 
-Definition bvn_to_bytes (b : bvn) : list Z * bvn :=
-  let n := bvn_n b in
-  let r := N.modulo n 8 in
-  let m := N.div n 8 in
-  (reverse (Z_to_little_endian (Z.of_N m) 8 (Z.shiftr (bvn_unsigned b) (Z.of_N r))),
-   bv_to_bvn (bv_extract 0 r (bvn_val b))).
-
+(** `binary_to_list/1` and `bitstring_to_list/1`: the bytes of a bitstring as
+    a list of integers. For bitstrings, the remaining bits (that do not form a
+    whole byte) are the last element of the list. *)
 Definition eval_bin_to_list (mname fname : string)
                             (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
@@ -997,21 +1044,6 @@ match convert_string_to_code (mname, fname), params with
 | _, _ => RExc (undef (VLit (Atom fname)))
 end.
 
-(** Helper functions for binaries and IO lists *)
-Definition bvn_empty : bvn := bv_to_bvn (Z_to_bv 0 0).
-
-Definition bvn_app (a b : bvn) : bvn :=
-  bv_to_bvn (bv_concat (bvn_n a + bvn_n b) (bvn_val a) (bvn_val b)).
-
-Definition bvn_byte (z : Z) : bvn := bv_to_bvn (Z_to_bv 8 z).
-
-(** Binaries are bitstrings whose size is a multiple of 8 *)
-Definition bvn_aligned (b : bvn) : bool := N.eqb (N.modulo (bvn_n b) 8%N) 0%N.
-
-(** The bytes of a binary as characters *)
-Definition bvn_to_chars (b : bvn) : list ascii :=
-  map (fun z => ascii_of_nat (Z.to_nat z)) (fst (bvn_to_bytes b)).
-
 (** The contents of an IO list (or binary) as a binary; improper IO lists
     may end with a binary. *)
 Fixpoint iolist_bits (v : Val) : option bvn :=
@@ -1029,12 +1061,14 @@ match v with
 | _ => None
 end.
 
-(** Conversions of lists, binaries and atoms *)
+(** Conversions of lists, binaries and atoms. NOTE: `binary_to_atom/2` treats
+    every byte as a character (multi-byte UTF-8 characters are not decoded),
+    and `binary_to_atom/1` is not supported. *)
 Definition eval_conversion (mname : string) (fname : string) (params : list Val)
   : Redex * option SideEffect :=
 match convert_string_to_code (mname, fname), params with
 | BListToInteger, [v] =>
-    match mk_ascii_list v with
+    match mk_byte_list v with
     | Some cs => match parse_integer 10 cs with
                  | Some z => (RValSeq [VLit (Integer z)], None)
                  | None => (RExc (badarg (VTuple [VLit (Atom fname); v])), None)
@@ -1042,7 +1076,7 @@ match convert_string_to_code (mname, fname), params with
     | None => (RExc (badarg (VTuple [VLit (Atom fname); v])), None)
     end
 | BListToInteger, [v; VLit (Integer base)] =>
-    match mk_ascii_list v with
+    match mk_byte_list v with
     | Some cs => match parse_integer (Z.to_nat base) cs with
                  | Some z => (RValSeq [VLit (Integer z)], None)
                  | None => (RExc (badarg (VTuple [VLit (Atom fname); v; VLit (Integer base)])), None)
@@ -1208,6 +1242,7 @@ match convert_string_to_code (mname, fname) with
 end.
 
 
+(** The result of a segment evaluation is an exception or a single bitstring. *)
 Lemma segment_to_bitstring_final v vsize unit type endian (r : Redex):
   segment_to_bitstring v vsize unit type endian = Some r ->
   (exists exc : Exception, r = exc) \/ (exists vs : bvn, r = RValSeq [VBitstring vs]).
@@ -1217,6 +1252,7 @@ Proof.
   all: try by right; eexists.
 Qed.
 
+(** Thus, it is a result. *)
 Corollary segment_to_bitstring_is_result v vsize unit type endian (r : Redex):
   segment_to_bitstring v vsize unit type endian = Some r ->
   is_result r.
@@ -1236,7 +1272,7 @@ Proof.
   * now rewrite IHl.
 Qed.
 
-(** `meta_to_cons` and `mk_list` are the inverse of eachother *)
+(** `meta_to_cons` and `mk_list` are the inverse of each other *)
 Lemma meta_to_cons_mk_list : forall l, mk_list (meta_to_cons l) = Some l.
 Proof.
   induction l.
@@ -1244,6 +1280,7 @@ Proof.
   simpl. now rewrite IHl.
 Qed.
 
+(** If `mk_list` succeeds, `meta_to_cons` gives back the original list. *)
 Lemma mk_list_meta_to_cons : forall l l', mk_list l = Some l' ->
   meta_to_cons l' = l.
 Proof.
@@ -1279,30 +1316,8 @@ Proof.
   now apply IHl.
 Qed.
 
-(** Different commutativity theorems for addition: *)
-Proposition plus_comm_basic {e1 e2 t : Val} eff: 
-  eval "erlang"%string "+"%string [e1 ; e2] = Some (RValSeq [t], eff)
-->
-  eval "erlang"%string "+"%string [e2; e1] = Some (RValSeq [t], eff).
-Proof.
-  simpl. case_eq e1; case_eq e2; intros.
-  all: try(reflexivity || inv H1).
-  all: try(destruct l); try(destruct l0); try(reflexivity || inv H3).
-  * unfold eval, eval_arith. simpl. rewrite <- Z.add_comm. reflexivity.
-Qed.
-
-Proposition plus_comm_basic_Val {e1 e2 v : Val} eff: 
-  eval "erlang"%string "+"%string [e1 ; e2] = Some (RValSeq [v], eff)
-->
-  eval "erlang"%string "+"%string [e2; e1] = Some (RValSeq [v], eff).
-Proof.
-  simpl. case_eq e1; case_eq e2; intros.
-  all: try(reflexivity || inv H1).
-  all: try(destruct l); try(destruct l0); try(reflexivity || inv H3).
-  * unfold eval, eval_arith. simpl. rewrite <- Z.add_comm. reflexivity.
-Qed.
-
 (** Scoping and `is_closed_result` properties for BIFs: *)
+(** Removing an element from a list preserves its scope. *)
 Lemma subtract_elem_closed Γ:
   forall v1 v2, VAL Γ ⊢ v1 -> VAL Γ ⊢ v2 ->
   VAL Γ ⊢ (subtract_elem v1 v2).
@@ -1311,6 +1326,7 @@ Proof.
   repeat break_match_goal; destruct_redex_scopes; auto.
 Qed.
 
+(** Subtracting a proper list from the empty list results in the empty list. *)
 Lemma eval_subtract_nil :
   forall v, is_shallow_proper_list v = true ->
     eval_subtract VNil v = RValSeq [VNil].
@@ -1319,6 +1335,7 @@ Proof.
   simpl. rewrite H0. auto.
 Qed.
 
+(** The (simulated) primops always raise exceptions. *)
 Lemma primop_eval_is_exception :
   forall f vl r eff',
   primop_eval f vl = Some (r, eff') ->
@@ -1329,6 +1346,7 @@ Proof.
   all: unfold eval_primop_error in *; repeat break_match_hyp; try invSome; eexists; reflexivity.
 Qed.
 
+(** The result of a primop on closed arguments is a closed result. *)
 Lemma primop_eval_is_closed_result :
   forall f vl r eff',
   Forall (fun v => VALCLOSED v) vl ->
@@ -1343,18 +1361,22 @@ Proof.
   intros. apply (H1 (S i)). slia.
 Qed.
 
+(** Closed results are closed redexes. *)
 Lemma is_closed_result_closed :
   forall r, is_closed_result r -> REDCLOSED r.
 Proof.
   destruct r; intros; inv H; auto.
 Qed.
 
+(** Strings converted to Core Erlang lists are closed. *)
 Lemma string_to_vcons_closed :
   forall s, VALCLOSED (string_to_vcons s).
 Proof.
   induction s; simpl; auto.
 Qed.
 
+(** The simulated BIFs always produce results (value sequences or
+    exceptions). *)
 Lemma eval_is_result :
   forall f m vl r eff,
   eval m f vl = Some (r, eff) ->
@@ -1380,9 +1402,7 @@ Proof.
     all: try now constructor.
     all: auto.
   * destruct v; simpl.
-    2: destruct l. 3: break_match_goal. 4: break_match_goal.
-    all: try now constructor.
-    clear -Heqo. destruct p. constructor.
+    all: repeat break_match_goal; try now constructor.
   * clear Heqb m f. induction v; cbn.
     all: constructor.
   * clear Heqb m. break_match_hyp. 2: break_match_hyp.
@@ -1410,75 +1430,20 @@ Proof.
     all: now constructor.
 Qed.
 
-Lemma map_insert_is_closed (v v0 : Val)
-(l2 : list (Val * Val)) :
-  VALCLOSED v -> VALCLOSED v0 ->
-  (forall i : nat,
-  i < Datatypes.length l2 -> VALCLOSED (nth i (map fst l2) VNil)) ->
-  (forall i : nat,
-  i < Datatypes.length l2 -> VALCLOSED (nth i (map snd l2) VNil))
-  ->
-VALCLOSED (VMap (map_put v v0 l2)).
+(** Splitting a closed list results in closed lists. *)
+Lemma split_cons_closed :
+  forall n v l1 l2, split_cons n v = Some (l1, l2) ->
+    VALCLOSED v -> VALCLOSED l1 /\ VALCLOSED l2.
 Proof.
-  intros. induction l2; simpl.
-  * constructor; simpl; destruct i; try lia; now intros.
-  * destruct a as [k' v']. simpl in *.
-    break_match_goal. 2: break_match_goal.
-    - constructor; intros.
-      all: destruct i; [|destruct i]; simpl; try assumption.
-      1: apply (H1 0); lia.
-      1: apply (H1 (S i)); simpl in H3; lia.
-      1: apply (H2 0); lia.
-      1: apply (H2 (S i)); simpl in H3; lia.
-    - constructor; intros.
-      all: destruct i; simpl; try assumption.
-      1: apply (H1 (S i)); simpl in H3; lia.
-      1: apply (H2 (S i)); simpl in H3; lia.
-    - unshelve (epose proof (IHl2 _ _)).
-      1: intros. apply (H1 (S i)); simpl in H3; lia.
-      1: intros. apply (H2 (S i)); simpl in H3; lia.
-      inv H3.
-      constructor; intros.
-      all: destruct i; simpl; try assumption.
-      1: apply (H1 0); lia.
-      2: apply (H2 0); lia.
-      1: apply H5; simpl in H3; lia.
-      1: apply H7; simpl in H3; lia.
+  induction n; intros; simpl in *.
+  * inv H. split; auto.
+  * destruct v; try congruence.
+    break_match_hyp; try congruence. destruct p. inv H.
+    inv H0. apply IHn in Heqo as [? ?]; auto.
 Qed.
 
-
-(** Scoping properties of the results of the BIFs on tuples, lists, binaries *)
-Lemma badarg_closed :
-  forall (f : string) args,
-    Forall (fun v => VALCLOSED v) args ->
-    REDCLOSED (badarg (VTuple (VLit f :: args))).
-Proof.
-  intros. unfold badarg. do 2 constructor.
-  apply indexed_to_forall. constructor; auto.
-Qed.
-
-Lemma VTuple_closed :
-  forall l, Forall (fun v => VALCLOSED v) l -> VALCLOSED (VTuple l).
-Proof.
-  intros. constructor. apply indexed_to_forall. assumption.
-Qed.
-
-Lemma VTuple_closed_inv :
-  forall l, VALCLOSED (VTuple l) -> Forall (fun v => VALCLOSED v) l.
-Proof.
-  intros. inv H. rewrite <- indexed_to_forall in H2. exact H2.
-Qed.
-
-Lemma Forall_firstn_skipn :
-  forall (l : list Val) n m,
-    Forall (fun v => VALCLOSED v) l ->
-    Forall (fun v => VALCLOSED v) (firstn n l ++ skipn m l).
-Proof.
-  intros. apply Forall_app; split.
-  * apply Forall_take. assumption.
-  * apply Forall_drop. assumption.
-Qed.
-
+(** Scoping properties of the results of the BIFs on tuples, lists, binaries.
+    The element found by `find_key` in a list of closed values is closed. *)
 Lemma find_key_closed :
   forall key n items e,
     Forall (fun v => VALCLOSED v) items ->
@@ -1488,6 +1453,8 @@ Proof.
   rewrite Forall_forall in H. now apply H.
 Qed.
 
+(** Reversing closed elements onto a closed tail (as `lists:reverse/2` does)
+    results in a closed list. *)
 Lemma fold_cons_closed :
   forall items tail,
     Forall (fun v => VALCLOSED v) items -> VALCLOSED tail ->
@@ -1497,6 +1464,8 @@ Proof.
   inv H. apply IHitems; auto.
 Qed.
 
+(** Putting closed keys with a closed value into a closed map (as
+    `maps:from_keys/2` does) results in a closed map. *)
 Lemma fold_map_put_closed :
   forall keys v m0,
     Forall (fun v => VALCLOSED v) keys -> VALCLOSED v -> VALCLOSED (VMap m0) ->
@@ -1504,9 +1473,11 @@ Lemma fold_map_put_closed :
 Proof.
   induction keys; simpl; intros; auto.
   inv H. apply IHkeys; auto.
-  inv H1. apply map_insert_is_closed; auto.
+  inv H1. apply map_put_is_closed; auto.
 Qed.
 
+(** The following lemmas state that the results of the corresponding BIF
+    groups on closed arguments are closed. *)
 Lemma eval_lists_bifs_closed :
   forall m f vl,
     Forall (fun v => VALCLOSED v) vl ->
@@ -1586,6 +1557,7 @@ Proof.
   all: do 2 constructor; [apply VTuple_closed; repeat constructor | constructor].
 Qed.
 
+(** The results of the simulated BIFs on closed arguments are closed. *)
 Lemma eval_is_closed_result :
   forall f m vl r eff,
   Forall (fun v => VALCLOSED v) vl ->
@@ -1606,7 +1578,6 @@ Proof.
   all: try now do 3 constructor.
   5-8: apply eval_lists_bifs_closed; assumption.
   9-15: eapply eval_conversion_closed; eassumption.
-  26-30, 32-33: apply indexed_to_forall; repeat constructor; auto.
   30-33: apply eval_tuple_bifs_closed; assumption.
   31: apply eval_split_binary_closed; assumption.
   * rewrite Forall_nth in H. specialize (H 1 ErrorVal ltac:(lia)).
@@ -1626,19 +1597,12 @@ Proof.
     - inv H1. now apply IHv0_2.
     - inv H1. apply IHv0_2; auto. now apply subtract_elem_closed.
   * destruct v; simpl.
-    2: destruct l. 3: break_match_goal. 4: break_match_goal.
-    all: try constructor; auto.
-    all: try (constructor; apply indexed_to_forall).
-    all: try constructor; auto.
-    clear -Heqo H1. destruct p. constructor. constructor; auto.
-    constructor. apply indexed_to_forall.
-    remember (Z.to_nat _) as n. clear Heqn x.
-    revert v v1 v0 Heqo H1. induction n; intros; simpl in *.
-    - inv Heqo. constructor; auto.
-    - destruct v0; try invSome. break_match_hyp. 2: invSome.
-      destruct p. invSome. destruct_redex_scopes.
-      apply IHn in Heqo0; auto. destruct_foralls.
-      auto.
+    all: repeat break_match_goal; subst; try (apply badarg_closed; auto; fail).
+    all: match goal with
+         | [Hs : split_cons _ _ = Some _ |- _] =>
+           apply split_cons_closed in Hs as [? ?]; auto
+         end.
+    all: do 2 constructor; [apply VTuple_closed; auto | constructor].
   * clear Heqb m f. induction v; cbn.
     all: destruct_redex_scopes; try (do 2 constructor; apply indexed_to_forall; now repeat constructor).
     do 2 constructor; auto. induction l; constructor.
@@ -1716,7 +1680,7 @@ Proof.
       intros. apply (H5 (S i)). slia.
     - break_match_hyp; invSome.
       apply (H5 0). slia.
-  * now apply map_insert_is_closed.
+  * now apply map_put_is_closed.
   * apply meta_to_cons_closed.
     apply Forall_forall. intros.
     apply in_map_iff in H as [? [? ?]]. subst.
@@ -1735,6 +1699,7 @@ Proof.
     constructor; intros; simpl in *; lia.
 Qed.
 
+(** The results of primops on closed arguments are closed. *)
 Corollary closed_primop_eval : forall f vl r eff',
   Forall (fun v => VALCLOSED v) vl ->
   (primop_eval f vl) = Some (r, eff') ->

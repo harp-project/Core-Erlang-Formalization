@@ -520,6 +520,27 @@ Proof. reflexivity. Qed.
 Goal eval "erlang" "list_to_integer" [ttrue]
     = Some (RExc (badarg (VTuple [VLit (Atom "list_to_integer"); ttrue])), None).
 Proof. reflexivity. Qed.
+(* Character codes are truncated to their lowest byte (checked in compiled
+   Core Erlang): 305 band 255 = $1, -207 band 255 = $1, -1 band 255 = 255. *)
+Goal eval "erlang" "list_to_integer" [VCons (VLit (Integer 305)) VNil]
+    = Some (RValSeq [VLit (Integer 1)], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "list_to_integer" [VCons (VLit (Integer (-207))) VNil]
+    = Some (RValSeq [VLit (Integer 1)], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "list_to_integer" [VCons (VLit (Integer 49)) (VCons (VLit (Integer 305)) VNil)]
+    = Some (RValSeq [VLit (Integer 11)], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "list_to_integer" [VCons (VLit (Integer (-1))) VNil]
+    = Some (RExc (badarg (VTuple [VLit (Atom "list_to_integer"); VCons (VLit (Integer (-1))) VNil])), None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "list_to_integer" [VCons (VLit (Integer 305)) VNil; VLit (Integer 16)]
+    = Some (RValSeq [VLit (Integer 1)], None).
+Proof. reflexivity. Qed.
+(* list_to_atom is stricter: negative codes are rejected *)
+Goal eval "erlang" "list_to_atom" [VCons (VLit (Integer (-1))) VNil]
+    = Some (RExc (badarg (VTuple [VLit (Atom "list_to_atom"); VCons (VLit (Integer (-1))) VNil])), None).
+Proof. reflexivity. Qed.
 Goal eval "erlang" "list_to_integer" [string_to_vcons "ff"; VLit (Integer 16)] = Some (RValSeq [VLit (Integer 255)], None).
 Proof. reflexivity. Qed.
 Goal eval "erlang" "list_to_integer" [string_to_vcons "1010"; VLit (Integer 2)] = Some (RValSeq [VLit (Integer 10)], None).
@@ -638,7 +659,7 @@ Goal eval "erlang" "size" [VTuple [ttrue; ffalse]] = Some (RValSeq [VLit (Intege
 Proof. reflexivity. Qed.
 Goal eval "erlang" "size" [bin_12] = Some (RValSeq [VLit (Integer 2)], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "size" [bits_3] = Some (RValSeq [VLit (Integer 1)], None).
+Goal eval "erlang" "size" [bits_3] = Some (RValSeq [VLit (Integer 0)], None).
 Proof. reflexivity. Qed.
 Goal eval "erlang" "size" [ttrue]
     = Some (RExc (badarg (VTuple [VLit (Atom "size"); ttrue])), None).

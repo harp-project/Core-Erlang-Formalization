@@ -214,6 +214,17 @@ Section lists.
     * now apply IHn.
   Qed.
 
+  (** Removing elements from a list (with `firstn` and `skipn`) preserves
+      properties of the elements. *)
+  Lemma Forall_firstn_skipn (P : T -> Prop) (l : list T) n m :
+    Forall P l -> Forall P (firstn n l ++ skipn m l).
+  Proof.
+    intros. rewrite Forall_forall in *. intros x Hin.
+    apply in_app_or in Hin as [Hin | Hin]; apply H.
+    * rewrite <- (firstn_skipn n l). apply in_or_app. now left.
+    * rewrite <- (firstn_skipn m l). apply in_or_app. now right.
+  Qed.
+
   (** Folding lemma for the length of non-empty lists. *)
   Lemma length_fold (a2 : T) (n : nat) (l2 : list T):
     n = length l2

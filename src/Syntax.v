@@ -14,7 +14,10 @@ Import ListNotations.
 (** We use nats for process identifiers for simplicity. *)
 Definition PID : Set := nat.
 
-(** Currently, the only literals are integers and atoms. *)
+(** Currently, the only literals are integers and atoms.
+    NOTE: in this representation atom length is not capped
+    at 255.
+ *)
 Inductive Lit : Set :=
 | Atom (s: string)
 | Integer (x : Z)
@@ -286,6 +289,10 @@ Inductive Redex : Set :=
 | RValSeq (vs : ValSeq)
 | RExc (e : Exception)
 | RBox.
+
+Coercion RExp : Exp >-> Redex.
+Coercion RValSeq : ValSeq  >-> Redex. (* This only seems to work for printing *)
+Coercion RExc : Exception >-> Redex.
 
 (** Converting a list of functions into a list of closures. *)
 Definition convert_to_closlist (l : list (nat * nat * Exp)) : (list Val) :=

@@ -22,6 +22,91 @@ Tactic Notation "extract_map_fun" "in" constr(H) "as" ident(F) :=
 
 Definition default_segment := Build_Segment PNil VNil 1 IntType Unsigned BigEndian.
 
+(** An introduction rule for the scoping of `case` expressions with
+    `Forall`-style premises (instead of the indexed premises of
+    `scoped_case`). *)
+Lemma scoped_case_Forall : forall Γ e l,
+  EXP Γ ⊢ e ->
+  Forall (fun '(p, g, b) => Forall (PatScoped Γ) p /\ EXP PatListVars p + Γ ⊢ g /\ EXP PatListVars p + Γ ⊢ b) l ->
+  EXP Γ ⊢ ° ECase e l.
+Proof.
+  intros Γ e l He H1.
+  rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H1.
+  do 2 constructor; auto.
+  all: intros i Hi.
+  all: specialize (H1 i Hi).
+  all: assert (E1 : nth i (map (fst ∘ fst) l) [] = (fst ∘ fst) (nth i l ([], ˝VNil, ˝VNil))) by exact (map_nth (fst ∘ fst) l ([], ˝VNil, ˝VNil) i).
+  all: assert (E2 : nth i (map (snd ∘ fst) l) (˝VNil) = (snd ∘ fst) (nth i l ([], ˝VNil, ˝VNil))) by exact (map_nth (snd ∘ fst) l ([], ˝VNil, ˝VNil) i).
+  all: assert (E3 : nth i (map snd l) (˝VNil) = snd (nth i l ([], ˝VNil, ˝VNil))) by exact (map_nth snd l ([], ˝VNil, ˝VNil) i).
+  all: rewrite ?E1, ?E2, ?E3.
+  all: destruct (nth i l ([], ˝VNil, ˝VNil)) as [[p g] b]; simpl in *.
+  - apply H1.
+  - apply H1.
+  - intros j Hj. destruct H1 as [H1 _]. rewrite indexed_to_forall with (def := PNil) in H1. apply H1. exact Hj.
+Qed.
+
+(* TODO: develop lemmas like above with Forall-style premises for automatic
+   scope-solving. We also need their opposite direction. *)
+
+(** Conversion of the indexed scoping premises of closed `case` clauses
+    (patterns scoped in the empty context) into the `Forall`-style form (used,
+    e.g., by `FCLOSED (FCase1 l)`), and back. *)
+Proposition clause_scope l :
+  (forall i : nat,
+  i < Datatypes.length l ->
+  EXP PatListVars (nth i (map (fst ∘ fst) l) [])
+  ⊢ nth i (map (snd ∘ fst) l) (˝ VNil)) ->
+  (forall i : nat,
+        i < Datatypes.length l ->
+        EXP PatListVars (nth i (map (fst ∘ fst) l) [])
+        ⊢ nth i (map snd l) (˝ VNil)) ->
+  (forall i, i < length l -> forall j, j < length (nth i (map (fst ∘ fst) l) []) ->
+    PAT 0 ⊢ nth j (nth i (map (fst ∘ fst) l) []) PNil) ->
+   Forall (fun '(pl, g, b) => Forall (PatScoped 0) pl /\ EXP PatListVars pl ⊢ g /\ EXP PatListVars pl ⊢ b) l.
+Proof.
+  induction l; intros; auto.
+  constructor.
+  * destruct a, p. split. 2: split.
+    - specialize (H1 0 ltac:(slia)).
+      rewrite indexed_to_forall. intros.
+      setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1. cbn in H1.
+      specialize (H1 i ltac:(lia)).
+      exact H1.
+    - apply (H 0). slia.
+    - apply (H0 0). slia.
+  * apply IHl; intros; (apply (H (S i)) + apply (H0 (S i)) + apply (H1 (S i))); slia.
+Qed.
+
+Proposition clause_scope_rev l :
+  Forall (fun '(pl, g, b) => Forall (PatScoped 0) pl /\ EXP PatListVars pl ⊢ g /\ EXP PatListVars pl ⊢ b) l
+  ->
+  (forall i : nat,
+  i < Datatypes.length l ->
+  EXP PatListVars (nth i (map (fst ∘ fst) l) [])
+  ⊢ nth i (map (snd ∘ fst) l) (˝ VNil)) /\
+  (forall i : nat,
+        i < Datatypes.length l ->
+        EXP PatListVars (nth i (map (fst ∘ fst) l) [])
+        ⊢ nth i (map snd l) (˝ VNil)) /\
+  (forall i, i < length l -> forall j, j < length (nth i (map (fst ∘ fst) l) []) ->
+    PAT 0 ⊢ nth j (nth i (map (fst ∘ fst) l) []) PNil)
+   .
+Proof.
+  intros. induction H; simpl; repeat split; intros; try lia; destruct_foralls.
+  * destruct i.
+    - now destruct x, p, H.
+    - apply IHForall. lia.
+  * destruct i.
+    - now destruct x, p, H0.
+    - apply IHForall. lia.
+  * destruct i.
+    - destruct x, p; simpl in *.
+      destruct H as [H _].
+      rewrite indexed_to_forall in H.
+      by apply H.
+    - apply IHForall; lia.
+Qed.
+
 (** 
   This definition states that all variables in Γ are preserved
   by the substitution.
@@ -2646,8 +2731,10 @@ Proof.
   intros. destruct r; try constructor.
   * eapply subst_implies_scope_exp. intros. apply H in H0. now inv H0.
   * induction vs; constructor; auto.
-    - eapply subst_implies_scope_val. intros. apply H in H0. inv H0. now inv H2.
-    - apply IHvs. intros. apply H in H0. inv H0. constructor. now inv H2.
+    - eapply subst_implies_scope_val. intros. apply H in H0.
+      inversion H0 as [| | | ? ? Hvs]; subst. now inv Hvs.
+    - apply IHvs. intros. apply H in H0.
+      inversion H0 as [| | | ? ? Hvs]; subst. constructor. now inv Hvs.
   * destruct e, p. simpl in H.
     constructor; eapply subst_implies_scope_val;
     intros; eapply H in H0; now inv H0.
@@ -2661,20 +2748,23 @@ Proof.
   intros. split.
   {
     destruct r; intros; destruct_redex_scopes; simpl; auto.
-    * constructor; eapply subst_preserves_scope_exp in H2; eauto.
-    * induction vs; constructor; simpl; auto.
+    * constructor. apply -> subst_preserves_scope_exp; eauto.
+    * match goal with [Hf : Forall _ vs |- _] => rename Hf into Hvs end.
+      induction vs; constructor; simpl; auto.
+      inversion Hvs as [|? ? Hhd Htl]; subst.
       constructor.
-      - inv H2. eapply subst_preserves_scope_val in H3; eauto.
-      - inv H2. apply IHvs in H4. now inv H4.
+      - eapply subst_preserves_scope_val in Hhd; eauto.
+      - apply IHvs in Htl. now inv Htl.
     * constructor; apply -> subst_preserves_scope_val; eauto.
-  } 
+  }
   {
     intros.
     specialize (H Γ idsubst ltac:(auto)). destruct r; simpl in H.
     - now rewrite idsubst_is_id_exp in H.
-    - induction vs; auto. inv H. do 2 constructor; auto.
-      + inv H1. now rewrite idsubst_is_id_val in H2.
-      + inv H1. epose proof (IHvs ltac:(now constructor)). now inv H.
+    - induction vs; auto. inversion H as [| | | ? ? Hvs]; subst. do 2 constructor; auto.
+      + inversion Hvs as [|? ? Hhd Htl]; subst. now rewrite idsubst_is_id_val in Hhd.
+      + inversion Hvs as [|? ? Hhd Htl]; subst.
+        epose proof (IHvs ltac:(now constructor)) as Hrest. now inv Hrest.
     - destruct e, p. inv H. constructor; now rewrite <- idsubst_is_id_val.
     - auto.
   }
@@ -2759,6 +2849,29 @@ Lemma redex_val_scope :
   forall Γ (v : Val), RED Γ ⊢ ˝v -> VAL Γ ⊢ v.
 Proof.
   intros. now do 2 destruct_redex_scope.
+Qed.
+
+(** A `badarg` exception is closed, if its arguments are closed. *)
+Lemma badarg_closed :
+  forall (f : string) args,
+    Forall (fun v => VALCLOSED v) args ->
+    REDCLOSED (badarg (VTuple (VLit f :: args))).
+Proof.
+  intros. unfold badarg. do 2 constructor.
+  apply indexed_to_forall. constructor; auto.
+Qed.
+
+(** A tuple is closed iff its elements are closed. *)
+Lemma VTuple_closed :
+  forall l, Forall (fun v => VALCLOSED v) l -> VALCLOSED (VTuple l).
+Proof.
+  intros. constructor. apply indexed_to_forall. assumption.
+Qed.
+
+Lemma VTuple_closed_inv :
+  forall l, VALCLOSED (VTuple l) -> Forall (fun v => VALCLOSED v) l.
+Proof.
+  intros. inv H. rewrite <- indexed_to_forall in H2. exact H2.
 Qed.
 
 
