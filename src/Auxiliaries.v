@@ -1598,10 +1598,7 @@ Proof.
     - inv H1. apply IHv0_2; auto. now apply subtract_elem_closed.
   * destruct v; simpl.
     all: repeat break_match_goal; subst; try (apply badarg_closed; auto; fail).
-    all: match goal with
-         | [Hs : split_cons _ _ = Some _ |- _] =>
-           apply split_cons_closed in Hs as [? ?]; auto
-         end.
+    all: edestruct split_cons_closed as [? ?]; [eassumption | assumption |].
     all: do 2 constructor; [apply VTuple_closed; auto | constructor].
   * clear Heqb m f. induction v; cbn.
     all: destruct_redex_scopes; try (do 2 constructor; apply indexed_to_forall; now repeat constructor).

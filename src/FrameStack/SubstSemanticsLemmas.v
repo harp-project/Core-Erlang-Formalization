@@ -13,26 +13,7 @@ Import ListNotations.
   Equivalence between labeled and unlabeled semantics
   *)
 
-Lemma labeled_2_unlabeled_termination_equiv :
- forall fs e l n ,
-  ⟨ fs, e ⟩ l – n ↓ ->
-  ⟨ fs, e ⟩ n ↓.
-Proof.
-  intros fs e l n H.
-  induction H; try (econstructor; eassumption).
-Qed.
-
-Lemma unlabeled_2_labeled_termination_equiv :
- forall fs e n ,
-  ⟨ fs, e ⟩ n ↓ ->
-  exists l, ⟨ fs, e ⟩ l – n ↓.
-Proof.
-  intros fs e n H.
-  induction H.
-  all: try (now destruct IHterminates_in_k; exists x; constructor; assumption).
-  all: try destruct IHterminates_in_k; eexists; econstructor; try eassumption.
-Qed.
-
+(** Every unlabeled step is a labeled step with some label, and vice versa. *)
 Lemma step_unlabeled_to_labeled:
   forall Fs r Fs' r',
   ⟨ Fs, r ⟩ --> ⟨Fs', r'⟩ ->
@@ -51,6 +32,7 @@ Proof.
   inv H; econstructor; try destruct ident; try apply H1; try apply H0; try assumption; reflexivity.
 Qed.
 
+(** The same for `k`-step evaluations (the labels form a trace). *)
 Corollary step_rt_unlabeled_to_labeled :
   forall Fs r Fs' r' k,
     ⟨Fs, r⟩ -[k]-> ⟨Fs', r'⟩ ->
@@ -60,10 +42,7 @@ Proof.
   * exists []. constructor.
   * destruct IHstep_rt as [ls D2].
     apply step_unlabeled_to_labeled in H as [l1 D1].
-    exists (match l1 with
-            | None => ls
-            | Some x => x :: ls
-            end).
+    exists (option_cons l1 ls).
     econstructor; try eassumption.
     reflexivity.
 Qed.
@@ -79,6 +58,8 @@ Proof.
     econstructor; eassumption.
 Qed.
 
+(** An unlabeled and a labeled step (or evaluation) from the same
+    configuration reach the same configuration. *)
 Corollary step_unlabeled_labeled_determinism_one_step :
   forall Fs e Fs' v l Fs'' v',
   ⟨ Fs, e ⟩ --> ⟨Fs', v⟩ ->
@@ -101,6 +82,8 @@ Proof.
   epose proof (step_rt_determinism_labeled H H0). firstorder.
 Qed.
 
+(** The equivalence of the two termination relations (in `k` steps, and in any
+    number of steps), and of the two semantic termination definitions. *)
 Lemma termination_unlabeled_to_labeled :
   forall Fs r k,
     ⟨ Fs, r ⟩ k ↓ ->
@@ -109,8 +92,8 @@ Proof.
   intros. induction H; try destruct IHterminates_in_k; try (eexists; constructor; eassumption).
   1-2: destruct ident; inv H0; eexists; econstructor; try eassumption; try reflexivity.
   * eexists. eapply LabeledTermination.step_case_match; eassumption.
+  * eexists. eapply LabeledTermination.cool_seg_size; eassumption.
   * eexists. eapply LabeledTermination.heat_letrec; eassumption.
-  * eexists. econstructor; eassumption.
 Qed.
 
 Corollary termination_labeled_to_unlabeled :
@@ -161,7 +144,9 @@ Qed.
 
 
 (**
-  Tactics to collected to use labeled lemmas/corollaries
+  `translate_to_labeled` translates the unlabeled step, evaluation and
+  termination hypotheses into their labeled counterparts, so that the labeled
+  lemmas can be used on them.
 *)
 Ltac translate_to_labeled :=
 repeat match goal with
@@ -172,7 +157,12 @@ repeat match goal with
 | [H : terminates_in_k_sem _ _ _ |- _] => apply term_in_sem_unlabeled_to_labeled in H as [? ?]
 end.
 
-(** Properties of the semantics *)
+(** Properties of the semantics.
+    The following corollaries are the unlabeled versions of the lemmas with
+    the same name (and a `_labeled` suffix) in `SubstSemanticsLabeledLemmas.v`;
+    they are proved by translating to the labeled semantics. *)
+
+(** The semantics is deterministic. *)
 Corollary step_determinism {e e' fs fs'} :
   ⟨ fs, e ⟩ --> ⟨fs', e'⟩ ->
   (forall fs'' e'', ⟨fs, e⟩ --> ⟨fs'', e''⟩ -> fs'' = fs' /\ e'' = e').
@@ -245,6 +235,8 @@ Proof.
   by apply termination_labeled_to_unlabeled in H1.
 Qed.
 
+(** The inductive termination relation (`Termination.v`) is equivalent to
+    termination expressed with the semantics. *)
 Corollary semantic_iff_termination :
   forall k e fs, terminates_in_k_sem fs e k <-> ⟨ fs, e ⟩ k ↓.
 Proof.
@@ -319,6 +311,8 @@ Proof.
     apply IHIH in H5. auto.
 Qed.
 
+(** Frame independence: evaluations do not depend on the bottom of the frame
+    stack. *)
 Corollary frame_indep_step : forall e F F' Fs e',
   ⟨ F :: Fs, e ⟩ --> ⟨ F' :: Fs, e' ⟩
 ->
@@ -384,6 +378,8 @@ Proof.
   by apply params_eval_create.
 Qed.
 
+(** If an expression terminates in a frame stack, then it also terminates in
+    the empty frame stack, in at most as many steps. *)
 Corollary term_empty : forall x Fs (e : Exp),
   ⟨ Fs, e ⟩ x ↓ ->
   exists k, ⟨ [], e ⟩ k ↓ /\ k <= x.
@@ -462,6 +458,9 @@ Proof.
   assumption.
 Qed.
 
+(** Putting back a frame: an evaluation in the frame stack `F :: Fs` can be
+    simulated by evaluating the plugged expression `plug_f F e` in `Fs` (and
+    vice versa, `put_back_rev`). *)
 Theorem put_back :
   forall F Fs (e : Exp) r k,
     FrameWf F -> (* required by map frames *)

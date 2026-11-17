@@ -1,7 +1,8 @@
 (**
   This file contains the inductive definition for (frame stack) termination of Core
   Erlang expressions. It is equivalent to the termination expressed with the
-  semantics in `SubstSemantics.v`.
+  semantics in `SubstSemantics.v` (see `SubstSemanticsLemmas.v`); its rules
+  correspond to the reduction rules (in the same order).
 *)
 
 From CoreErlang.FrameStack Require Export SubstSemantics.
@@ -14,7 +15,6 @@ Definition terminates_in_k_sem (fs : FrameStack) (e : Redex) (k : nat)
   exists (res : Redex), is_result res /\ ⟨fs, e⟩ -[k]-> ⟨[], res⟩.
 
 (** A more practical way to define termination in k steps *)
-(* The following notation does not work with level 0 *)
 Reserved Notation "⟨ fs , e ⟩ k ↓" (at level 0).
 Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 
@@ -43,13 +43,13 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 (* 0 subexpression in complex expressions: *)
 | cool_params_0 xs ident (vl : list Val) (res : Redex) (l: option SideEffect) k: 
   ident <> IMap ->
-  Some (res, l) = create_result ident vl -> (* TODO side effects *)
+  Some (res, l) = create_result ident vl -> (* side effects are ignored here, see LabeledTermination.v *)
   ⟨xs, res⟩ k ↓
 ->
   ⟨FParams ident vl [] ::xs, RBox⟩ S k ↓
 
 | cool_params xs ident (vl : list Val) (v : Val) (res : Redex) (l : option SideEffect) k:
-  Some (res, l) = create_result ident (vl ++ [v]) -> (* TODO side effects *)
+  Some (res, l) = create_result ident (vl ++ [v]) -> (* side effects are ignored here, see LabeledTermination.v *)
   ⟨xs, res⟩ k ↓
 ->
   ⟨FParams ident vl [] :: xs, RValSeq [v]⟩ S k ↓
@@ -199,18 +199,39 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 ->
   ⟨ (FCase2 vs e' l)::xs, RValSeq [ VLit (Atom "true") ] ⟩ S k ↓
 
-(* reduction is ongoing, the pattern matched, and the guard is false, thus
-   we check the next pattern. *)
-| step_case_false vs e' l xs k:
-  ⟨ (FCase1 l)::xs, RValSeq vs ⟩ k ↓ 
+(* reduction is ongoing, the pattern matched, and the guard is not true
+   (e.g., it is false, or a non-boolean value), thus we check the next
+   pattern. *)
+| step_case_false vs e' l xs k v:
+  v <> VLit (Atom "true") ->
+  ⟨ (FCase1 l)::xs, RValSeq vs ⟩ k ↓
 ->
-  ⟨ (FCase2 vs e' l)::xs, RValSeq [ VLit (Atom "false") ] ⟩ S k ↓
+  ⟨ (FCase2 vs e' l)::xs, RValSeq [ v ] ⟩ S k ↓
 
 (** Exceptions *)
 | cool_case_empty vs xs k:
-  ⟨ xs, RExc if_clause ⟩ k ↓ 
+  ⟨ xs, RExc if_clause ⟩ k ↓
 ->
   ⟨ (FCase1 [])::xs, RValSeq vs ⟩ S k ↓
+
+(** segments *)
+(** Heating *)
+| heat_seg (seg : Segment Exp Exp) xs k :
+  ⟨FSeg1 (seg_size seg) (seg_unit seg) (seg_type seg) (seg_sign seg) (seg_endian seg) :: xs, seg_val seg⟩ k ↓
+->
+  ⟨ xs, ESeg seg ⟩ S k ↓
+
+(** Cooling *)
+| cool_seg_val v (size : Exp) unit type sign endian xs k :
+  ⟨ FSeg2 v unit type sign endian :: xs, size ⟩ k ↓
+->
+  ⟨ FSeg1 size unit type sign endian :: xs, RValSeq [v] ⟩ S k ↓
+
+| cool_seg_size v vsize type unit sign endian xs r k :
+  segment_to_bitstring v vsize unit type endian = Some r ->
+  ⟨ xs, r ⟩ k ↓
+->
+  ⟨ FSeg2 v unit type sign endian :: xs, RValSeq [vsize] ⟩ S k ↓
 
 (**  LetRec *)
 (**  Cooling *)
@@ -241,27 +262,8 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 ->
   ⟨ xs, ETry e1 vl1 e2 vl2 e3 ⟩ S k ↓
 
-(** segments *)
-(** Heating *)
-| heat_seg (seg : Segment Exp Exp) xs k :
-  ⟨FSeg1 (seg_size seg) (seg_unit seg) (seg_type seg) (seg_sign seg) (seg_endian seg) :: xs, seg_val seg⟩ k ↓
-->
-  ⟨ xs, ESeg seg ⟩ S k ↓
-
-(** Cooling *)
-| cool_seg_val v (size : Exp) unit type sign endian xs k :
-  ⟨ FSeg2 v unit type sign endian :: xs, size ⟩ k ↓
-->
-  ⟨ FSeg1 size unit type sign endian :: xs, RValSeq [v] ⟩ S k ↓
-
-| eval_cool_seg_size v vsize type unit sign endian xs r k :
-  segment_to_bitstring v vsize unit type endian = Some r ->
-  ⟨ xs, r ⟩ k ↓
-->
-  ⟨ FSeg2 v unit type sign endian :: xs, RValSeq [vsize] ⟩ S k ↓
-
 (** Exceptions *)
-(** Propogation *)
+(** Propagation *)
 | prop_exc F exc xs k:
   isPropagatable F = true ->
   ⟨ xs, RExc exc ⟩ k ↓ 
@@ -274,11 +276,14 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
   is_result res -> ⟨ [] , res ⟩ 0 ↓ 
 where "⟨ fs , e ⟩ k ↓" := (terminates_in_k fs e k).
 
+(** Termination in some number of steps. *)
 Definition terminates (fs : FrameStack) (e : Redex) :=
   exists n, ⟨ fs, e ⟩ n ↓.
 Notation "⟨ fs , e ⟩ ↓" := (terminates fs e) (at level 0).
 
-
+(** `inv_term` inverts a termination hypothesis; `deriv` inverts a termination
+    (or index bound) hypothesis of a known shape, and eliminates the
+    impossible results. *)
 Ltac inv_term :=
   match goal with
   | [H : ⟨ _, _ ⟩ _ ↓ |- _] => inv H
@@ -295,11 +300,14 @@ Ltac deriv :=
   | [H : ⟨ _, RBox ⟩ _ ↓ |- _] => inv H; try inv_result
   end.
 
+(** `change clock to n` replaces the step count of a termination goal with
+    `n` (the equality is proved by `lia`). *)
 Tactic Notation "change" "clock" "to" constr(num) :=
   match goal with
   | |- ⟨ _, _ ⟩ ?k ↓ => replace k with num by lia
   end.
 
+(** The program `inf` does not terminate in any frame stack. *)
 Theorem inf_diverges :
   forall n Fs, ~⟨Fs, inf⟩ n↓.
 Proof.

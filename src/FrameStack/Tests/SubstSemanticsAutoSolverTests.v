@@ -1204,3 +1204,62 @@ Definition let_exception : Exp :=
 
 Goal exists ex, ⟨[], let_exception⟩ -->* RExc ex.
 Proof. eexists. star_step_solver. Qed.
+
+(** Constructs with zero subexpressions (`eval_cool_params_0`: the solver
+    used to fail on these) *)
+Goal ⟨[], °ETuple []⟩ -->* RValSeq [VTuple []].
+Proof. star_step_solver. Qed.
+
+Goal ⟨[], °EValues []⟩ -->* RValSeq [].
+Proof. star_step_solver. Qed.
+
+Goal exists ex, ⟨[], °ECall (˝VLit "erlang") (˝VLit "foo") []⟩ -->* RExc ex.
+Proof. eexists. star_step_solver. Qed.
+
+(** Guards: a guard that is not `true` (`false`, or a non-boolean value)
+    fails, and the next clause is tried *)
+Goal ⟨[], °ECase (˝VLit 1%Z)
+              [([PVar], ˝ffalse, ˝VLit "first");
+               ([PVar], ˝ttrue, ˝VLit "second")]⟩
+   -->* RValSeq [VLit "second"].
+Proof. star_step_solver. Qed.
+
+Goal ⟨[], °ECase (˝VLit 1%Z)
+              [([PVar], ˝VLit 5%Z, ˝VLit "first");
+               ([PVar], ˝ttrue, ˝VLit "second")]⟩
+   -->* RValSeq [VLit "second"].
+Proof. star_step_solver. Qed.
+
+(** No clause matches: `if_clause` *)
+Goal ⟨[], °ECase (˝VLit 1%Z) [([PLit (Integer 2)], ˝ttrue, ˝VLit "first")]⟩
+   -->* RExc if_clause.
+Proof. star_step_solver. Qed.
+
+(** Sequencing *)
+Goal ⟨[], °ESeq (˝VLit 1%Z) (˝VLit 2%Z)⟩ -->* RValSeq [VLit 2%Z].
+Proof. star_step_solver. Qed.
+
+Goal ⟨[], °ESeq (°ESeq (˝VLit 1%Z) (˝VLit 2%Z)) (˝VLit 3%Z)⟩ -->* RValSeq [VLit 3%Z].
+Proof. star_step_solver. Qed.
+
+(** Binary construction with segments (`eval_cool_seg_size`: the solver used
+    to leave the segment evaluation unsolved) *)
+Definition int_seg (v size : Z) : Exp :=
+  °ESeg {| seg_val := ˝VLit v; seg_size := ˝VLit size; seg_unit := 1;
+           seg_type := IntType; seg_sign := Unsigned; seg_endian := BigEndian |}.
+
+Goal ⟨[], °ECall (˝VLit "erlang") (˝VLit "bit_size") [°EBin []]⟩
+   -->* RValSeq [VLit 0%Z].
+Proof. star_step_solver. Qed.
+
+Goal ⟨[], °ECall (˝VLit "erlang") (˝VLit "bit_size") [°EBin [int_seg 5 8; int_seg 1 4]]⟩
+   -->* RValSeq [VLit 12%Z].
+Proof. star_step_solver. Qed.
+
+Goal ⟨[], °ECall (˝VLit "erlang") (˝VLit "binary_to_list") [°EBin [int_seg 1 8; int_seg 258 16]]⟩
+   -->* RValSeq [VCons (VLit 1%Z) (VCons (VLit 1%Z) (VCons (VLit 2%Z) VNil))].
+Proof. star_step_solver. Qed.
+
+(** A negative size raises an exception *)
+Goal exists ex, ⟨[], °EBin [int_seg 5 (-1)]⟩ -->* RExc ex.
+Proof. eexists. star_step_solver. Qed.

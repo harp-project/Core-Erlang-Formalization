@@ -432,11 +432,10 @@ Lemma match_pattern_list_length vs :
     PatListVars lp = length vs'.
 Proof.
   induction vs; destruct lp; intros vs' H; simpl in H; try invMatch; auto.
-  unfold match_and in H. repeat break_match_hyp; invMatch.
+  unfold match_and in H.
+  destruct (match_pattern p a) eqn:Hp, (match_pattern_list lp vs) eqn:Hl; invMatch.
   cbn. rewrite length_app.
-  match goal with
-  | [Hl : match_pattern_list _ _ = Matches _ |- _] => apply IHvs in Hl; rewrite <- Hl
-  end.
+  apply IHvs in Hl. rewrite <- Hl.
   erewrite match_pattern_length; [reflexivity | eassumption].
 Qed.
 
@@ -482,9 +481,7 @@ Proof.
   intros m l0 vs H. rewrite match_pattern_list_single in H.
   revert l0 vs H. induction m; destruct l0; intros; simpl in *; try (invMatch; auto; fail).
   unfold match_and in H. break_match_hyp; invMatch.
-  match goal with
-  | [Hr : _ = Matches _ |- _] => apply IHm in Hr as [? ?]
-  end.
+  edestruct IHm as [? ?]; [eassumption |].
   subst. auto.
 Qed.
 
@@ -496,9 +493,7 @@ Proof.
   intros m l0 vs H. rewrite match_pattern_list_single in H.
   revert l0 vs H. induction m; destruct l0; intros; simpl in *; try (invMatch; auto; fail).
   destruct p. unfold match_and in H. break_match_hyp; invMatch.
-  match goal with
-  | [Hr : _ = Matches _ |- _] => apply IHm in Hr as [? ?]
-  end.
+  edestruct IHm as [? ?]; [eassumption |].
   subst. auto.
 Qed.
 

@@ -10,6 +10,8 @@ Import ListNotations.
 
 (** The only BIFs that create atoms are `list_to_atom` and `binary_to_atom`,
     and both of them have a single atom as the side effect's argument *)
+(** The atom creation side effects of `eval_convert`, `eval_conversion` and
+    `eval` (and thus of a reduction step) contain a single atom. *)
 Lemma eval_convert_ac : forall m f vl r l0,
   eval_convert m f vl = (r, Some ((AtomCreation, l0) : SideEffect)) ->
   exists av, l0 = [VLit (Atom av)].
@@ -69,6 +71,7 @@ Proof.
       destruct (params =? (length (vl ++ [v])))%nat; try discriminate.
 Qed.
 
+(** Transitivity of the `k`-step relation: the traces are concatenated. *)
 Theorem transitive_eval_labeled :
   forall {n e e'} l {fs fs'}, ⟨ fs, e ⟩ -[ n, l ]->ₗ ⟨ fs', e' ⟩ ->
   forall {n' e''} l' {fs''},  ⟨ fs', e' ⟩ -[ n', l' ]->ₗ ⟨ fs'', e'' ⟩
@@ -81,6 +84,7 @@ Proof.
   destruct s; rewrite H0; auto.
 Qed.
 
+(** Transitivity of the reflexive-transitive closure. *)
 Corollary transitive_any_eval_labeled :
   forall {e e'} l {fs fs'}, ⟨ fs, e ⟩ -[ l ]->ₗ* ⟨ fs', e' ⟩ ->
   forall {e''} l' {fs''},  ⟨ fs', e' ⟩ -[ l' ]->ₗ* ⟨ fs'', e'' ⟩
@@ -91,6 +95,8 @@ Proof.
   unfold step_any_non_terminal. eexists. exact H1.
 Qed.
 
+(** The labeled semantics is deterministic: the label and the next
+    configuration are unique. *)
 Theorem step_determinism_labeled {e e' l fs fs'} :
   ⟨ fs, e ⟩ -⌊ l ⌋->ₗ ⟨ fs', e' ⟩ ->
   (forall {l' fs'' e''}, ⟨ fs, e ⟩ -⌊ l' ⌋->ₗ ⟨ fs'', e'' ⟩
@@ -102,6 +108,7 @@ Proof.
   - rewrite H0 in H10. now inv H10.
 Qed.
 
+(** Results in the empty frame stack cannot be reduced further. *)
 Lemma value_nostep_labeled v :
   is_result v ->
   forall fs' v' l, ⟨[], v⟩ -⌊l⌋->ₗ ⟨fs' , v'⟩ -> False.
@@ -109,6 +116,7 @@ Proof.
   intros H fs' v' l' HD. inversion H; subst; inversion HD.
 Qed.
 
+(** Determinism of the `k`-step relation (including the traces). *)
 Theorem step_rt_determinism_labeled {r r' fs fs' l k} :
   ⟨fs, r⟩ -[k, l]->ₗ ⟨fs', r'⟩
 ->
@@ -122,6 +130,7 @@ Proof.
     firstorder.
 Qed.
 
+(** The result of a parameter list frame with closed values is closed. *)
 Lemma create_result_closed :
   forall vl ident r eff,
     Forall (fun v => VALCLOSED v) vl ->
@@ -151,9 +160,10 @@ Proof.
     unfold badarg. do 4 scope_solver_step.
     constructor. by apply indexed_to_forall.
     by scope_solver_step.
-  * destruct m, f; try destruct l; try destruct l0; try invSome.
-    all: inv Hi; try econstructor; auto; scope_solver.
-    eapply eval_is_closed_result; try eassumption. eauto.
+  * inv Hi. destruct m, f; try destruct l; try destruct l0; try invSome.
+    all: try (eapply eval_is_closed_result; [eassumption | symmetry; eassumption]).
+    all: apply badarg_closed; repeat (apply Forall_cons; auto).
+    all: apply meta_to_cons_closed; auto.
   * destruct (primop_eval f vl) eqn: p.
     - inv Heq.
       eapply (closed_primop_eval f vl r eff Hall).
@@ -176,6 +186,8 @@ Proof.
       by apply meta_to_cons_closed. scope_solver.
 Qed.
 
+(** The result of a segment evaluation is scoped in the context of its
+    value and size. *)
 Lemma segment_to_bitstring_scope Γ v vsize unit type endian r:
   VAL Γ ⊢ v ->
   VAL Γ ⊢ vsize ->
@@ -186,6 +198,8 @@ Proof.
   all: by scope_solver.
 Qed.
 
+(** Reduction steps preserve the closedness of the frame stack and the
+    redex. *)
 Theorem step_closedness_labeled : forall F e F' e' l,
    ⟨ F, e ⟩ -⌊l⌋->ₗ ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e
 ->
@@ -259,6 +273,7 @@ Proof.
   * rewrite Nat.add_0_r in *. do 2 (constructor; auto).
 Qed.
 
+(** The same for multiple steps. *)
 Theorem step_any_closedness_labeled : forall Fs Fs' e v k l,
    ⟨ Fs, e ⟩ -[k , l]->ₗ ⟨Fs', v⟩ -> FSCLOSED Fs -> REDCLOSED e
 ->
@@ -268,6 +283,7 @@ Proof.
   apply (IHstep_rt ). all: auto.
 Qed.
 
+(** The same for the reflexive-transitive closure. *)
 Corollary step_any_non_terminal_closedness : forall F e l F' e',
    ⟨ F, e ⟩ -[ l ]->ₗ* ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e
 -> REDCLOSED e' /\ FSCLOSED F'.
@@ -277,6 +293,8 @@ Proof.
   apply (step_any_closedness_labeled _ _ _ _ _ _ H2 H4 H5). all: assumption.
 Qed.
 
+(** Reverse transitivity: by determinism, the remaining part of a longer
+    evaluation starts from the configuration reached by a shorter one. *)
 Lemma transitive_eval_rev_labeled : forall Fs Fs' e e' k1 l1,
   ⟨ Fs, e ⟩ -[k1 , l1]->ₗ ⟨ Fs', e' ⟩->
   forall Fs'' e'' k2 l2,
@@ -287,23 +305,14 @@ Proof.
   intros Fs Fs' e e' k1 l1 H. induction H.
   - intros Fs'' e'' k2 l2 H. simpl in H. apply H.
   - intros Fs'' e''' k2 l2 H2. rewrite Nat.add_succ_l in H2.
-    destruct s; subst.
-    + inv H2. destruct s0.
-      * inv H7. eapply IHstep_rt.
-        destruct (step_determinism_labeled H H3).
-        destruct H2. subst. assumption.
-      * inv H7.
-        destruct (step_determinism_labeled H H3).
-        inv H2.
-    + inv H2. destruct s.
-      * inv H7.
-        destruct (step_determinism_labeled H H3).
-        inv H1.
-      * inv H7. eapply IHstep_rt.
-        destruct (step_determinism_labeled H H3).
-        destruct H2. subst. assumption.
+    inversion H2 as [|? ? ? ? ? ? ? ? ? s' Hst Hrt Heq]; subst.
+    destruct (step_determinism_labeled H Hst) as [? [? ?]]. subst.
+    eapply IHstep_rt.
+    destruct s'; simpl in Heq; [inv Heq|subst]; assumption.
 Qed.
 
+(** Frame independence: reduction steps (and evaluations) do not depend on the
+    bottom of the frame stack, which can be replaced or extended. *)
 Lemma frame_indep_step_labeled : forall e F F' Fs e' l,
   ⟨ F :: Fs, e ⟩ -⌊l⌋->ₗ ⟨ F' :: Fs, e' ⟩
 ->
@@ -354,6 +363,8 @@ Proof.
   intros. eapply frame_indep_core_labeled in H. exact H.
 Qed.
 
+(** Evaluating the already evaluated (value) parameters of a parameter list
+    frame takes `2` steps per value, and produces no side effects. *)
 Lemma params_eval_labeled :
   forall vals ident vl exps e Fs (v : Val),
   ⟨ FParams ident vl ((map VVal vals) ++ e :: exps) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals , []]->ₗ
@@ -370,13 +381,12 @@ Proof.
     all: simpl; auto.
 Qed.
 
+(** After evaluating the last value parameters, the result of the frame is
+    created (with its side effect). *)
 Lemma params_eval_create :
   forall vals ident vl Fs (v : Val) r eff',
   Some (r, eff') = create_result ident (vl ++ v :: vals) ->
-  ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals, match eff' with
-              | None => []
-              | Some x => [x]
-              end ]->ₗ
+  ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals, option_cons eff' [] ]->ₗ
   ⟨ Fs, r ⟩.
 Proof.
   induction vals; simpl; intros.
@@ -391,6 +401,8 @@ Proof.
     reflexivity. reflexivity.
 Qed.
 
+(** A step followed by termination in `k` steps is termination in `k + 1`
+    steps (with the label of the step at the front of the trace). *)
 Lemma terminates_in_k_step :
   forall fs e fs' e' k sl l, ⟨ fs, e ⟩ -⌊ l ⌋->ₗ ⟨ fs', e' ⟩ ->
   ⟨ fs', e' ⟩ sl – k ↓ ->
@@ -400,6 +412,8 @@ Proof.
   all: econstructor; eassumption.
 Qed.
 
+(** The inductive termination relation (`LabeledTermination.v`) is
+    equivalent to termination expressed with the labeled semantics. *)
 Theorem semantic_iff_termination :
   forall k e fs l, terminates_in_k_sem_labeled fs e k l <-> ⟨ fs, e ⟩ l – k ↓.
 Proof.
@@ -455,14 +469,8 @@ Proof.
   }
 Qed.
 
-(* option tail function *)
-Definition option_tail {A} (l : option A) (sl : list A) 
-  : list A :=
-  match l with
-  | Some s => tail sl
-  | None => sl
-  end.
-
+(** Termination is preserved by reduction steps: the step count decreases,
+    and the label of the step is removed from the trace. *)
 Lemma terminates_step :
   forall n fs e l, ⟨ fs, e ⟩ l – n ↓ -> forall fs' e' l', ⟨fs, e⟩ -⌊l'⌋->ₗ ⟨fs', e'⟩
 ->
@@ -481,6 +489,8 @@ Proof.
     destruct s; simpl; rewrite Nat.sub_0_r; assumption.
 Qed.
 
+(** The same for multiple steps (`term_step_term_labeled` states it with
+    `skipn` instead of an explicit trace decomposition). *)
 Lemma term_step_term_no_skip :
   forall k n fs e l1 l2, ⟨ fs, e ⟩ l1 ++ l2 – n ↓ 
   -> forall fs' e' , ⟨fs, e⟩ -[k , l1]->ₗ ⟨fs', e'⟩
@@ -517,6 +527,8 @@ Proof.
       eapply IHk in H3. exact H3. exact H2.
 Qed.
 
+(** Conversely, an evaluation followed by termination is termination (with the
+    concatenated traces). *)
 Lemma step_term_term_labeled :
   forall k n fs e fs' e' l1 l2,
   ⟨fs, e⟩ -[k , l1]->ₗ ⟨fs', e'⟩ -> ⟨ fs', e' ⟩ l2 – n - k ↓ -> n >= k 
@@ -541,48 +553,8 @@ Proof.
   eexists. eauto.
 Qed.
 
-Lemma create_result_is_not_box_closed :
-  forall ident vl r eff',
-  ICLOSED ident ->
-  Forall (fun v => VALCLOSED v) vl ->
-  Some (r, eff') = create_result ident vl ->
-  REDCLOSED r.
-Proof.
-  destruct ident; intros; simpl in *; try invSome; auto.
-  1: do 3 constructor. by apply indexed_to_forall.
-  (* map *)
-  1: do 3 constructor.
-  1-2: erewrite <- length_map; apply indexed_to_forall.
-  1-2: eapply List.Forall_map; apply make_val_map_keeps_prop.
-  1-2: eapply Forall_impl; [|eapply deflatten_keeps_prop; eassumption].
-  1-2: intros; destruct a; apply H1.
-  * case_match; invSome.
-    scope_solver.
-    do 4 scope_solver_step.
-    constructor. by apply indexed_to_forall.
-    scope_solver.
-  * destruct m, f; try destruct l; try destruct l0; try invSome; try constructor; inv H; scope_solver.
-    symmetry in H1; eapply eval_is_closed_result in H1; auto.
-  * destruct (primop_eval f vl) eqn: pe.
-    - inv H1. eapply primop_eval_is_closed_result; eassumption.
-    - inv H1.
-  * inv H. destruct v; try invSome; try now (scope_solver).
-    break_match_hyp; invSome; auto.
-    all: constructor; auto.
-    inv H3.
-    apply -> subst_preserves_scope_exp; try eassumption.
-    apply scoped_list_subscoped_eq. 3: auto.
-    rewrite length_app.
-    unfold convert_to_closlist. apply Nat.eqb_eq in Heqb. rewrite length_map. lia.
-    {
-      apply Forall_app.
-      split; auto.
-      now apply closlist_scope.
-    }
-    scope_solver.
-    apply meta_to_cons_closed. assumption.
-Qed.
-
+(** The result of a parameter list frame is a result or an expression (i.e.,
+    never `RBox`). *)
 Lemma create_result_is_not_box :
   forall ident vl r eff',
   Some (r, eff') = create_result ident vl ->
@@ -602,6 +574,10 @@ Proof.
     - left. constructor.
 Qed.
 
+(** Auxiliary lemmas for `term_empty_labeled`: the evaluation of a parameter
+    list frame (and of a `case` frame) terminates independently of the rest of
+    the frame stack, if its subexpressions do (given as an induction
+    hypothesis). *)
 Lemma Private_params_exp_eval :
   forall exps ident vl Fs (e : Exp) n (l : SideEffectList),
   ⟨ FParams ident vl exps :: Fs, e ⟩ l – n ↓ ->
@@ -684,7 +660,10 @@ Proof.
       lia.
 Qed.
 
-(* TODO: move this to Basics.v *)
+(** If `l0` is a prefix of `l1`, then `l1` is `l0` followed by the rest of
+    `l1`.
+    NOTE: this could be in `Basics.v`, but it depends on stdpp's `prefix_of`,
+    which is not imported there. *)
 Proposition prefix_drop : forall {A} (l0 l1 : list A) ,
             l0 `prefix_of` l1 -> 
             forall l2,
@@ -858,15 +837,14 @@ Proof.
            econstructor. apply eval_step_case_match; eassumption.
            eassumption. reflexivity. rewrite app_nil_r. destruct Hprefi. subst.
            apply prefix_app. rewrite drop_app_length in Hprefj. assumption.
-        ** (* guard is false *)
-           apply IHl in H7 as [res [j [ls2 [Hres [HD [Htl Hpref]]]]]]; auto.
-           2: {
-             intros. eapply IH. lia. eassumption.
-           }
+        ** (* guard is not true *)
+           edestruct IHl as [res [j [ls2 [Hres [HD [Htl Hpref]]]]]].
+           2: eassumption.
+           { intros. eapply IH. lia. eassumption. }
            exists res, (1 + (i + S j)). eexists. split. 2: split. auto. 2: split. 2: lia.
            econstructor. apply eval_step_case_match. eassumption.
            eapply transitive_eval_labeled. exact Hdgr.
-           econstructor. constructor. exact HD. reflexivity. reflexivity.
+           econstructor. apply eval_step_case_false. assumption. exact HD. reflexivity. reflexivity.
            destruct Hprefi. subst.
            apply prefix_app. rewrite drop_app_length in Hpref. assumption.
     - (* not matching first pattern *)
@@ -879,6 +857,9 @@ Proof.
       reflexivity. assumption.
 Qed.
 
+(** If an expression terminates in a frame stack, then it also terminates in
+    the empty frame stack, in at most as many steps, with a prefix of the
+    trace. *)
 Theorem term_empty_labeled : forall x Fs (e : Exp) (l : SideEffectList),
   ⟨ Fs, e ⟩ l – x ↓ ->
   exists k l', ⟨ [], e ⟩ l' – k ↓ /\ k <= x /\ l' `prefix_of` l.
@@ -888,7 +869,7 @@ Proof.
     lia. apply prefix_nil.
   * destruct el. (* tricks to avoid RBox *)
     - do 2 eexists. split. constructor.
-      epose proof (cool_params_0_l [] IValues [] _ None []). simpl in H0.
+      epose proof (cool_params_0 [] IValues [] _ None []). simpl in H0.
       eapply H0.
       congruence. reflexivity. do 2 constructor. auto. inv H3. split. lia.
       apply prefix_nil.
@@ -905,7 +886,7 @@ Proof.
       split. 2: exact Hd. auto. split. lia. assumption.
   * destruct el. (* proof is same as above, tricks to avoid RBox *)
     - do 2 eexists. split. constructor.
-      epose proof (cool_params_0_l [] ITuple [] _ None []). simpl in H0.
+      epose proof (cool_params_0 [] ITuple [] _ None []). simpl in H0.
       eapply H0.
       congruence. reflexivity. do 4 constructor; auto. intros. inv H3.
       split. lia. apply prefix_nil.
@@ -922,7 +903,7 @@ Proof.
       split. 2: exact Hd. auto. split. lia. assumption.
   * destruct el. (* proof is same as above, tricks to avoid RBox *)
     - do 2 eexists. split. constructor.
-      epose proof (cool_params_0_l [] IBin [] _ None []). simpl in H0.
+      epose proof (cool_params_0 [] IBin [] _ None []). simpl in H0.
       eapply H0.
       congruence. reflexivity. do 4 constructor; auto. intros. inv H3.
       split. lia. apply prefix_nil.
@@ -989,7 +970,7 @@ Proof.
            constructor.
            eapply step_term_term_plus_labeled. exact Hr1'. constructor.
            eapply step_term_term_plus_labeled. exact Hr2'. constructor.
-           epose proof (cool_params_0_l [] (ICall v f0) [] _ l0 []). simpl in H0.
+           epose proof (cool_params_0 [] (ICall v f0) [] _ l0 []). simpl in H0.
            apply H0.
            congruence. exact H6.
            (* here is this different from the previous *)
@@ -1046,7 +1027,7 @@ Proof.
            rewrite app_nil_end_deprecated at 1.
            apply prefix_app. apply prefix_nil.
   * destruct el. (* tricks to avoid RBox *)
-    - inv H3. do 2 eexists. split. constructor. eapply cool_params_0_l.
+    - inv H3. do 2 eexists. split. constructor. eapply cool_params_0.
       congruence. eassumption.
       (* here is this different from the previous *)
       simpl. constructor. 2: split. 2: lia. cbn in H5.
@@ -1286,34 +1267,6 @@ Proof.
       apply semantic_iff_termination. exists res. split. 2: exact H0.
       all: auto.
       destruct Hpref1. subst. apply prefix_app. rewrite drop_app_length in *. assumption.
-  * apply H in H4 as [i [li [Hd [Hlt Hpref]]]].
-    do 2 eexists. split. econstructor. reflexivity. exact Hd. split. lia. assumption. lia.
-  * apply H in H3 as HH. 2: lia.
-    destruct HH as [i [li [Hd [Hlt Hpref]]]].
-    apply semantic_iff_termination in Hd as [r [Hres Hd]].
-    eapply frame_indep_nil_labeled in Hd as Hlia.
-    eapply frame_indep_nil_labeled in Hd.
-    eapply term_step_term_labeled in H3. 2: exact Hlia.
-    simpl in *.
-    inv Hres. (* exception or not *)
-    - inv H3. (* 2: { inv H7. } *)
-      apply H in H10 as [j [l2 [Hd2 [Hlt2 Hpref2]]]]. 2: lia.
-      exists (1 + (i + (1 + j))). eexists. split. 2: split. 2: lia.
-      constructor. eapply step_term_term_labeled. exact Hd. 2: lia.
-      replace (i + (1 + j) - i) with (S j) by lia.
-      2: { destruct Hpref. subst. rewrite drop_app_length in Hpref2.
-           apply prefix_app. exact Hpref2.
-      }
-      now constructor.
-    - inv H3.
-      apply H in H10 as [j [l2 [Hd2 [Hlt2 Hpref2]]]]. 2: lia.
-      exists (1 + (i + (1 + j))). eexists. split. 2: split. 2: lia.
-      constructor. eapply step_term_term_labeled. exact Hd. 2: lia.
-      replace (i + (1 + j) - i) with (S j) by lia.
-      2: { destruct Hpref. subst. rewrite drop_app_length in Hpref2.
-           apply prefix_app. exact Hpref2.
-      }
-      now constructor.
   * apply H in H3 as HH. 2: lia.
     destruct HH as [i [li [Hi [Hlt Hprefi]]]].
     apply semantic_iff_termination in Hi as [res [Hres Hr]].
@@ -1390,6 +1343,34 @@ Proof.
              destruct Hprefi. subst. apply prefix_app. rewrite drop_app_length in Hprefj.
              assumption.
            }
+  * apply H in H4 as [i [li [Hd [Hlt Hpref]]]].
+    do 2 eexists. split. econstructor. reflexivity. exact Hd. split. lia. assumption. lia.
+  * apply H in H3 as HH. 2: lia.
+    destruct HH as [i [li [Hd [Hlt Hpref]]]].
+    apply semantic_iff_termination in Hd as [r [Hres Hd]].
+    eapply frame_indep_nil_labeled in Hd as Hlia.
+    eapply frame_indep_nil_labeled in Hd.
+    eapply term_step_term_labeled in H3. 2: exact Hlia.
+    simpl in *.
+    inv Hres. (* exception or not *)
+    - inv H3. (* 2: { inv H7. } *)
+      apply H in H10 as [j [l2 [Hd2 [Hlt2 Hpref2]]]]. 2: lia.
+      exists (1 + (i + (1 + j))). eexists. split. 2: split. 2: lia.
+      constructor. eapply step_term_term_labeled. exact Hd. 2: lia.
+      replace (i + (1 + j) - i) with (S j) by lia.
+      2: { destruct Hpref. subst. rewrite drop_app_length in Hpref2.
+           apply prefix_app. exact Hpref2.
+      }
+      now constructor.
+    - inv H3.
+      apply H in H10 as [j [l2 [Hd2 [Hlt2 Hpref2]]]]. 2: lia.
+      exists (1 + (i + (1 + j))). eexists. split. 2: split. 2: lia.
+      constructor. eapply step_term_term_labeled. exact Hd. 2: lia.
+      replace (i + (1 + j) - i) with (S j) by lia.
+      2: { destruct Hpref. subst. rewrite drop_app_length in Hpref2.
+           apply prefix_app. exact Hpref2.
+      }
+      now constructor.
   * do 2 eexists. split. now constructor. split. lia. apply prefix_nil.
 Qed.
 
@@ -1410,6 +1391,7 @@ Proof.
   do 3 eexists; eauto.
 Qed.
 
+(** The same, with the evaluation to a result in the original frame stack. *)
 Corollary term_eval_labeled : forall x Fs (e : Exp) (ls : SideEffectList) ,
   ⟨ Fs, e ⟩ ls – x ↓ ->
   exists v k lss,
@@ -1425,6 +1407,7 @@ Proof.
   eapply frame_indep_nil_labeled in Hd. exact Hd.
 Qed.
 
+(** Both of the previous two corollaries at once. *)
 Corollary term_eval_both_labeled :
   forall x Fs (e : Exp) (l : SideEffectList) , 
   ⟨ Fs, e ⟩ l – x ↓ ->
@@ -1439,6 +1422,8 @@ Proof.
   eapply frame_indep_nil_labeled in Hd. exact Hd.
 Qed.
 
+(** The expression of a parameter list frame (`to_Exp`) evaluates to the
+    frame itself, with the given parameters already evaluated. *)
 Lemma to_Exp_eval_labeled :
   forall (vals : list Val) (exp : Exp) (exps : list Exp) ident Fs,
    (ident = IMap -> exists n, length exps + length vals = 1 + 2*n) -> (* invariant for maps *)
@@ -1550,6 +1535,7 @@ Proof.
       all: reflexivity.
 Qed.
 
+(** A value sequence of values evaluates to the values in `2 + 2n` steps. *)
 Corollary params_eval_VValues_labeled :
  forall (vals : list Val) (Fs : list Frame),
  ⟨ Fs, °EValues (map VVal vals)⟩ -[
@@ -1571,6 +1557,8 @@ Proof.
 Qed.
 
 
+(** Putting back a frame: an evaluation in the frame stack `F :: Fs` can be
+    simulated by evaluating the plugged expression `plug_f F e` in `Fs`. *)
 Theorem put_back_labeled :
   forall F Fs (e : Exp) r k l,
     FrameWf F -> (* required by map frames *)
@@ -1623,12 +1611,9 @@ Proof.
       simpl. do 2 rewrite idsubst_is_id_exp.
       eapply frame_indep_nil_labeled in X as X'. eapply transitive_eval_labeled.
       exact X'. clear X'. econstructor. constructor. reflexivity.
-      eapply frame_indep_nil_labeled in X.
-      replace k with (i+(k-i)) in H1 by lia.
-      epose proof (transitive_eval_rev_labeled _ _ _ _ _ _ X _ _ _ _ H1) as XX.
-      inv XX. inv H5. assert (k2 = k1) by lia. subst. exact H6.
+      eassumption.
       all: try reflexivity.
-      simpl.
+      cbn [option_cons] in *. subst.
       by rewrite <-HX, app_assoc, <-HX.
     (* true guard *)
     - eexists.
@@ -1641,7 +1626,7 @@ Proof.
       exact X. clear X. econstructor. constructor.
       eassumption.
       all: try reflexivity.
-      simpl.
+      cbn [option_cons] in *. subst.
       by rewrite <-HX, app_assoc, <-HX.
     (* false guard *)
     - eexists.
@@ -1651,7 +1636,7 @@ Proof.
       econstructor. constructor. reflexivity.
       simpl. do 2 rewrite idsubst_is_id_exp.
       eapply frame_indep_nil_labeled in X. eapply transitive_eval_labeled.
-      exact X. clear X. econstructor. constructor.
+      exact X. clear X. econstructor. apply eval_step_case_false; assumption.
       econstructor. constructor. reflexivity. cbn.
       rewrite map_ext with (g := id). 2: {
         intros. by rewrite idsubst_is_id_exp.
@@ -1670,7 +1655,8 @@ Proof.
       econstructor. constructor.
       eapply transitive_eval_labeled.
       apply params_eval_VValues_labeled. eassumption.
-      all: try reflexivity. simpl.
+      all: try reflexivity.
+      cbn [option_cons] in *. subst. simpl.
       by rewrite <-HX, app_assoc, <-HX.
   * eexists. econstructor. constructor. 2: reflexivity. simpl.
     econstructor. constructor. 2: reflexivity.
@@ -1678,6 +1664,7 @@ Proof.
     eassumption.
 Qed.
 
+(** The same for termination. *)
 Corollary put_back_term_labeled : forall F (e : Exp) Fs l, FrameWf F ->
   ⟨ F :: Fs, e ⟩ₗ l ↓ -> ⟨ Fs, plug_f F e ⟩ₗ l ↓.
 Proof.
@@ -1689,6 +1676,7 @@ Proof.
   apply semantic_iff_termination. eexists. split; eassumption.
 Qed.
 
+(** Reverse transitivity for a shorter evaluation with a prefix trace. *)
 Corollary transitive_eval_rev_lt_labeled :
   forall {Fs r Fs' r' k1} l1, ⟨Fs, r⟩ -[k1, l1]->ₗ ⟨Fs', r'⟩ ->
     forall {Fs'' r'' k2} l2, k2 <= k1 -> l2 `prefix_of` l1
@@ -1703,11 +1691,7 @@ Proof.
   eapply transitive_eval_rev_labeled in H. 2: eassumption. assumption.
 Qed.
 
-Ltac inv_term_labeled :=
-  match goal with
-  | [H : ⟨ _, _ ⟩ _ – _ ↓ |- _] => inv H
-  end.
-
+(** An evaluation cannot be longer than the evaluation to a final result. *)
 Lemma transitive_contradiction_labeled :
   forall k1 fs r fs' r' k2 l1 l2 r'', is_result r'' ->
     ⟨fs, r⟩ -[k1, l1]->ₗ ⟨fs', r'⟩ ->
@@ -1727,6 +1711,7 @@ Proof.
       + lia.
 Qed.
 
+(** The converse of `put_back_labeled`. *)
 Theorem put_back_rev_labeled :
   forall F Fs (e : Exp) r k l,
     FrameWf F -> (* required by map frames *)
@@ -1774,7 +1759,7 @@ Proof.
     pose proof (transitive_eval_rev_lt_labeled _ H2 _ Hi Hpref X') as XX.
     clear X' H2.
     (* check what's the guard result: exception, false, or true *)
-    inv XX. inv Hres; inv H2.
+    inv XX. inv Hres; inv H2; cbn [option_cons] in *; subst.
     (* exception *)
     - eexists.
       eapply frame_indep_nil_labeled in X.
@@ -1791,9 +1776,9 @@ Proof.
       exact X. econstructor. constructor.
       eassumption.
       reflexivity.
-    (* false *)
+    (* not true *)
     - inv H3. inv H2.
-      simpl in H15. invMatch. simpl in *.
+      simpl in *. invMatch. simpl in *.
       rewrite map_ext with (g := id) in H4. 2: {
         intros. by rewrite idsubst_is_id_exp.
       }
@@ -1816,7 +1801,7 @@ Proof.
         eapply frame_indep_nil_labeled in X.
         pose proof (prefix_drop _ _ Hpref _ eq_refl). rewrite H4.
         eapply transitive_eval_labeled. exact X.
-        econstructor. constructor.
+        econstructor. apply eval_step_case_false; assumption.
         exact XX.
         simpl. by rewrite drop_0.
       (* k0 should be greater; therefore, this is a contradiction *)
@@ -1829,6 +1814,7 @@ Proof.
 Qed.
 
 
+(** The same for termination. *)
 Theorem put_back_rev_term_labeled : forall F e Fs l, FrameWf F ->
   ⟨ Fs, plug_f F e ⟩ₗ l ↓ -> ⟨ F :: Fs, e ⟩ₗ l ↓.
 Proof.

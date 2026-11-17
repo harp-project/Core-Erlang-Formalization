@@ -23,7 +23,10 @@ module 'a' ['black_knight'/1,
 		    %% Line 2
 		    ['export_all']]
 
-'f'/0 = fun() -> call []:'erlang'()
+'f'/0 = fun() -> case 5 of
+                   <X> when 'alma' -> 'ok'
+                   <X> when 'true' -> 'nok'
+                 end
 
 'g'/0 = fun() -> case 5 of
                    <X> when call 'erlang':'element'(X, {}) -> 'true'

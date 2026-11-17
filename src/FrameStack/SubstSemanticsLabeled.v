@@ -1,14 +1,23 @@
 (**
-  This file defines the frame stack semantics of Core Erlang.
+  This file defines the labeled variant of the frame stack semantics of Core
+  Erlang: each step is labeled with the side effect it produces (if any), and
+  the reflexive-transitive closure collects these into a side-effect trace.
+  Apart from the labels, the rules are the same as in `SubstSemantics.v` (in
+  the same order); the equivalence of the two semantics is proved in
+  `SubstSemanticsLemmas.v`.
 *)
 
 From CoreErlang.FrameStack Require Export Frames.
-From CoreErlang Require Export Auxiliaries Matching.
 
 Import ListNotations.
 
-(* Note: for simplicity, this semantics allows guards to evaluate
-   to exceptions, which is not allowed in normal Core Erlang. *)
+(* Note on guards (checked against compiled Core Erlang, `erlc +from_core`):
+   - Exceptions raised in a guard propagate out of the `case` expression (as
+     in Core Erlang; the Erlang compiler wraps guards so that code compiled
+     from Erlang does not raise exceptions in them).
+   - A guard that evaluates to a single value other than `true` (`false` or
+     a non-boolean value) fails, and the next clause is tried, as in compiled
+     Core Erlang. *)
 Reserved Notation "⟨ fs , e ⟩ -⌊ l ⌋->ₗ ⟨ fs' , e' ⟩" (at level 0).
 Inductive step : FrameStack -> Redex -> option SideEffect -> FrameStack -> Redex -> Prop :=
 (**  Reduction rules *)
@@ -33,11 +42,11 @@ Inductive step : FrameStack -> Redex -> option SideEffect -> FrameStack -> Redex
 (* 0 subexpression in complex expressions: *)
 | eval_cool_params_0 xs ident (vl : list Val) (res : Redex) (l : option SideEffect) : 
   ident <> IMap ->
-  Some (res, l) = create_result ident vl -> (* TODO: side effects *)
+  Some (res, l) = create_result ident vl ->
   ⟨FParams ident vl [] ::xs, RBox⟩ -⌊l⌋->ₗ ⟨xs, res⟩
 
 | eval_cool_params xs ident (vl : list Val) (v : Val) (res : Redex) (l : option SideEffect):
-  Some (res, l) = create_result ident (vl ++ [v]) ->(* TODO: side effects *)
+  Some (res, l) = create_result ident (vl ++ [v]) ->
   ⟨FParams ident vl [] :: xs, RValSeq [v]⟩ -⌊l⌋->ₗ ⟨xs, res⟩
 
 (************************************************)
@@ -144,10 +153,16 @@ Inductive step : FrameStack -> Redex -> option SideEffect -> FrameStack -> Redex
   ⟨ (FCase2 vs e' l)::xs, RValSeq [ VLit (Atom "true") ] ⟩ -⌊None⌋->ₗ 
   ⟨ xs, RExp e' ⟩
 
-(* reduction is ongoing, the pattern matched, and the guard is false, thus
-   we check the next pattern. *)
-| eval_step_case_false vs e' l xs :
-  ⟨ (FCase2 vs e' l)::xs, RValSeq [ VLit (Atom "false") ] ⟩ -⌊None⌋->ₗ ⟨ (FCase1 l)::xs, RValSeq vs ⟩
+(* reduction is ongoing, the pattern matched, and the guard is not true
+   (e.g., it is false, or a non-boolean value, as in compiled Core Erlang),
+   thus we check the next pattern. *)
+| eval_step_case_false vs e' l xs v :
+  v <> VLit (Atom "true") ->
+  ⟨ (FCase2 vs e' l)::xs, RValSeq [ v ] ⟩ -⌊None⌋->ₗ ⟨ (FCase1 l)::xs, RValSeq vs ⟩
+
+(** Exceptions *)
+| eval_cool_case_empty vs xs:
+  ⟨ (FCase1 [])::xs, RValSeq vs ⟩ -⌊None⌋->ₗ ⟨ xs, RExc if_clause ⟩
 
 (** segments *)
 (** Heating *)
@@ -164,10 +179,6 @@ Inductive step : FrameStack -> Redex -> option SideEffect -> FrameStack -> Redex
   segment_to_bitstring v vsize unit type endian = Some r ->
   ⟨ FSeg2 v unit type sign endian :: xs, RValSeq [vsize] ⟩ -⌊None⌋->ₗ
   ⟨ xs, r ⟩
-
-(** Exceptions *)
-| eval_cool_case_empty vs xs:
-  ⟨ (FCase1 [])::xs, RValSeq vs ⟩ -⌊None⌋->ₗ ⟨ xs, RExc if_clause ⟩
 
 (**  LetRec *)
 (**  Cooling *)
@@ -192,7 +203,7 @@ Inductive step : FrameStack -> Redex -> option SideEffect -> FrameStack -> Redex
   ⟨ xs, ETry e1 vl1 e2 vl2 e3 ⟩ -⌊None⌋->ₗ ⟨ (FTry vl1 e2 vl2 e3)::xs, RExp e1 ⟩
 
 (** Exceptions *)
-(** Propogation *)
+(** Propagation *)
 | eval_prop_exc F exc xs :
   isPropagatable F = true ->
   ⟨ F::xs, RExc exc ⟩ -⌊None⌋->ₗ ⟨ xs, RExc exc ⟩
@@ -208,7 +219,7 @@ Inductive step_rt : FrameStack -> Redex -> nat -> list SideEffect -> FrameStack 
 | step_trans fs e fs' e' fs'' e'' k l l' s:
   ⟨ fs, e ⟩ -⌊s⌋->ₗ ⟨ fs', e'⟩ ->
   ⟨fs', e'⟩ -[ k , l ]->ₗ ⟨fs'', e''⟩ ->
-  l' = match s with | None => l | Some s' => s' :: l end
+  l' = option_cons s l
   ->
   ⟨ fs, e ⟩ -[S k, l' ]->ₗ ⟨fs'', e''⟩
 where "⟨ fs , e ⟩ -[ k , l ]->ₗ ⟨ fs' , e' ⟩" := (step_rt fs e k l fs' e').

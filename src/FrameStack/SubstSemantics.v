@@ -1,13 +1,23 @@
 (**
-  This file defines the frame stack semantics of Core Erlang.
+  This file defines the (unlabeled) frame stack semantics of Core Erlang. Side
+  effects are not recorded by this semantics; its labeled counterpart (with
+  the same rules, in the same order) is defined in `SubstSemanticsLabeled.v`,
+  and the equivalence of the two is proved in `SubstSemanticsLemmas.v`.
 *)
 
 From CoreErlang.FrameStack Require Export Frames.
 
 Import ListNotations.
 
-(* Note: for simplicity, this semantics allows guards to evaluate
-   to exceptions, which is not allowed in normal Core Erlang. *)
+(* Note on guards (checked against compiled Core Erlang, `erlc +from_core`):
+   - Exceptions raised in a guard propagate out of the `case` expression (as
+     in Core Erlang; the Erlang compiler wraps guards so that code compiled
+     from Erlang does not raise exceptions in them).
+   - A guard that evaluates to a single value other than `true` (`false` or
+     a non-boolean value) fails, and the next clause is tried, as in compiled
+     Core Erlang. *)
+(** `⟨ fs, e ⟩ --> ⟨ fs', e' ⟩`: one reduction step of the redex `e` in the
+    frame stack `fs`. *)
 Reserved Notation "⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩" (at level 0).
 Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 (**  Reduction rules *)
@@ -32,11 +42,11 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 (* 0 subexpression in complex expressions: *)
 | eval_cool_params_0 xs ident (vl : list Val) (res : Redex) (l : option SideEffect) : 
   ident <> IMap ->
-  Some (res, l) = create_result ident vl -> (* TODO: side effects *)
+  Some (res, l) = create_result ident vl -> (* side effects are ignored here, see SubstSemanticsLabeled.v *)
   ⟨FParams ident vl [] ::xs, RBox⟩ --> ⟨xs, res⟩
 
 | eval_cool_params xs ident (vl : list Val) (v : Val) (res : Redex) (l : option SideEffect):
-  Some (res, l) = create_result ident (vl ++ [v]) ->(* TODO: side effects *)
+  Some (res, l) = create_result ident (vl ++ [v]) -> (* side effects are ignored here, see SubstSemanticsLabeled.v *)
   ⟨FParams ident vl [] :: xs, RValSeq [v]⟩ --> ⟨xs, res⟩
 
 (************************************************)
@@ -143,10 +153,12 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
   ⟨ (FCase2 vs e' l)::xs, RValSeq [ VLit (Atom "true") ] ⟩ --> 
   ⟨ xs, RExp e' ⟩
 
-(* reduction is ongoing, the pattern matched, and the guard is false, thus
-   we check the next pattern. *)
-| eval_step_case_false vs e' l xs :
-  ⟨ (FCase2 vs e' l)::xs, RValSeq [ VLit (Atom "false") ] ⟩ --> ⟨ (FCase1 l)::xs, RValSeq vs ⟩
+(* reduction is ongoing, the pattern matched, and the guard is not true
+   (e.g., it is false, or a non-boolean value, as in compiled Core Erlang),
+   thus we check the next pattern. *)
+| eval_step_case_false vs e' l xs v :
+  v <> VLit (Atom "true") ->
+  ⟨ (FCase2 vs e' l)::xs, RValSeq [ v ] ⟩ --> ⟨ (FCase1 l)::xs, RValSeq vs ⟩
 
 (** Exceptions *)
 | eval_cool_case_empty vs xs:
@@ -191,7 +203,7 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
   ⟨ xs, ETry e1 vl1 e2 vl2 e3 ⟩ --> ⟨ (FTry vl1 e2 vl2 e3)::xs, RExp e1 ⟩
   
 (** Exceptions *)
-(** Propogation *)
+(** Propagation *)
 | eval_prop_exc F exc xs :
   isPropagatable F = true ->
   ⟨ F::xs, RExc exc ⟩ --> ⟨ xs, RExc exc ⟩
@@ -199,7 +211,11 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 
 where "⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩" := (step fs e fs' e').
 
+Add Search Blacklist "_ind" "_sind".
 
+
+(** `⟨ fs, e ⟩ -[ k ]-> ⟨ fs', e' ⟩`: the configuration `⟨ fs', e' ⟩` is
+    reachable from `⟨ fs, e ⟩` in exactly `k` steps. *)
 Reserved Notation "⟨ fs , e ⟩ -[ k ]-> ⟨ fs' , e' ⟩" (at level 0).
 Inductive step_rt : FrameStack -> Redex -> nat -> FrameStack -> Redex -> Prop :=
 | step_refl fs e : ⟨ fs, e ⟩ -[ 0 ]-> ⟨ fs, e ⟩
@@ -209,6 +225,9 @@ Inductive step_rt : FrameStack -> Redex -> nat -> FrameStack -> Redex -> Prop :=
   ⟨ fs, e ⟩ -[S k]-> ⟨fs'', e''⟩
 where "⟨ fs , e ⟩ -[ k ]-> ⟨ fs' , e' ⟩" := (step_rt fs e k fs' e').
 
+(** `⟨ fs, e ⟩ -->* r`: the evaluation of `e` in the frame stack `fs`
+    terminates with the result `r` (a value sequence or an exception) and an
+    empty frame stack, in some number of steps. *)
 Definition step_any (fs : FrameStack) (e : Redex) (r : Redex) : Prop :=
   exists k, is_result r /\ ⟨fs, e⟩ -[k]-> ⟨[], r⟩.
 Notation "⟨ fs , e ⟩ -->* v" := (step_any fs e v) (at level 0, v at level 50).

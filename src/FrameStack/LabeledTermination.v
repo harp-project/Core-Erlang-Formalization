@@ -1,7 +1,10 @@
 (**
   This file contains the inductive definition for (frame stack) termination of Core
-  Erlang expressions. It is equivalent to the termination expressed with the
-  semantics in `SubstSemanticsLabeled.v`.
+  Erlang expressions, with side-effect traces. It is equivalent to the
+  termination expressed with the semantics in `SubstSemanticsLabeled.v` (see
+  `semantic_iff_termination` in `SubstSemanticsLabeledLemmas.v`). Its rules
+  have the same names and order as the rules of the unlabeled termination
+  relation (`Termination.v`).
 *)
 
 From CoreErlang.FrameStack Require Export SubstSemanticsLabeled.
@@ -13,18 +16,13 @@ Definition terminates_in_k_sem_labeled (fs : FrameStack) (e : Redex) (k : nat) (
   : Prop :=
   exists (res : Redex), is_result res /\ ⟨fs, e⟩ -[k , l]->ₗ ⟨[], res⟩.
 
-Definition option_cons {A} (a : option A) (l : list A) : list A :=
-match a with
-| (Some a') => a' :: l
-| None => l
-end.
-
-(** A more practical way to define termination in k steps *)
+(** A more practical way to define termination in k steps (the side effects of
+    the steps are collected into the trace `l`) *)
 Reserved Notation "⟨ fs , e ⟩ l – k ↓" (at level 0).
 Inductive terminates_in_k : FrameStack -> Redex -> SideEffectList -> nat -> Prop :=
 
 (** Cooling: single value *)
-| cool_value_l v xs l k :
+| cool_value v xs l k :
   ⟨ xs, RValSeq [v] ⟩ l – k ↓
 ->
   ⟨ xs, ˝v ⟩ l – S k ↓
@@ -46,15 +44,15 @@ Inductive terminates_in_k : FrameStack -> Redex -> SideEffectList -> nat -> Prop
   ⟨FParams ident vl (e::el) ::xs, RBox⟩ l – S k ↓
 
 (* 0 subexpression in complex expressions: *)
-| cool_params_0_l xs ident (vl : list Val) (res : Redex) (l: option SideEffect) ls k: 
+| cool_params_0 xs ident (vl : list Val) (res : Redex) (l: option SideEffect) ls k:
   ident <> IMap ->
-  Some (res, l) = create_result ident vl -> (* TODO side effects *)
+  Some (res, l) = create_result ident vl ->
   ⟨xs, res⟩ ls – k ↓
 ->
   ⟨FParams ident vl [] ::xs, RBox⟩ (option_cons l ls) – S k ↓
 
 | cool_params xs ident (vl : list Val) (v : Val) (res : Redex) (l : option SideEffect) ls k:
-  Some (res, l) = create_result ident (vl ++ [v]) -> (* TODO side effects *)
+  Some (res, l) = create_result ident (vl ++ [v]) ->
   ⟨xs, res⟩ ls – k ↓
 ->
   ⟨FParams ident vl [] :: xs, RValSeq [v]⟩ (option_cons l ls) – S k ↓
@@ -199,23 +197,44 @@ Inductive terminates_in_k : FrameStack -> Redex -> SideEffectList -> nat -> Prop
 
 (* reduction is ongoing, the pattern matched, and the guard is true, thus 
    the reduction continues inside the given clause *)
-| step_case_true_l vs e' l xs ls k:
-  ⟨ xs, RExp e' ⟩ ls – k ↓ 
+| step_case_true vs e' l xs ls k:
+  ⟨ xs, RExp e' ⟩ ls – k ↓
 ->
   ⟨ (FCase2 vs e' l)::xs, RValSeq [ VLit (Atom "true") ] ⟩ ls – S k ↓
 
-(* reduction is ongoing, the pattern matched, and the guard is false, thus
-   we check the next pattern. *)
-| step_case_false_l vs e' l xs k ls:
-  ⟨ (FCase1 l)::xs, RValSeq vs ⟩ ls – k ↓ 
+(* reduction is ongoing, the pattern matched, and the guard is not true
+   (e.g., it is false, or a non-boolean value), thus we check the next
+   pattern. *)
+| step_case_false vs e' l xs k ls v:
+  v <> VLit (Atom "true") ->
+  ⟨ (FCase1 l)::xs, RValSeq vs ⟩ ls – k ↓
 ->
-  ⟨ (FCase2 vs e' l)::xs, RValSeq [ VLit (Atom "false") ] ⟩ ls – S k ↓
+  ⟨ (FCase2 vs e' l)::xs, RValSeq [ v ] ⟩ ls – S k ↓
 
 (** Exceptions *)
 | cool_case_empty vs xs l k:
-  ⟨ xs, RExc if_clause ⟩ l – k ↓ 
+  ⟨ xs, RExc if_clause ⟩ l – k ↓
 ->
   ⟨ (FCase1 [])::xs, RValSeq vs ⟩ l – S k ↓
+
+(** segments *)
+(** Heating *)
+| heat_seg (seg : Segment Exp Exp) xs l k :
+  ⟨FSeg1 (seg_size seg) (seg_unit seg) (seg_type seg) (seg_sign seg) (seg_endian seg) :: xs, seg_val seg⟩ l – k ↓
+->
+  ⟨ xs, ESeg seg ⟩ l – S k ↓
+
+(** Cooling *)
+| cool_seg_val v (size : Exp) unit type sign endian xs l k :
+  ⟨ FSeg2 v unit type sign endian :: xs, size ⟩ l – k ↓
+->
+  ⟨ FSeg1 size unit type sign endian :: xs, RValSeq [v] ⟩ l – S k ↓
+
+| cool_seg_size v vsize type unit sign endian xs r l k :
+  segment_to_bitstring v vsize unit type endian = Some r ->
+  ⟨ xs, r ⟩ l – k ↓
+->
+  ⟨ FSeg2 v unit type sign endian :: xs, RValSeq [vsize] ⟩ l – S k ↓
 
 (**  LetRec *)
 (**  Cooling *)
@@ -246,27 +265,8 @@ Inductive terminates_in_k : FrameStack -> Redex -> SideEffectList -> nat -> Prop
 ->
   ⟨ xs, ETry e1 vl1 e2 vl2 e3 ⟩ l – S k ↓
 
-(** segments *)
-(** Heating *)
-| heat_seg (seg : Segment Exp Exp) xs l k :
-  ⟨FSeg1 (seg_size seg) (seg_unit seg) (seg_type seg) (seg_sign seg) (seg_endian seg) :: xs, seg_val seg⟩ l – k ↓
-->
-  ⟨ xs, ESeg seg ⟩ l – S k ↓
-
-(** Cooling *)
-| cool_seg_val v (size : Exp) unit type sign endian xs l k :
-  ⟨ FSeg2 v unit type sign endian :: xs, size ⟩ l – k ↓
-->
-  ⟨ FSeg1 size unit type sign endian :: xs, RValSeq [v] ⟩ l – S k ↓
-
-| eval_cool_seg_size v vsize type unit sign endian xs r l k :
-  segment_to_bitstring v vsize unit type endian = Some r ->
-  ⟨ xs, r ⟩ l – k ↓
-->
-  ⟨ FSeg2 v unit type sign endian :: xs, RValSeq [vsize] ⟩ l – S k ↓
-
 (** Exceptions *)
-(** Propogation *)
+(** Propagation *)
 | prop_exc F exc xs l k:
   isPropagatable F = true ->
   ⟨ xs, RExc exc ⟩ l – k ↓ 
@@ -279,11 +279,15 @@ Inductive terminates_in_k : FrameStack -> Redex -> SideEffectList -> nat -> Prop
   is_result v -> ⟨ [] , v ⟩ [] – 0 ↓ 
 where "⟨ fs , e ⟩ l – k ↓" := (terminates_in_k fs e l k).
 
+(** Termination in some number of steps, with the side-effect trace `l`. *)
 Definition terminates (fs : FrameStack) (e : Redex) (l : list SideEffect) :=
   exists n, ⟨ fs, e ⟩ l – n ↓.
 Notation "⟨ fs , e ⟩ₗ l ↓" := (terminates fs e l) (at level 0).
 
 
+(** `inv_term_labeled` inverts a termination hypothesis; `deriv_labeled`
+    inverts a termination (or index bound) hypothesis of a known shape, and
+    eliminates the impossible results. *)
 Ltac inv_term_labeled :=
   match goal with
   | [H : ⟨ _, _ ⟩ _ – _ ↓ |- _] => inv H
@@ -293,18 +297,21 @@ Ltac deriv_labeled :=
   | [H : ?i < length _ |- _] => simpl in *; inv H; auto; try lia
   | [H : ?i <= length _ |- _] => simpl in *; inv H;  auto; try lia
   | [H : ⟨ _, _ ⟩ₗ _ ↓ |- _] => inv H; try inv_result
-  | [H : ⟨ _ :: _, RValSeq _ ⟩ₗ _ ↓ |- _] => inv H; try inv_result
-  | [H : ⟨ _ :: _, RExc _ ⟩ₗ _ ↓ |- _] => inv H; try inv_result
-  | [H : ⟨ _, RExp (EExp _) ⟩ₗ _ ↓ |- _] => inv H; try inv_result
-  | [H : ⟨ _, RExp (VVal _) ⟩ₗ _ ↓ |- _] => inv H; try inv_result
-  | [H : ⟨ _, RBox ⟩ₗ _ ↓ |- _] => inv H; try inv_result
+  | [H : ⟨ _ :: _, RValSeq _ ⟩ _ – _ ↓ |- _] => inv H; try inv_result
+  | [H : ⟨ _ :: _, RExc _ ⟩ _ – _ ↓ |- _] => inv H; try inv_result
+  | [H : ⟨ _, RExp (EExp _) ⟩ _ – _ ↓ |- _] => inv H; try inv_result
+  | [H : ⟨ _, RExp (VVal _) ⟩ _ – _ ↓ |- _] => inv H; try inv_result
+  | [H : ⟨ _, RBox ⟩ _ – _ ↓ |- _] => inv H; try inv_result
   end.
 
+(** `change labeled clock to n` replaces the step count of a termination goal
+    with `n` (the equality is proved by `lia`). *)
 Tactic Notation "change" "labeled" "clock" "to" constr(num) :=
   match goal with
   | |- ⟨ _, _ ⟩ _ – ?k ↓ => replace k with num by lia
   end.
 
+(** The program `inf` does not terminate in any frame stack. *)
 Theorem inf_diverges :
   forall n Fs l, ~⟨Fs, inf⟩ l – n↓.
 Proof.

@@ -153,10 +153,11 @@ Definition sequentialStepFunc : FrameStack -> Redex -> option (FrameStack * Rede
           (* eval_step_case_true and eval_step_case_false *)
           | (FCase2 vs' e' l)::xs =>
               match vs with
-              | [VLit (Atom str)] => 
+              | [VLit (Atom str)] =>
                   if String.eqb str "true" then Some ( xs, RExp e' )
-                  else if String.eqb str "false" then Some ((FCase1 l)::xs, RValSeq vs' )
-                  else None
+                  else Some ((FCase1 l)::xs, RValSeq vs' )
+              (* guards evaluating to non-true values fail *)
+              | [_] => Some ((FCase1 l)::xs, RValSeq vs' )
               | _ => None
               end
           

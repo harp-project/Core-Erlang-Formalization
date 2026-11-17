@@ -2749,12 +2749,12 @@ Proof.
   {
     destruct r; intros; destruct_redex_scopes; simpl; auto.
     * constructor. apply -> subst_preserves_scope_exp; eauto.
-    * match goal with [Hf : Forall _ vs |- _] => rename Hf into Hvs end.
-      induction vs; constructor; simpl; auto.
-      inversion Hvs as [|? ? Hhd Htl]; subst.
+    * induction vs; constructor; simpl; auto.
+      destruct_foralls.
       constructor.
-      - eapply subst_preserves_scope_val in Hhd; eauto.
-      - apply IHvs in Htl. now inv Htl.
+      - eapply (proj1 (subst_preserves_scope_val _ _)); eauto.
+      - assert (RED Γ' ⊢ RValSeq (map (substVal ξ) vs)) as Hrest by (apply IHvs; assumption).
+        now inv Hrest.
     * constructor; apply -> subst_preserves_scope_val; eauto.
   }
   {

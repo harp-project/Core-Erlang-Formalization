@@ -300,6 +300,23 @@ Section lists.
 
 End lists.
 
+(** Puts `a'` at the front of the list `l` if `a` is `Some a'`, otherwise
+    gives back `l`. *)
+Definition option_cons {A} (a : option A) (l : list A) : list A :=
+match a with
+| (Some a') => a' :: l
+| None => l
+end.
+
+(** The counterpart of `option_cons`: removes the first element of `sl` if `l`
+    is `Some _`, otherwise gives back `sl`. *)
+Definition option_tail {A} (l : option A) (sl : list A)
+  : list A :=
+  match l with
+  | Some s => tail sl
+  | None => sl
+  end.
+
 (**
     Custom induction scheme for lists based on their length, rather than their
     structure.
