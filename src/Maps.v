@@ -169,6 +169,17 @@ Section flattening.
     intros. now destruct a.
   Qed.
 
+  (** The previous property expressed with `PBoth` *)
+  Lemma deflatten_PBoth :
+    forall P (l : list A), Forall P l ->
+      Forall (PBoth P) (deflatten_list l).
+  Proof.
+    induction l using list_length_ind; intros.
+    destruct l; auto. inv H0. inv H4. auto.
+    simpl. constructor. 2: apply H; auto; slia.
+    now constructor.
+  Qed.
+
   (** Flattening lists also do not affect propositions that were satsified by
       the list elements *)
   Lemma flatten_keeps_prop (P : A -> Prop) :

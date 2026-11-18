@@ -9,19 +9,40 @@ From CoreErlang.FrameStack Require Export CIU.
 
 Import ListNotations.
 
+(** * Properties of expression relations
+
+    The relations below are indexed by the number of free variables (`Γ`).
+    The `Compatible*` properties express that a relation is preserved by the
+    corresponding syntactic construct (for well-scoped subexpressions). *)
+
+(** A relation is adequate, if the termination of closed expressions is
+    preserved from left to right. *)
 Definition Adequate (R : nat -> Exp -> Exp -> Prop) :=
   forall e1 e2, R 0 e1 e2 -> ⟨[], e1⟩ ↓ -> ⟨[], e2⟩ ↓.
 
+(** A relation is reflexive on well-scoped expressions. *)
 Definition IsReflexive (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ e,
   EXP Γ ⊢ e -> R Γ e e.
 
+(** A reflexive relation relates every list of well-scoped expressions to
+    itself pairwise. *)
+Lemma biforall_IsReflexive :
+  forall (R : nat -> Exp -> Exp -> Prop), IsReflexive R ->
+  forall l Γ, Forall (fun e : Exp => EXP Γ ⊢ e) l -> list_biforall (R Γ) l l.
+Proof.
+  induction l; constructor; auto.
+  inv H0. now apply H. inv H0. now apply IHl.
+Qed.
+
+(** Compatibility with function expressions *)
 Definition CompatibleFun (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ vl vl' e1 e2, vl = vl' ->
     EXP (vl + Γ) ⊢ e1 -> EXP (vl' + Γ) ⊢ e2 -> 
     R (vl + Γ) e1 e2 ->
     R Γ (EFun vl e1) (EFun vl' e2).
 
+(** Compatibility with value sequence expressions *)
 Definition CompatibleValues (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ el el',
     Forall (fun e => EXP Γ ⊢ e) el ->
@@ -29,6 +50,7 @@ Definition CompatibleValues (R : nat -> Exp -> Exp -> Prop) :=
     list_biforall (R Γ) el el' ->
     R Γ (EValues el) (EValues el').
 
+(** Compatibility with list construction *)
 Definition CompatibleCons (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ e1 e1' e2 e2',
     EXP Γ ⊢ e1 -> EXP Γ ⊢ e1' -> 
@@ -37,6 +59,7 @@ Definition CompatibleCons (R : nat -> Exp -> Exp -> Prop) :=
     R Γ e2 e2' ->
     R Γ (ECons e1 e2) (ECons e1' e2').
 
+(** Compatibility with tuple expressions *)
 Definition CompatibleTuple (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ el el',
     Forall (fun e => EXP Γ ⊢ e) el ->
@@ -44,6 +67,7 @@ Definition CompatibleTuple (R : nat -> Exp -> Exp -> Prop) :=
     list_biforall (R Γ) el el' ->
     R Γ (ETuple el) (ETuple el').
 
+(** Compatibility with map expressions *)
 Definition CompatibleMap (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ l l',
     Forall (PBoth (fun e => EXP Γ ⊢ e)) l ->
@@ -51,6 +75,7 @@ Definition CompatibleMap (R : nat -> Exp -> Exp -> Prop) :=
     list_biforall (fun '(v1, v2) '(v1', v2') => R Γ v1 v1' /\ R Γ v2 v2') l l' ->
     R Γ (EMap l) (EMap l').
 
+(** Compatibility with inter-module calls *)
 Definition CompatibleCall (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ m m' f f' el el',
   EXP Γ ⊢ m -> EXP Γ ⊢ m' ->
@@ -61,6 +86,7 @@ Definition CompatibleCall (R : nat -> Exp -> Exp -> Prop) :=
   list_biforall (R Γ) el el' ->
     R Γ (ECall m f el) (ECall m' f' el').
 
+(** Compatibility with primop calls *)
 Definition CompatiblePrimOp (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ f f' el el', f = f' ->
     Forall (fun e => EXP Γ ⊢ e) el ->
@@ -68,6 +94,7 @@ Definition CompatiblePrimOp (R : nat -> Exp -> Exp -> Prop) :=
     list_biforall (R Γ) el el' ->
     R Γ (EPrimOp f el) (EPrimOp f' el').
 
+(** Compatibility with function applications *)
 Definition CompatibleApp (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ e e' el el',
     EXP Γ ⊢ e ->
@@ -78,6 +105,8 @@ Definition CompatibleApp (R : nat -> Exp -> Exp -> Prop) :=
     list_biforall (R Γ) el el' ->
     R Γ (EApp e el) (EApp e' el').
 
+(** Compatibility with `case` expressions (with syntactically equal
+    patterns; see `CompatibleCaseGen` for related patterns) *)
 Definition CompatibleCase (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ e e' l l',
     EXP Γ ⊢ e ->
@@ -95,6 +124,7 @@ Definition CompatibleCase (R : nat -> Exp -> Exp -> Prop) :=
     ) l l' ->
     R Γ (ECase e l) (ECase e' l').
 
+(** Compatibility with `let` expressions *)
 Definition CompatibleLet (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ l e1 e2 l' e1' e2', l = l' ->
     EXP Γ ⊢ e1  ->
@@ -105,6 +135,7 @@ Definition CompatibleLet (R : nat -> Exp -> Exp -> Prop) :=
     R (l + Γ) e2 e2' ->
     R Γ (ELet l e1 e2) (ELet l' e1' e2').
 
+(** Compatibility with sequencing *)
 Definition CompatibleSeq (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ e1 e2 e1' e2',
     EXP Γ ⊢ e1  ->
@@ -115,6 +146,7 @@ Definition CompatibleSeq (R : nat -> Exp -> Exp -> Prop) :=
     R Γ e2 e2' ->
     R Γ (ESeq e1 e2) (ESeq e1' e2').
 
+(** Compatibility with `letrec` expressions *)
 Definition CompatibleLetRec (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ e l e' l',
     EXP (length l  + Γ) ⊢ e  ->
@@ -127,6 +159,7 @@ Definition CompatibleLetRec (R : nat -> Exp -> Exp -> Prop) :=
     R (length l + Γ) e e' ->
     R Γ (ELetRec l e) (ELetRec l' e').
 
+(** Compatibility with `try` expressions *)
 Definition CompatibleTry (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ e1 vl1 e2 vl2 e3 e1' vl1' e2' vl2' e3', 
     vl1 = vl1' -> vl2 = vl2' ->
@@ -141,6 +174,7 @@ Definition CompatibleTry (R : nat -> Exp -> Exp -> Prop) :=
     R (vl2 + Γ) e3 e3' ->
     R Γ (ETry e1 vl1 e2 vl2 e3) (ETry e1' vl1' e2' vl2' e3').
 
+(** Compatibility with bitstring construction *)
 Definition CompatibleBin (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ el el',
     Forall (fun e => EXP Γ ⊢ e) el ->
@@ -148,6 +182,7 @@ Definition CompatibleBin (R : nat -> Exp -> Exp -> Prop) :=
     list_biforall (R Γ) el el' ->
     R Γ (EBin el) (EBin el').
 
+(** Compatibility with bitstring segments (with equal specifiers) *)
 Definition CompatibleSeg (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ seg seg',
     EXP Γ ⊢ (seg_val seg)  ->
@@ -162,7 +197,8 @@ Definition CompatibleSeg (R : nat -> Exp -> Exp -> Prop) :=
     R Γ (seg_size seg) (seg_size seg') ->
     R Γ (ESeg seg) (ESeg seg').
 
-
+(** A pre-contextual relation relates well-scoped expressions, and it is
+    adequate, reflexive, transitive and compatible with every construct. *)
 Definition IsPreCtxRel (R : nat -> Exp -> Exp -> Prop) :=
   (forall Γ p1 p2, R Γ p1 p2 -> EXP Γ ⊢ p1 /\ EXP Γ ⊢ p2) /\
   Adequate R /\ IsReflexive R /\
@@ -183,11 +219,14 @@ Definition IsPreCtxRel (R : nat -> Exp -> Exp -> Prop) :=
   CompatibleBin R /\
   CompatibleSeg R.
 
+(** A contextual relation is the largest pre-contextual relation. *)
 Definition IsCtxRel (R : nat -> Exp -> Exp -> Prop) :=
   IsPreCtxRel R /\
   forall R', IsPreCtxRel R' ->
     forall Γ p1 p2, R' Γ p1 p2 -> R Γ p1 p2.
 
+(** A pre-contextual relation that includes a contextual relation is also
+    contextual. *)
 Lemma bigger_implies_IsCtxRel : forall E R,
     IsCtxRel R ->
     IsPreCtxRel E ->
@@ -204,6 +243,7 @@ Proof.
   - auto.
 Qed.
 
+(** The logical relation is pre-contextual. *)
 Theorem Erel_IsPreCtxRel : IsPreCtxRel Erel_open.
 Proof.
   unfold IsPreCtxRel.
@@ -288,6 +328,7 @@ Proof.
     auto.
 Qed.
 
+(** CIU equivalence is pre-contextual. *)
 Corollary CIU_IsPreCtxRel : IsPreCtxRel CIU_open.
 Proof.
   unfold IsPreCtxRel.
@@ -374,6 +415,10 @@ Proof.
     now apply Erel_IsPreCtxRel.
 Qed.
 
+(** * Contexts *)
+
+(** Identifiers of the constructs with a parameter list, which can contain a
+    hole (similar to `FrameIdent`). *)
 Inductive CtxIdent :=
 | CValues
 | CTuple
@@ -383,6 +428,8 @@ Inductive CtxIdent :=
 | CApp (e : Exp)
 | CBin.
 
+(** Expression contexts: expressions with exactly one hole (`CHole`), which
+    can be in any subexpression position. *)
 Inductive Ctx :=
 | CHole
 | CFun      (vl : nat) (c : Ctx)
@@ -412,6 +459,7 @@ Inductive Ctx :=
             (unit : nat) (sign : BinSign) (endian : BinEnd)
 .
 
+(** Builds the expression identified by `ident` from its parameter list. *)
 Definition create_exp (ident : CtxIdent) (l : list Exp) :=
 match ident with
  | CValues => EValues l
@@ -423,7 +471,7 @@ match ident with
  | CBin => EBin l
 end.
 
-
+(** Plugs an expression into the hole of a context. *)
 Fixpoint plug (C : Ctx) (p : Exp) :=
 match C with
 | CHole              => p
@@ -455,6 +503,7 @@ match C with
                                                   seg_sign := sign; seg_endian := endian |}
 end.
 
+(** Plugs a context into the hole of another context (context composition). *)
 Fixpoint plugc (C : Ctx) (p : Ctx) :=
 match C with
 | CHole             => p
@@ -481,7 +530,7 @@ match C with
 | CSeg2   val c type unit sign endian  => CSeg2 val (plugc c p) type unit sign endian
 end.
 
-
+(** Plugging into composed contexts is the same as plugging twice. *)
 Lemma plug_assoc : forall C1 C2 e,
     plug C1 (plug C2 e) =
     plug (plugc C1 C2) e.
@@ -497,6 +546,8 @@ Qed.
 Reserved Notation "'EECTX' Γh ⊢ C ∷ Γ" (at level 60).
 Reserved Notation "'EECTXID' Γh ⊢ C ∷ Γ" (at level 60).
 
+(** Scoping of context identifiers: the expressions they contain are scoped
+    in `Γ`. *)
 Inductive EECtxIdentScope (Γh : nat) : CtxIdent -> nat -> Prop :=
 
 | CEScope_CValues Γ : EECTXID Γh ⊢ CValues ∷ Γ
@@ -516,6 +567,9 @@ Inductive EECtxIdentScope (Γh : nat) : CtxIdent -> nat -> Prop :=
 
 where "'EECTXID' Γh ⊢ C ∷ Γ" := (EECtxIdentScope Γh C Γ).
 
+(** Scoping of contexts: `EECTX Γh ⊢ C ∷ Γ` means that the context `C` is
+    scoped in `Γ`, and its hole is scoped in `Γh` (i.e., expressions scoped
+    in `Γh` can be plugged into it). *)
 Inductive EECtxScope (Γh : nat) : nat -> Ctx -> Prop :=
 
 | CEScope_Hole : (EECTX Γh ⊢ CHole ∷ Γh)
@@ -563,7 +617,6 @@ Inductive EECtxScope (Γh : nat) : nat -> Ctx -> Prop :=
   EECTX Γh ⊢ c ∷ Γ ->
   Forall (fun '(p, g, e) => Forall (PatScoped Γ) p /\ EXP PatListVars p + Γ ⊢ g /\ EXP PatListVars p + Γ ⊢ e) l ->
   EECTX Γh ⊢ (CCase1 c l) ∷ Γ
-
 
 | CEScope_CCase2 : forall Γ e l lp c e2 l',
   EXP Γ ⊢ e ->
@@ -647,12 +700,14 @@ where
 "'EECTX' Γh ⊢ C ∷ Γ" := (EECtxScope Γh Γ C)
 .
 
-
+(** Solves the goal by inverting a contradictory hypothesis. *)
 Ltac solve_inversion :=
   match goal with
   | [ H : _ |- _ ] => solve [inv H]
   end.
 
+(** Plugging a well-scoped expression into a well-scoped context results in
+    a well-scoped expression. *)
 Lemma plug_preserves_scope_exp : forall {Γh C Γ e},
     (EECTX Γh ⊢ C ∷ Γ ->
      EXP Γh ⊢ e ->
@@ -689,6 +744,7 @@ Proof.
   * do 2 constructor; simpl; auto.
 Qed.
 
+(** Composing well-scoped contexts results in a well-scoped context. *)
 Lemma plugc_preserves_scope_exp : forall {Γh Couter Γ Cinner Γ'},
     (EECTX Γ' ⊢ Couter ∷ Γ ->
      EECTX Γh ⊢ Cinner ∷ Γ' ->
@@ -704,34 +760,22 @@ Proof.
   inv H10; now constructor.
 Qed.
 
+(** * Contextual equivalence *)
 
-(* In CTX, we only care about syntax, thus only expressions can be considered as
-   equivalent. However, in CIU/LogRel, we have the possibility to do that for exceptions
-   too. This also can be expressed with CTX by ECall "erlang" "error" [reason;details] *)
+(** Two well-scoped expressions are contextually related, if plugging the
+    first into any closing context terminates, then plugging the second one
+    also terminates.
+
+    In CTX, we only care about syntax, thus only expressions can be
+    considered as equivalent. However, in CIU/LogRel, we have the possibility
+    to do that for exceptions too. This also can be expressed with CTX by
+    `ECall "erlang" "error" [reason;details]`. *)
 Definition CTX (Γ : nat) (e1 e2 : Exp) :=
   (EXP Γ ⊢ e1 /\ EXP Γ ⊢ e2) /\
   (forall (C : Ctx),
       EECTX Γ ⊢ C ∷ 0 -> ⟨ [], RExp (plug C e1) ⟩ ↓ -> ⟨ [], RExp (plug C e2) ⟩ ↓).
 
-(* TODO: move to a different file *)
-Lemma IsReflexiveList : forall R' l Γ',
-  IsReflexive R' -> Forall (fun r => EXP Γ' ⊢ r) l ->
-  Forall (fun '(e0, e3) => R' Γ' e0 e3) (combine l l).
-Proof.
-  induction l; intros; constructor.
-  * apply H. inversion H0. auto.
-  * inversion H0. apply IHl; auto.
-Qed.
-
-(* TODO: move to a different file *)
-Lemma biforall_IsReflexive :
-  forall (R : nat -> Exp -> Exp -> Prop), IsReflexive R ->
-  forall l Γ, Forall (fun e : Exp => EXP Γ ⊢ e) l -> list_biforall (R Γ) l l.
-Proof.
-  induction l; constructor; auto.
-  inv H0. now apply H. inv H0. now apply IHl.
-Qed.
-
+(** Every pre-contextual relation is included in CTX. *)
 Lemma CTX_bigger : forall R' : nat -> Exp -> Exp -> Prop,
     IsPreCtxRel R' -> forall (Γ : nat) (e1 e2 : Exp), R' Γ e1 e2 -> CTX Γ e1 e2.
 Proof.
@@ -866,18 +910,24 @@ Proof.
   now apply H2.
 Qed.
 
+(** CIU-related expressions are contextually related. *)
 Corollary CIU_implies_CTX :
   forall Γ (e1 e2 : Exp), CIU_open Γ e1 e2 -> CTX Γ e1 e2.
 Proof.
   intros. eapply CTX_bigger. apply CIU_IsPreCtxRel. assumption.
 Qed.
 
-
+(** CTX is reflexive on well-scoped expressions. *)
 Theorem CTX_refl Γ e : EXP Γ ⊢ e -> CTX Γ e e.
 Proof.
   unfold CTX. intros. split; auto.
 Qed.
 
+(** The following three theorems are the inductive steps of the
+    compatibility proofs of CTX for constructs with lists of subexpressions:
+    related elements of the lists can be replaced one by one. *)
+
+(** Parameter lists *)
 Theorem CTX_isPreCtxRel_CParams Γ tl tl' hd hds :
   EXP Γ ⊢ hd ->
   list_biforall
@@ -922,6 +972,7 @@ Proof.
     apply Forall_app; auto.
 Qed.
 
+(** Clauses of `case` expressions *)
 Theorem CTX_isPreCtxRel_CCase Γ tl tl' pl g g' b' b e hds :
   list_biforall
         (fun '(p, g, e) '(p', g', e') =>
@@ -990,6 +1041,7 @@ Proof.
     apply Forall_app; split; auto.
 Qed.
 
+(** Function definitions of `letrec` expressions *)
 Theorem CTX_isPreCtxRel_CLetRec Γ tl tl' n nsc b1 b2 e hds :
   list_biforall
         (fun '(v, e) '(v', e') =>
@@ -1042,6 +1094,7 @@ Proof.
     apply Forall_app; split; auto.
 Qed.
 
+(** CTX is pre-contextual. *)
 Lemma CTX_IsPreCtxRel : IsPreCtxRel CTX.
 Proof.
   unfold IsPreCtxRel.
@@ -1157,7 +1210,7 @@ Proof.
       3: { intros. simpl. rewrite length_flatten_list. exists (length tl). lia. }
       2: {
         constructor; auto.
-        Search list_biforall flatten_list. clear -H5.
+        clear -H5.
         induction H5; auto.
         simpl. destruct hd, hd'. intuition.
       }
@@ -1364,6 +1417,7 @@ Proof.
     now rewrite <- plug_assoc in H14.
 Qed.
 
+(** CTX is the largest pre-contextual relation. *)
 Lemma CTX_IsCtxRel : IsCtxRel CTX.
 Proof.
   unfold IsCtxRel.
@@ -1373,40 +1427,22 @@ Proof.
     eapply CTX_bigger; eauto.
 Qed.
 
-Global Hint Resolve CTX_IsCtxRel : core.
-Global Hint Resolve CTX_IsPreCtxRel : core.
-Global Hint Resolve CIU_implies_CTX : core.
+#[global]
+Hint Resolve CTX_IsCtxRel : core.
+#[global]
+Hint Resolve CTX_IsPreCtxRel : core.
+#[global]
+Hint Resolve CIU_implies_CTX : core.
 
+(** There is a contextual relation. *)
 Lemma exists_CTX : exists R, IsCtxRel R.
 Proof.
   exists CTX.
   apply CTX_IsCtxRel.
 Qed.
 
-
-Lemma CIU_beta_value : forall {Γ e2 v},
-    EXP S Γ ⊢ e2 -> VAL Γ ⊢ v ->
-    (CIU_open Γ e2.[v/] (ELet 1 (˝v) e2) /\ 
-     CIU_open Γ (ELet 1 (˝v) e2) e2.[v/]).
-Proof.
-  unfold CIU_open.
-  intros.
-  unfold CIU.
-  intuition idtac.
-  1,5: constructor; apply -> subst_preserves_scope_exp; try eassumption;
-    apply -> subst_preserves_scope_exp; eauto.
-  1,3: simpl; do 3 constructor; [ constructor; apply -> subst_preserves_scope_val; eauto |
-                             apply -> subst_preserves_scope_exp; eauto ].
-  destruct H3. exists (3 + x). simpl. do 2 constructor.
-  constructor; auto.
-  simpl. rewrite subst_comp_exp, subst_extend. simpl in H2.
-  now rewrite subst_comp_exp, scons_substcomp, substcomp_id_r in H2.
-
-  destruct H3 as [x D]. simpl in D. inv D. 2: inv_result. repeat deriv.
-  simpl in *. rewrite subst_comp_exp, subst_extend in H11.
-  rewrite subst_comp_exp, scons_substcomp, substcomp_id_r. eexists. exact H11.
-Qed.
-
+(** Contextual relations are closed under substituting a value for the last
+    free variable. *)
 Lemma CTX_closed_under_substitution : forall {Γ e1 e2 v R},
     IsCtxRel R ->
     VAL Γ ⊢ v ->
@@ -1435,46 +1471,8 @@ Unshelve.
   all: auto.
 Qed.
 
-(* Scoping.v *)
-Lemma Valscope_lift :
-  forall Γ l, Forall (ValScoped Γ) l ->
-    Forall (ExpScoped Γ) (map VVal l).
-Proof.
-  intros. induction H; simpl; auto.
-Qed.
-
-(* Maps.v *)
-Lemma deflatten_PBoth :
-  forall {T} P (l : list T), Forall P l ->
-    Forall (PBoth P) (deflatten_list l).
-Proof.
-  induction l using list_length_ind; intros.
-  destruct l; auto. inv H0. inv H4. auto.
-  simpl. constructor. 2: apply H; auto; slia.
-  now constructor.
-Qed.
-
-
-(* NOTE: this is not going to work:
-
-Lemma EECTX_loosen_scope :
-  forall C Γ Δ, EECTX Γ ⊢ C ∷ Δ ->
-    forall Γ', EECTX Γ - Γ' ⊢ C ∷ Δ - Γ'.
-Proof.
-  intros C Γ Δ H. induction H; intros; try constructor; auto.
-  2: {
-  try eapply loosen_scope_exp; try eassumption; try lia.
-Abort.
-
-Lemma CTX_loosen_scope :
-  forall Γ e1 e2, CTX Γ e1 e2 ->
-    forall Γ', Γ' >= Γ -> CTX Γ' e1 e2.
-Proof.
-  intros. destruct H as [[Hcl1 Hcl2] H]. split. split.
-  1-2: eapply loosen_scope_exp; eassumption.
-  intros; apply H; auto.
-Abort. *)
-
+(** Closed clauses are scoped in `PatListVars p + 0` (a technical
+    reformulation for `scoped_case_Forall`). *)
 Lemma clauses_add0 : forall l,
   Forall (fun '(pl, g, b) => Forall (PatScoped 0) pl /\ EXP PatListVars pl ⊢ g /\ EXP PatListVars pl ⊢ b) l ->
   Forall (fun '(p, g, e) => Forall (PatScoped 0) p /\ EXP PatListVars p + 0 ⊢ g /\ EXP PatListVars p + 0 ⊢ e) l.
@@ -1483,6 +1481,8 @@ Proof.
   intros [[p g] b] ?. now rewrite Nat.add_0_r.
 Qed.
 
+(** The clauses used to simulate an `FCase2` frame (guard evaluation) with a
+    context are closed. *)
 Lemma FCase2_clauses_scoped : forall e lv ex le,
   EXPCLOSED e -> EXPCLOSED ex ->
   Forall (fun v => VALCLOSED v) lv ->
@@ -1499,6 +1499,8 @@ Proof.
       + now apply clauses_add0 in H2.
 Qed.
 
+(** The clauses used to simulate an `FCase2` frame with contextually related
+    guards are contextually related. *)
 Lemma FCase2_clauses_CTX : forall e1 e2 lv ex le,
   EXPCLOSED ex ->
   Forall (fun v => VALCLOSED v) lv ->
@@ -1523,6 +1525,7 @@ Proof.
     split; [constructor|]. split; [reflexivity|]. split; now apply CTX_refl.
 Qed.
 
+(** CIU equivalence is contextual, i.e., it coincides with CTX. *)
 Theorem CIU_IsCtxRel : IsCtxRel CIU_open.
 Proof.
   destruct exists_CTX as [R' HR'].
@@ -1631,6 +1634,7 @@ Proof.
            simpl. apply CTX_refl. constructor; auto.
 Qed.
 
+(** The logical relation is contextual. *)
 Theorem Erel_IsCtxRel : IsCtxRel Erel_open.
 Proof.
   unfold IsCtxRel.
@@ -1644,20 +1648,24 @@ Proof.
   eapply H2. 2: exact H0. assumption.
 Qed.
 
+(** Contextually related expressions are CIU-related. *)
 Corollary CTX_implies_CIU :
   forall e1 e2 Γ, CTX Γ e1 e2 -> CIU_open Γ e1 e2.
 Proof.
   intros. eapply CIU_IsCtxRel. 2: exact H. auto.
 Qed.
 
-Global Hint Resolve CTX_implies_CIU : core.
+#[global]
+Hint Resolve CTX_implies_CIU : core.
 
+(** CTX and CIU coincide. *)
 Corollary CIU_iff_CTX :
   forall e1 e2 Γ, CTX Γ e1 e2 <-> CIU_open Γ e1 e2.
 Proof.
   intros. split; auto.
 Qed.
 
+(** CTX and the logical relation of redexes coincide on expressions. *)
 Corollary Rrel_iff_CTX :
   forall e1 e2 Γ, CTX Γ e1 e2 <-> Rrel_open Γ e1 e2.
 Proof.
@@ -1666,6 +1674,7 @@ Proof.
   * apply CIU_iff_Rrel in H. auto.
 Qed.
 
+(** CTX and the logical relation of expressions coincide. *)
 Corollary Erel_iff_CTX :
   forall e1 e2 Γ, CTX Γ e1 e2 <-> Erel_open Γ e1 e2.
 Proof.
@@ -1674,7 +1683,7 @@ Proof.
   * apply Rrel_exp_compat in H. apply CIU_iff_Rrel in H. auto.
 Qed.
 
-
+(** All contextual relations coincide. *)
 Lemma Largest_CTX_is_unique :
   forall R1 R2, IsCtxRel R1 -> IsCtxRel R2 ->
     forall Γ e1 e2, R1 Γ e1 e2 <-> R2 Γ e1 e2.
@@ -1685,12 +1694,13 @@ Proof.
   split; firstorder.
 Qed.
 
-(** General version of [CompatibleCase]: patterns (more precisely, the sizes
-    of binary patterns) are only related, not equal. *)
+(** Restricting an expression relation to values. *)
 Definition Erel_to_Vrel (R : nat -> Exp -> Exp -> Prop)
   : nat -> Val -> Val -> Prop :=
 fun n v1 v2 => R n (˝v1) (˝v2).
 
+(** General version of [CompatibleCase]: patterns (more precisely, the sizes
+    of binary patterns) are only related, not equal. *)
 Definition CompatibleCaseGen (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ e e' l l',
     EXP Γ ⊢ e ->
@@ -1708,6 +1718,7 @@ Definition CompatibleCaseGen (R : nat -> Exp -> Exp -> Prop) :=
     ) l l' ->
     R Γ (ECase e l) (ECase e' l').
 
+(** CTX is compatible with `case` expressions with related patterns. *)
 Theorem CTX_CompatibleCaseGen : CompatibleCaseGen CTX.
 Proof.
   intros Γ e e' l l' He He' Hl Hl' Hee Hbi.

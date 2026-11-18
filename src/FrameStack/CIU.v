@@ -221,6 +221,31 @@ Proof.
   eapply CIU_transitive_closed. apply H; auto. apply H0; auto.
 Qed.
 
+(** Beta-reduction of a value-`let` is CIU-equivalent to substitution (in
+    both directions). *)
+Lemma CIU_beta_value : forall {Γ e2 v},
+    EXP S Γ ⊢ e2 -> VAL Γ ⊢ v ->
+    (CIU_open Γ e2.[v/] (ELet 1 (˝v) e2) /\
+     CIU_open Γ (ELet 1 (˝v) e2) e2.[v/]).
+Proof.
+  unfold CIU_open.
+  intros.
+  unfold CIU.
+  intuition idtac.
+  1,5: constructor; apply -> subst_preserves_scope_exp; try eassumption;
+    apply -> subst_preserves_scope_exp; eauto.
+  1,3: simpl; do 3 constructor; [ constructor; apply -> subst_preserves_scope_val; eauto |
+                             apply -> subst_preserves_scope_exp; eauto ].
+  destruct H3. exists (3 + x). simpl. do 2 constructor.
+  constructor; auto.
+  simpl. rewrite subst_comp_exp, subst_extend. simpl in H2.
+  now rewrite subst_comp_exp, scons_substcomp, substcomp_id_r in H2.
+
+  destruct H3 as [x D]. simpl in D. inv D. 2: inv_result. repeat deriv.
+  simpl in *. rewrite subst_comp_exp, subst_extend in H11.
+  rewrite subst_comp_exp, scons_substcomp, substcomp_id_r. eexists. exact H11.
+Qed.
+
 (** A CIU relation between values as expressions also holds between them as
     single-element value sequences. *)
 Corollary CIU_compat_reverse :

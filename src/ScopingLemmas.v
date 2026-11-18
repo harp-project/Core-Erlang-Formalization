@@ -45,6 +45,14 @@ Proof.
   - intros j Hj. destruct H1 as [H1 _]. rewrite indexed_to_forall with (def := PNil) in H1. apply H1. exact Hj.
 Qed.
 
+(** Scoped values are scoped as expressions. *)
+Lemma Valscope_lift :
+  forall Γ l, Forall (ValScoped Γ) l ->
+    Forall (ExpScoped Γ) (map VVal l).
+Proof.
+  intros. induction H; simpl; auto.
+Qed.
+
 (* TODO: develop lemmas like above with Forall-style premises for automatic
    scope-solving. We also need their opposite direction. *)
 
