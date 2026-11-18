@@ -215,6 +215,16 @@ Ltac scope_solver_step :=
   end.
 Ltac scope_solver := repeat scope_solver_step; try lia.
 
+(** Simplifies scoping goals about lists built with `repeat` (length bounds,
+    indexing and mapping). *)
+Ltac repeat_scope :=
+  repeat
+  match goal with
+  | [H : _ < length (repeat _ _) |- _] => rewrite repeat_length in H
+  | |- context C [nth _ (repeat _ _) _] => rewrite nth_repeat_lt; try lia; scope_solver
+  | |- context C [map _ (repeat _ _)] => rewrite map_repeat
+  end.
+
 (** The diverging program `inf` is scoped in any context. *)
 Lemma inf_scope :
   forall Γ, NVAL Γ ⊢ inf.

@@ -7,7 +7,9 @@
 From CoreErlang.FrameStack Require Export Termination.
 Import ListNotations.
 
-(** Because of this, reasoning about preorder relations is enough *)
+(** The relations below are preorders (reflexive and transitive). The
+    following goal shows that a preorder together with its converse is an
+    equivalence relation, thus reasoning about preorders is enough. *)
 Goal forall T : Type, forall R : relation T, Reflexive R -> Transitive R ->
   let R' := fun x y => R x y /\ R y x in Reflexive R' /\ Symmetric R' /\ Transitive R'.
 Proof.
@@ -37,6 +39,9 @@ match e1, e2 with
     Vrel m Hmn details1 details2)
 end.
 
+(** Related frame stacks are closed, well-formed, and terminate for related
+    value sequences, related exceptions, and `RBox` (in at most `n` steps on
+    the left, in any number of steps on the right). *)
 Definition frame_rel (n : nat)
                      (Vrel : forall m, m <= n -> Val -> Val -> Prop)
                      (F1 F2 : FrameStack) : Prop :=
@@ -52,6 +57,8 @@ Definition frame_rel (n : nat)
   /\
   (forall m (Hmn : m <= n), ⟨ F1, RBox ⟩ m ↓ -> ⟨ F2, RBox ⟩ ↓).
 
+(** Related expressions are closed, and they terminate in related frame
+    stacks (in at most `n` steps on the left). *)
 Definition exp_rel (n : nat)
                    (Vrel : forall m, m <= n -> Val -> Val -> Prop)
                    (p1 p2 : Exp)
@@ -65,6 +72,12 @@ Definition exp_rel (n : nat)
 (**
   This definition uses recursion for recursive language elements, and the
   parameter `Vrel` for functions.
+  - Closures are related mainly based on their bodies: the bodies have to be
+    related (for every smaller step index), when the closures are applied to
+    related arguments. In addition, their arities and reference numbers (`id`)
+    have to be equal (value equality, `Val_eqb`, and ordering, `Val_ltb`,
+    compare closures by their reference numbers).
+  - All PIDs are related (similarly to `Val_eqb`, see `Equalities.v`).
 *)
 Fixpoint Vrel_rec (n : nat)
                   (Vrel : forall m, m < n -> Val -> Val -> Prop)
@@ -113,6 +126,8 @@ Fixpoint Vrel_rec (n : nat)
 Definition Vrel : nat -> Val -> Val -> Prop :=
   Fix Wf_nat.lt_wf _ Vrel_rec.
 
+(** The expression, frame stack and exception relations, instantiated with
+    `Vrel`. *)
 Definition Erel (n : nat) (e1 e2 : Exp) : Prop :=
   exp_rel n (fun m _ => Vrel m) e1 e2.
 
@@ -123,6 +138,8 @@ Definition Excrel (n: nat) (ex1 ex2 : Exception) : Prop :=
   exc_rel n (fun m _ => Vrel m) ex1 ex2.
 
 
+(** Related frame identifiers: the same kind of identifier with related
+    values. *)
 Definition IRel (n : nat) (i1 i2 : FrameIdent) : Prop :=
 ICLOSED i1 /\ ICLOSED i2 /\
 match i1, i2 with
@@ -138,9 +155,9 @@ end.
 
 (* --------------------------------------------------------------- *)
 
-(** ξ and η assigns closed expressions to vars in Γ 
-  Basically this says, ξ and η are equivalent pointwise for Γ
-*)
+(** `Vrel_rec` gives the same relation for pointwise equal parameters. This is
+    needed to unfold the fixpoint combinator in the definition of `Vrel` (see
+    `Vrel_Fix_eq`). *)
 Lemma Vrel_rec_pointwise {n : nat} :
   forall (f g : forall m : nat, (m < n)%nat -> Val -> Val -> Prop),
     (forall (m : nat) (p : (m < n)%nat), f m p = g m p) ->
@@ -190,6 +207,7 @@ Proof.
   * auto.
 Qed.
 
+(** Unfolding equation of `Vrel`. *)
 Lemma Vrel_Fix_eq : forall {n : nat} {v1 v2 : Val},
   Vrel n v1 v2
   = 
@@ -201,21 +219,17 @@ Proof.
   trivial.
 Qed.
 
+(** Dependent induction principle for `le`, used to prove downward closure. *)
 Scheme le_dep_ind := Induction for le Sort Prop.
 
-Ltac forall_to_Forall :=
-  match goal with
-  | [H : forall i : nat, i < length _ -> ?P (nth i _ _) |- _] =>
-    apply indexed_to_forall in H
-  end.
-Ltac foralls_to_Foralls :=
-  repeat forall_to_Forall.
-
+(** `fdestruct_scopes` deconstructs the scoping hypotheses (of frames and
+    redexes), and converts the indexed premises into `Forall`s. *)
 Ltac fdestruct_scopes :=
   destruct_scopes;
   foralls_to_Foralls;
   destruct_foralls.
 
+(** Downward closure: the relations hold for every smaller step index. *)
 Lemma Vrel_downclosed :
   forall {n m : nat} {Hmn : m <= n} {v1 v2 : Val},
     Vrel n v1 v2 ->
@@ -293,6 +307,7 @@ Proof.
   Unshelve. 1-2: lia.
 Qed.
 
+(** Related values and expressions are closed. *)
 Lemma Vrel_closed : forall {n : nat} {v1 v2 : Val},
     Vrel n v1 v2 ->
     VALCLOSED v1 /\ VALCLOSED v2.
@@ -356,7 +371,8 @@ Qed.
 
 Global Hint Resolve Erel_closed_r : core.
 
-(** closing substitutions *)
+(** Related closing substitutions: `ξ₁` and `ξ₂` assign closed, pointwise
+    related values to the variables in `Γ`. *)
 Definition Grel (n : nat) (Γ : nat) (ξ₁ ξ₂ : Substitution) : Prop :=
   SUBSCOPE Γ ⊢ ξ₁ ∷ 0 /\ SUBSCOPE Γ ⊢ ξ₂ ∷ 0 /\
   forall x, x < Γ -> 
@@ -366,6 +382,7 @@ Definition Grel (n : nat) (Γ : nat) (ξ₁ ξ₂ : Substitution) : Prop :=
     end.
 
 
+(** Downward closure for lists of values and for closing substitutions. *)
 Lemma Vrel_downclosed_list_biforall : forall vals1 vals2 m n,
   m <= n ->
   list_biforall (Vrel n) vals1 vals2 ->
@@ -391,6 +408,8 @@ Qed.
 
 
 
+(** The relations of open terms: terms related by all related closing
+    substitutions of their scope `Γ`. *)
 Definition Vrel_open (Γ : nat) (v1 v2 : Val) :=
   forall n ξ₁ ξ₂,
   Grel n Γ ξ₁ ξ₂
@@ -410,6 +429,8 @@ Definition Erel_open (Γ : nat) (e1 e2 : Exp) :=
 ->
   Erel n (subst ξ₁ e1) (subst ξ₂ e2).
 
+(** Every closed value is related to itself at step index 0 (the general
+    fundamental property is proved in `Compatibility.v`). *)
 Theorem Vrel_fundamental_0 v :
   VALCLOSED v -> Vrel 0 v v.
 Proof.
@@ -445,6 +466,8 @@ Proof.
     now apply IHv2.
 Qed.
 
+(** Terms related as open terms are scoped in `Γ`; for `Γ = 0`, they are
+    related as closed terms. *)
 Lemma Erel_open_closed : forall {Γ e1 e2},
     Erel_open Γ e1 e2 ->
     forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 ->
@@ -455,7 +478,6 @@ Proof.
   apply H; auto.
   unfold Grel.
   intuition idtac. break_match_goal.
-  (* rewrite Vrel_Fix_eq. unfold Vrel_rec at 1. *)
   specialize (H0 x H1) as P'. rewrite Heqs in P'. clear dependent ξ.
   * by apply Vrel_fundamental_0.
   * specialize (H0 x H1). rewrite Heqs in H0. lia.
@@ -533,6 +555,7 @@ Qed.
 
 Global Hint Resolve Vrel_open_scope_r : core.
 
+(** Downward closure and closedness of related frame stacks. *)
 Lemma Frel_downclosed :
   forall {n m : nat} {Hmn : m <= n} {F1 F2 : FrameStack},
     Frel n F1 F2 ->
@@ -546,6 +569,8 @@ Qed.
 
 Global Hint Resolve Frel_downclosed : core.
 
+(** `downclose_Vrel` proves a `Vrel` goal from a `Vrel` hypothesis with a
+    larger step index. *)
 Ltac downclose_Vrel :=
   match goal with
   | [H : Vrel _ ?a ?b |- Vrel _ ?a ?b] =>
@@ -584,6 +609,7 @@ Qed.
 Global Hint Resolve Frel_closed_r : core.
 
 
+(** Scoping and closedness of lists of related terms. *)
 Lemma biforall_vrel_scoped : forall vals1 vals2 Γ,
   list_biforall (Vrel_open Γ) vals1 vals2 ->
   Forall (fun e => VAL Γ ⊢ e) vals1 /\ Forall (fun e => VAL Γ ⊢ e) vals2.
@@ -628,6 +654,8 @@ Proof.
   * eapply IHvals1; eauto.
 Qed.
 
+(** Constructing related closing substitutions: extension with related
+    values, the identity (for `Γ = 0`), and lists of related values. *)
 Lemma Grel_scons : forall n v1 v2 ξ₁ ξ₂ Γ,
   Grel n Γ ξ₁ ξ₂ -> Vrel n v1 v2 -> Grel n (S Γ) (v1.:ξ₁) (v2.:ξ₂).
 Proof.
@@ -654,7 +682,8 @@ Proof.
   apply Grel_scons; auto.
 Qed.
 
-(* To avoid unnecessary case separations: *)
+(** The possible shapes of related values (to avoid unnecessary case
+    separations); the tactic `Vrel_possibilities` destructs these cases. *)
 Lemma Vrel_possibilities : forall {n v1 v2},
   Vrel n v1 v2 ->
   (v1 = VNil /\ v2 = VNil) \/
@@ -683,6 +712,7 @@ Ltac Vrel_possibilities H0 :=
   apply Vrel_possibilities in H0 as H0'; intuition; destruct_hyps; subst.
 
 
+(** Composing related closing substitutions with lists of related values. *)
 Lemma Grel_list_subst m vl' Γ ξ₁ ξ₂:
   forall vl1 vl2,
   list_biforall (Vrel m) vl1 vl2 ->
@@ -727,6 +757,7 @@ Proof.
   Unshelve. all: exact VNil.
 Qed.
 
+(** The relation of redexes (closed and open), similarly to `Erel`. *)
 Definition Rrel (n : nat) (r1 r2 : Redex) :=
   REDCLOSED r1 /\ REDCLOSED r2 /\
   forall m (Hmn : m <= n) F1 F2, Frel m F1 F2 ->
@@ -736,6 +767,7 @@ Definition Rrel_open (Γ : nat) (r1 r2 : Redex) :=
   forall (n : nat) (ξ₁ ξ₂ : Substitution),
   Grel n Γ ξ₁ ξ₂ -> Rrel n r1.[ξ₁]ᵣ r2.[ξ₂]ᵣ.
 
+(** Downward closure of `Rrel`. *)
 Theorem Rrel_downclosed :
   forall n r1 r2, Rrel n r1 r2 -> forall m, m <= n -> Rrel m r1 r2.
 Proof.
@@ -745,8 +777,11 @@ Proof.
   Unshelve. lia.
 Qed.
 
+(** Induction principle for related values, following their structure.
+    The step index `m` is a parameter (it comes before the motive), thus
+    `induction H using Vrel_ind` does not try to clear it. *)
 Lemma Vrel_ind :
-  forall (P : Val -> Val -> Prop)
+  forall m (P : Val -> Val -> Prop)
   (HNil : P VNil VNil)
   (HLit : forall l, P (VLit l) (VLit l))
   (HPid : forall p1 p2, P (VPid p1) (VPid p2))
@@ -755,7 +790,7 @@ Lemma Vrel_ind :
   (HTuple : forall l l', list_biforall P l l' -> P (VTuple l) (VTuple l'))
   (HMap : forall l l', list_biforall (fun '(a, b) '(a', b') => P a a' /\ P b b') l l' -> P (VMap l) (VMap l'))
   (HBitstring : forall bits, P (VBitstring bits) (VBitstring bits)),
-  forall {m} v1 v2 (IH: Vrel m v1 v2),
+  forall v1 v2 (IH: Vrel m v1 v2),
   P v1 v2.
 Proof.
   intros ? ? ? ? ? ? ? ? ? ?. valinduction; try destruct v2; intros.
@@ -785,6 +820,10 @@ Proof.
       1: apply (H5 (S i)); slia.
 Qed.
 
+(** The relation of patterns: patterns of the same structure, whose binary
+    segments have related sizes (by `vrel`) and the same specifiers. It is
+    parametrised by the value relation, and instantiated with `Vrel` in
+    `Prel`. *)
 Fixpoint Prel_rec (vrel : nat -> Val -> Val -> Prop) (n : nat) (p1 p2 : Pat) :=
   match p1, p2 with
   | PBin l1, PBin l2 =>
@@ -827,6 +866,7 @@ Definition Prel := Prel_rec Vrel.
 Definition Prel_open (Γ : nat) (p1 p2 : Pat) :=
   forall (n : nat) (ξ₁ ξ₂ : Substitution), Grel n Γ ξ₁ ξ₂ → Prel n p1.[ξ₁]ₚ p2.[ξ₂]ₚ.
 
+(** Closedness and scoping of related patterns. *)
 Lemma Prel_closed :
   forall n p1 p2, Prel n p1 p2 -> PATCLOSED p1 /\ PATCLOSED p2.
 Proof.
@@ -909,7 +949,6 @@ Proof.
   apply H; eauto.
   unfold Grel.
   intuition idtac. break_match_goal.
-  (* rewrite Vrel_Fix_eq. unfold Vrel_rec at 1. *)
   specialize (H0 x H1) as P'. rewrite Heqs in P'. clear dependent ξ.
   * by apply Vrel_fundamental_0.
   * specialize (H0 x H1). rewrite Heqs in H0. lia.
@@ -963,6 +1002,7 @@ Proof.
   * eapply IHpats1; eauto.
 Qed.
 
+(** Downward closure of `Prel`. *)
 Lemma Prel_downclosed :
   forall {n m : nat} {Hmn : m <= n} {p1 p2 : Pat},
     Prel n p1 p2 ->
@@ -1018,6 +1058,8 @@ Proof.
   Unshelve. by auto.
 Qed.
 
+(** `Prel_rec` is monotone in its value relation, and it is preserved by
+    substitutions that map related values to related values. *)
 Lemma Prel_rec_weaken :
   forall R Q n p1 p2, Prel_rec R n p1 p2 ->
     (forall p1' p2', R n p1' p2' -> Q n p1' p2') ->

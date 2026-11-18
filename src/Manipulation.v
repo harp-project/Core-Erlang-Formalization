@@ -2187,6 +2187,27 @@ Proof.
     now rewrite scons_substcomp.
 Qed.
 
+(** Substitution commutes with embedding values into expressions. *)
+Lemma map_map_subst :
+  forall l ξ,
+    map (fun x => x.[ξ]) (map VVal l) =
+    map VVal (map (fun x => x.[ξ]ᵥ) l).
+Proof.
+  induction l; intros; simpl; auto.
+  now rewrite IHl.
+Qed.
+
+(** Substituting into a list of closures is the same as substituting into
+    the bodies of the closure definitions (shifting the substitution with the
+    number of definitions and parameters). *)
+Lemma convert_map : forall l ξ, map (substVal ξ) (convert_to_closlist l) =
+                                convert_to_closlist (map (fun '(i, ls, x) => (i, ls, x.[upn (Datatypes.length l + ls) ξ])) l).
+Proof.
+  clear. intros. unfold convert_to_closlist.
+  do 2 rewrite map_map. f_equal.
+  extensionality x. destruct x, p. now simpl.
+Qed.
+
 (**
   This function creates a list of variables from n up to m + n, i.e.,
   `[VVar n; VVar (S n); ... ; VVar (m + n)]`

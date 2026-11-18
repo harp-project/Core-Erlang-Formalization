@@ -364,6 +364,16 @@ Global Hint Resolve closed_ignores_sub_nonval : core.
 
 Global Hint Resolve closed_ignores_sub_pat : core.
 
+(** Substitution does not change a list of closed values. *)
+Lemma map_ignores_sub_val :
+  forall l ξ,
+    Forall (fun x => VALCLOSED x) l ->
+    map (substVal ξ) l = l.
+Proof.
+  induction l; intros; simpl; auto. inv H.
+  rewrite IHl. rewrite closed_ignores_sub_val. all: auto.
+Qed.
+
 
 (** This Theorem says that if an e Exp is scoped in Γ then it is also scoped in (S Γ), a one increment bigger value. So the scoping can be extended. *)
 Theorem Private_scope_ext :
@@ -2873,5 +2883,15 @@ Lemma VTuple_closed_inv :
 Proof.
   intros. inv H. rewrite <- indexed_to_forall in H2. exact H2.
 Qed.
+
+(** A list of `VNil`s is closed. *)
+Lemma closed_Nil_many :
+  forall x, Forall (fun v => VALCLOSED v) (repeat VNil x).
+Proof.
+  intros. induction x; constructor; auto.
+Qed.
+
+#[global]
+Hint Resolve closed_Nil_many : core.
 
 

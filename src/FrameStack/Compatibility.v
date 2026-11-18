@@ -1,10 +1,24 @@
 (**
-  This file proves the compatibility (congruence) properties of logical relations.
+  This file proves the compatibility (congruence) properties of the logical
+  relations defined in `LogRel.v`: each syntactic construct preserves
+  relatedness, both for closed terms (`_compat_closed` lemmas, stated with
+  step indices) and for open terms (`_compat` lemmas, stated with
+  `Erel_open`/`Vrel_open`/`Prel_open`).
+
+  The file contains, in order:
+  - compatibility of the value constructors;
+  - relatedness of pattern matching;
+  - compatibility of the expression constructors;
+  - relatedness of the simulated BIFs and primops (`Rel_eval*` lemmas);
+  - the fundamental property (every well-scoped term is related to itself),
+    for expressions, values, patterns, frame stacks and redexes;
+  - transitivity-like properties (`Erel_trans`, `Vrel_trans`).
 *)
 
 From CoreErlang.FrameStack Require Export LogRel SubstSemanticsLemmas.
 Import ListNotations.
 
+(** Related tuples have pairwise related elements. *)
 Lemma Vrel_Tuple_compat_rev :
   forall m l l',
   Vrel m (VTuple l) (VTuple l') ->
@@ -19,6 +33,7 @@ Proof.
   1: apply (H2 (S i)); slia.
 Qed.
 
+(** Related lists have related heads and tails. *)
 Lemma Vrel_Cons_compat_rev :
   forall m a b c d,
     Vrel m (VCons a b) (VCons c d) -> Vrel m a c /\ Vrel m b d.
@@ -29,6 +44,7 @@ Proof.
   split; rewrite Vrel_Fix_eq; auto.
 Qed.
 
+(** Related maps have pairwise related keys and values. *)
 Lemma Vrel_Map_compat_rev :
   forall m l l',
   Vrel m (VMap l) (VMap l') ->
@@ -45,6 +61,7 @@ Proof.
   1: apply (H3 (S i)); slia.
 Qed.
 
+(** A variable in scope is related to itself. *)
 Lemma Vrel_Var_compat :
   forall Γ n,
   n < Γ ->
@@ -55,8 +72,10 @@ Proof.
   now rewrite Heqs, Heqs0.
 Qed.
 
-Global Hint Resolve Vrel_Var_compat : core.
+#[global]
+Hint Resolve Vrel_Var_compat : core.
 
+(** A function identifier is related to the variable with the same index. *)
 (* TODO NOTE: currently, function arities are not yet checked when doing the substitution, however, this is going to change! *)
 Lemma Vrel_FunId_Var_compat :
   forall Γ n a,
@@ -68,8 +87,10 @@ Proof.
   now rewrite Heqs, Heqs0.
 Qed.
 
-Global Hint Resolve Vrel_FunId_Var_compat : core.
+#[global]
+Hint Resolve Vrel_FunId_Var_compat : core.
 
+(** A variable is related to the function identifier with the same index. *)
 Lemma Vrel_Var_FunId_compat :
   forall Γ n a,
   n < Γ ->
@@ -80,8 +101,11 @@ Proof.
   now rewrite Heqs, Heqs0.
 Qed.
 
-Global Hint Resolve Vrel_Var_FunId_compat : core.
+#[global]
+Hint Resolve Vrel_Var_FunId_compat : core.
 
+(** Function identifiers with the same index are related (regardless of
+    their arities). *)
 (* TODO NOTE: currently, function arities are not yet checked when doing the substitution, however, this is going to change! *)
 Lemma Vrel_FunId_compat :
   forall Γ n a1 a2,
@@ -93,8 +117,10 @@ Proof.
   now rewrite Heqs, Heqs0.
 Qed.
 
-Global Hint Resolve Vrel_FunId_compat : core.
+#[global]
+Hint Resolve Vrel_FunId_compat : core.
 
+(** Literals are related to themselves. *)
 Lemma Vrel_Lit_compat_closed :
   forall m l,
   Vrel m (VLit l) (VLit l).
@@ -102,8 +128,10 @@ Proof.
   intros. rewrite Vrel_Fix_eq. unfold Vrel_rec. repeat constructor.
 Qed.
 
-Global Hint Resolve Vrel_Lit_compat_closed : core.
+#[global]
+Hint Resolve Vrel_Lit_compat_closed : core.
 
+(** Literals are related to themselves (open version). *)
 Lemma Vrel_Lit_compat :
   forall Γ l,
   Vrel_open Γ (VLit l) (VLit l).
@@ -111,8 +139,10 @@ Proof.
   unfold Vrel_open. intros. simpl. auto.
 Qed.
 
-Global Hint Resolve Vrel_Lit_compat : core.
+#[global]
+Hint Resolve Vrel_Lit_compat : core.
 
+(** Any two PIDs are related. *)
 Lemma Vrel_Pid_compat_closed :
   forall m p1 p2,
   Vrel m (VPid p1) (VPid p2).
@@ -120,8 +150,10 @@ Proof.
   intros. rewrite Vrel_Fix_eq. unfold Vrel_rec. repeat constructor.
 Qed.
 
-Global Hint Resolve Vrel_Pid_compat_closed : core.
+#[global]
+Hint Resolve Vrel_Pid_compat_closed : core.
 
+(** Any two PIDs are related (open version). *)
 Lemma Vrel_Pid_compat :
   forall Γ p1 p2,
   Vrel_open Γ (VPid p1) (VPid p2).
@@ -129,40 +161,58 @@ Proof.
   unfold Vrel_open. intros. simpl. auto.
 Qed.
 
-Global Hint Resolve Vrel_Pid_compat : core.
+#[global]
+Hint Resolve Vrel_Pid_compat : core.
 
+(** The empty list is related to itself. *)
 Lemma Vrel_Nil_compat_closed:
   forall m, Vrel m VNil VNil.
 Proof.
   split; constructor; constructor.
 Qed.
 
-Global Hint Resolve Vrel_Nil_compat_closed : core.
+#[global]
+Hint Resolve Vrel_Nil_compat_closed : core.
 
+(** The empty list is related to itself (open version). *)
 Lemma Vrel_Nil_compat :
   forall Γ, Vrel_open Γ VNil VNil.
 Proof.
   unfold Vrel_open. intros. simpl. auto.
 Qed.
 
-Global Hint Resolve Vrel_Nil_compat : core.
+#[global]
+Hint Resolve Vrel_Nil_compat : core.
 
+(** A list of `VNil`s is related to itself pairwise. It is typically used
+    to instantiate the bound variables of a body with dummy values. *)
+Lemma Vrel_Nil_many :
+  forall m x, list_biforall (Vrel m) (repeat VNil x) (repeat VNil x).
+Proof.
+  intros. induction x; constructor; auto.
+Qed.
+
+(** Bitstrings are related to themselves. *)
 Lemma Vrel_Bitstring_compat_closed:
   forall m bits, Vrel m (VBitstring bits) (VBitstring bits).
 Proof.
   split; constructor; constructor.
 Qed.
 
-Global Hint Resolve Vrel_Bitstring_compat_closed : core.
+#[global]
+Hint Resolve Vrel_Bitstring_compat_closed : core.
 
+(** Bitstrings are related to themselves (open version). *)
 Lemma Vrel_Bitstring_compat :
   forall Γ bits, Vrel_open Γ (VBitstring bits) (VBitstring bits).
 Proof.
   unfold Vrel_open. intros. simpl. auto.
 Qed.
 
-Global Hint Resolve Vrel_Bitstring_compat : core.
+#[global]
+Hint Resolve Vrel_Bitstring_compat : core.
 
+(** List construction preserves relatedness. *)
 Lemma Vrel_Cons_compat_closed :
   forall m v1 v1' v2 v2', Vrel m v1 v1' -> Vrel m v2 v2'
  ->
@@ -178,8 +228,10 @@ Proof.
   Unshelve. all: lia.
 Qed.
 
-Global Hint Resolve Vrel_Cons_compat_closed : core.
+#[global]
+Hint Resolve Vrel_Cons_compat_closed : core.
 
+(** List construction preserves relatedness (open version). *)
 Lemma Vrel_Cons_compat :
   forall Γ v1 v1' v2 v2', Vrel_open Γ v1 v1' -> Vrel_open Γ v2 v2'
  ->
@@ -189,8 +241,11 @@ Proof.
   apply Vrel_Cons_compat_closed; [apply H | apply H0]; auto.
 Qed.
 
-Global Hint Resolve Vrel_Cons_compat : core.
+#[global]
+Hint Resolve Vrel_Cons_compat : core.
 
+(** Simplifies the length of a closure list created by `convert_to_closlist`
+    (possibly appended to another list), in the goal or in a hypothesis. *)
 Ltac simpl_convert_length :=
   match goal with
   | |- context G [Datatypes.length ((convert_to_closlist _) ++ _) ] =>
@@ -203,6 +258,8 @@ Ltac simpl_convert_length :=
     unfold convert_to_closlist in H; rewrite length_map,length_map in H
   end.
 
+(** Closures with the same identifier and arity, related bodies, and related
+    environment extensions are related (open version). *)
 Lemma Vrel_Clos_compat :
   forall Γ ext1 ext2 id1 id2 vl1 vl2 b1 b2,
   vl1 = vl2 -> id1 = id2 ->
@@ -442,8 +499,71 @@ Proof.
   repeat simpl_convert_length. lia.
 Qed.
 
-Global Hint Resolve Vrel_Clos_compat : core.
+#[global]
+Hint Resolve Vrel_Clos_compat : core.
 
+(** Closed closures with the same identifier and arity are related, if their
+    bodies are related for all related arguments at all smaller indices. *)
+Lemma Vrel_Clos_compat_closed :
+  forall n ext1 ext2 id1 id2 vl1 vl2 e1 e2,
+  vl1 = vl2 -> id1 = id2 ->
+  Forall (fun '(id1, vl1, e1) => EXP length ext1 + vl1 ⊢ e1) ext1 ->
+  Forall (fun '(id1, vl1, e1) => EXP length ext2 + vl1 ⊢ e1) ext2 ->
+  (forall m (Hmn : m <= n) vl vl',
+        length vl = vl1 ->
+        list_biforall (Vrel m) vl vl' ->
+        Erel m e1.[list_subst (convert_to_closlist ext1 ++ vl) idsubst]
+               e2.[list_subst (convert_to_closlist ext2 ++ vl') idsubst]) ->
+  Vrel n (VClos ext1 id1 vl1 e1) (VClos ext2 id2 vl2 e2).
+Proof.
+  intros. rewrite Vrel_Fix_eq. simpl. split. 2: split.
+  1: {
+    constructor.
+    * intros. do 2 rewrite map_nth with (d := (0, 0, ˝VNil)).
+      rewrite indexed_to_forall with (def := (0, 0, ˝VNil)) in H1.
+      apply H1 in H4. destruct nth, p. cbn. now rewrite Nat.add_0_r.
+    * specialize (H3 n ltac:(lia) (repeat VNil vl1) (repeat VNil vl1)).
+      replace (length ext1 + vl1 + 0) with
+              (length (convert_to_closlist ext1 ++ repeat VNil vl1)).
+      2: { unfold convert_to_closlist.
+           rewrite length_app, length_map, repeat_length. lia. }
+      apply subst_implies_list_scope.
+      apply Forall_app. split.
+      - apply closlist_scope. intros.
+        do 2 rewrite map_nth with (d := (0, 0, ˝VNil)).
+        rewrite indexed_to_forall with (def := (0, 0, ˝VNil)) in H1.
+        apply H1 in H4. destruct nth, p. now rewrite Nat.add_0_r.
+      - now apply Forall_repeat.
+      - apply Erel_closed_l in H3; auto.
+        now rewrite repeat_length.
+        clear. induction vl1; simpl; auto.
+  }
+  1: {
+    constructor.
+    * intros. do 2 rewrite map_nth with (d := (0, 0, ˝VNil)).
+      rewrite indexed_to_forall with (def := (0, 0, ˝VNil)) in H2.
+      apply H2 in H4. destruct nth, p. cbn. now rewrite Nat.add_0_r.
+    * specialize (H3 n ltac:(lia) (repeat VNil vl2) (repeat VNil vl2)).
+      replace (length ext2 + vl2 + 0) with
+              (length (convert_to_closlist ext2 ++ repeat VNil vl2)).
+      2: { unfold convert_to_closlist.
+           rewrite length_app, length_map, repeat_length. lia. }
+      apply subst_implies_list_scope.
+      apply Forall_app. split.
+      - apply closlist_scope. intros.
+        do 2 rewrite map_nth with (d := (0, 0, ˝VNil)).
+        rewrite indexed_to_forall with (def := (0, 0, ˝VNil)) in H2.
+        apply H2 in H4. destruct nth, p. now rewrite Nat.add_0_r.
+      - now apply Forall_repeat.
+      - apply Erel_closed_r in H3; auto.
+        now rewrite repeat_length.
+        clear. induction vl2; simpl; auto.
+  }
+  split; auto. split; auto. subst.
+  intros. apply H3. lia. lia. auto.
+Qed.
+
+(** Tuples with pairwise related elements are related. *)
 Lemma Vrel_Tuple_compat_closed :
   forall m l l', list_biforall (Vrel m) l l'
  ->
@@ -465,8 +585,10 @@ Proof.
     apply IHlist_biforall.
 Qed.
 
-Global Hint Resolve Vrel_Tuple_compat_closed : core.
+#[global]
+Hint Resolve Vrel_Tuple_compat_closed : core.
 
+(** Tuples with pairwise related elements are related (open version). *)
 Lemma Vrel_Tuple_compat :
   forall Γ l l', list_biforall (Vrel_open Γ) l l'
 ->
@@ -477,8 +599,10 @@ Proof.
   eapply biforall_map. exact H. intros. auto.
 Qed.
 
-Global Hint Resolve Vrel_Tuple_compat : core.
+#[global]
+Hint Resolve Vrel_Tuple_compat : core.
 
+(** Maps with pairwise related keys and values are related. *)
 Lemma Vrel_Map_compat_closed :
   forall m l l',
   list_biforall (fun '(v1, v2) '(v1', v2') => Vrel m v1 v1' /\ Vrel m v2 v2') l l'
@@ -505,8 +629,10 @@ Proof.
     apply IHlist_biforall.
 Qed.
 
-Global Hint Resolve Vrel_Map_compat_closed : core.
+#[global]
+Hint Resolve Vrel_Map_compat_closed : core.
 
+(** Maps with pairwise related keys and values are related (open version). *)
 Lemma Vrel_Map_compat :
   forall Γ l l',
   list_biforall (fun '(v1, v2) '(v1', v2') => Vrel_open Γ v1 v1' /\ Vrel_open Γ v2 v2') l l'
@@ -518,11 +644,10 @@ Proof.
   eapply biforall_map. exact H. intros. destruct x, y, H1. split; auto.
 Qed.
 
-Global Hint Resolve Vrel_Map_compat : core.
-
 #[global]
-Hint Constructors list_biforall : core.
+Hint Resolve Vrel_Map_compat : core.
 
+(** Related values are related as expressions. *)
 Lemma Erel_Val_compat_closed :
   forall {n v v'},
     Vrel n v v' ->
@@ -583,8 +708,10 @@ Unshelve.
   all: lia.
 Qed.
 
-Global Hint Resolve Erel_Val_compat_closed : core.
+#[global]
+Hint Resolve Erel_Val_compat_closed : core.
 
+(** Related values are related as expressions (open version). *)
 Lemma Erel_Val_compat :
   forall {Γ v v'},
     Vrel_open Γ v v' ->
@@ -595,8 +722,11 @@ Proof.
   simpl. now apply Erel_Val_compat_closed, H.
 Qed.
 
-Global Hint Resolve Erel_Val_compat : core.
+#[global]
+Hint Resolve Erel_Val_compat : core.
 
+(** If a pattern matches a value, then a related pattern matches a related
+    value, and the bound values are pairwise related. *)
 Lemma match_pattern_Vrel : forall p1 p2 v1 v2 n,
   Vrel n v1 v2 ->
   Prel n p1 p2 ->
@@ -775,6 +905,8 @@ Qed.
 
 
 (* Corollaries for the unnamed helper functions *)
+(** The inlined fixpoint of `match_pattern` that matches lists of patterns
+    (e.g., in tuple patterns) preserves relatedness. *)
 Corollary match_pattern_list_fix : forall pl1 pl2 vl1 vl2 n,
   list_biforall (Vrel n) vl1 vl2 ->
   list_biforall (Prel n) pl1 pl2 ->
@@ -824,6 +956,9 @@ Proof.
     by apply biforall_app.
 Qed.
 
+(** The map-pattern version of `match_pattern_list_fix`: the inlined
+    fixpoint of `match_pattern` that matches the key-value pattern pairs of a
+    map pattern preserves relatedness. *)
 Corollary match_pattern_map_fix : forall pl1 pl2 vl1 vl2 n,
   list_biforall (fun '(v1, v2) '(v1', v2') => Vrel n v1 v1' /\ Vrel n v2 v2') vl1 vl2 ->
   list_biforall (fun '(v1, v2) '(v1', v2') => Prel n v1 v1' /\ Prel n v2 v2') pl1 pl2 ->
@@ -877,6 +1012,7 @@ Proof.
     by repeat apply biforall_app.
 Qed.
 
+(** `match_pattern_Vrel` lifted to lists of patterns and values. *)
 Corollary match_pattern_list_Vrel : forall pl1 pl2 vl1 vl2 n,
   list_biforall (Vrel n) vl1 vl2 ->
   list_biforall (Prel n) pl1 pl2 ->
@@ -888,8 +1024,7 @@ Proof.
   induction pl1; destruct pl2; intros. 2-3: inv H0.
   * inv H. eexists. split. reflexivity.
     inv H1. by auto.
-  * unfold match_and in *.
-    simpl in H1. inv H0.
+  * simpl in H1. unfold match_and in *. inv H0.
     repeat break_match_hyp; try congruence. inv H1. inv H.
     pose proof match_pattern_Vrel _ _ _ _ _ H2 H5 _ Heqm as [p1l [Heq Hall]].
     specialize (IHpl1 _ _ _ _ H4 H7 _ Heqm0) as [p2l [Heq2 Hall2]]. clear Heqm0.
@@ -906,6 +1041,8 @@ Qed.
   matching result (or match_pattern_Vrel, or the helpers above), and rewrite
   with it - before another pattern matching.
  *)
+(** If a pattern does not match a value, then a related pattern does not
+    match a related value either. *)
 Lemma nomatch_pattern_Vrel : forall p1 p2 v1 v2 n,
   Vrel n v1 v2 ->
   Prel n p1 p2 ->
@@ -1160,6 +1297,7 @@ Proof.
               reflexivity. assumption.
 Qed.
 
+(** `nomatch_pattern_Vrel` lifted to lists of patterns and values. *)
 Corollary nomatch_pattern_list_Vrel : forall pl1 pl2 vl1 vl2 n,
   list_biforall (Vrel n) vl1 vl2 ->
   list_biforall (Prel n) pl1 pl2 ->
@@ -1167,16 +1305,16 @@ Corollary nomatch_pattern_list_Vrel : forall pl1 pl2 vl1 vl2 n,
 Proof.
   intros pl1 pl2 vl1 vl2 n H H0. revert vl1 vl2 H. induction H0; simpl; intros.
   * inv H. now auto.
-  * inv H1.
+  * inversion H1 as [|v1 v2 vs1 vs2 Hv Hvs]; subst; simpl in *.
     - reflexivity.
-    - break_match_hyp; try congruence.
-      + eapply match_pattern_Vrel in Heqm as [? [D Hl1]]. rewrite D.
-        2-3: eassumption.
-        break_match_hyp; try congruence.
-        eapply IHlist_biforall in Heqm. by rewrite Heqm.
-        assumption.
-      + eapply nomatch_pattern_Vrel in Heqm. by rewrite Heqm.
-        all: eassumption.
+    - unfold match_and in *.
+      destruct (match_pattern hd v1) eqn:Hp, (match_pattern_list tl vs1) eqn:Hl; try congruence.
+      + pose proof (match_pattern_Vrel _ _ _ _ _ Hv H _ Hp) as [? [Hp' _]].
+        rewrite Hp', (IHlist_biforall _ _ Hvs Hl). reflexivity.
+      + pose proof (match_pattern_list_Vrel _ _ _ _ _ Hvs H0 _ Hl) as [? [Hl' _]].
+        rewrite (nomatch_pattern_Vrel _ _ _ _ _ Hv H Hp), Hl'. reflexivity.
+      + rewrite (nomatch_pattern_Vrel _ _ _ _ _ Hv H Hp), (IHlist_biforall _ _ Hvs Hl).
+        reflexivity.
 Qed.
 
 (** Related patterns bind the same number of pattern variables. *)
@@ -1213,6 +1351,7 @@ Proof.
       simpl in *. by rewrite H_1, H_3.
 Qed.
 
+(** Pairwise related pattern lists bind the same number of variables. *)
 Corollary PatListVars_Prel_biforall :
   forall n l1 l2, list_biforall (Prel n) l1 l2 -> PatListVars l1 = PatListVars l2.
 Proof.
@@ -1223,6 +1362,7 @@ Proof.
     reflexivity.
 Qed.
 
+(** Pairwise related open pattern lists bind the same number of variables. *)
 Corollary PatListVars_Prel_open_biforall :
   forall Γ l1 l2, list_biforall (Prel_open Γ) l1 l2 -> PatListVars l1 = PatListVars l2.
 Proof.
@@ -1240,6 +1380,9 @@ Proof.
   * clear. induction Γ; simpl; constructor; auto.
 Qed.
 
+(** `case` expressions are related, if their scrutinees are related, and
+    their clauses have related patterns, and related guards and bodies for
+    all related values bound by the patterns. *)
 Lemma Erel_Case_compat_closed : forall n e1 e1' l l',
     Erel n e1 e1' ->
     list_biforall (
@@ -1269,8 +1412,7 @@ Proof.
   1-6: pose proof (repeat_length VNil (PatListVars p1)) as Pl.
   1-6: pose proof (Forall_repeat (fun v => VALCLOSED v) VNil (PatListVars p1) ltac:(constructor)) as Fr.
   1-6: try rewrite Nat.add_0_r.
-  1-6: assert (list_biforall (Vrel 0) (repeat VNil (PatListVars p1)) (repeat VNil (PatListVars p1))) as H'H by
-    (clear; induction (PatListVars p1); simpl; constructor; auto).
+  1-6: pose proof (Vrel_Nil_many 0 (PatListVars p1)) as H'H.
   1-6: apply H0 in H'H as [H'1 H'2]; [|lia|now rewrite repeat_length].
   1-6: assert (list_biforall (Prel 0) p1 p2) as Hprel by (apply H0; lia).
   1-6: pose proof PatListVars_Prel_biforall _ _ _ Hprel as Pl2.
@@ -1301,8 +1443,7 @@ Proof.
   1-2: pose proof (repeat_length VNil (PatListVars p1)) as Pl.
   1-2: pose proof (Forall_repeat (fun v => VALCLOSED v) VNil (PatListVars p1) ltac:(constructor)) as Fr.
   1-2: try rewrite Nat.add_0_r.
-  1-2: assert (list_biforall (Vrel 0) (repeat VNil (PatListVars p1)) (repeat VNil (PatListVars p1))) as H'H by
-    (clear; induction (PatListVars p1); simpl; constructor; auto).
+  1-2: pose proof (Vrel_Nil_many 0 (PatListVars p1)) as H'H.
   1-2: assert (list_biforall (Prel 0) p1 p2) as Hprel by (apply H0; lia).
   1-2: apply H0 in H'H as [H'1 H'2]; [|lia|now rewrite repeat_length].
   1-2: pose proof PatListVars_Prel_biforall _ _ _ Hprel as Pl2.
@@ -1352,8 +1493,7 @@ Proof.
       1-2: pose proof (repeat_length VNil (PatListVars p1')) as Pl.
       1-2: pose proof (Forall_repeat (fun v => VALCLOSED v) VNil (PatListVars p1') ltac:(constructor)) as Fr.
       1-2: try rewrite Nat.add_0_r.
-      1-2: assert (list_biforall (Vrel 0) (repeat VNil (PatListVars p1')) (repeat VNil (PatListVars p1'))) as H'H by
-        (clear; induction (PatListVars p1'); simpl; constructor; auto).
+      1-2: pose proof (Vrel_Nil_many 0 (PatListVars p1')) as H'H.
       1-2: assert (list_biforall (Prel 0) p1' p2') as Hprel by (apply H0; lia).
       1-2: apply H0 in H'H as [H'1 H'2]; [|lia|now rewrite repeat_length].
       1-2: pose proof PatListVars_Prel_biforall _ _ _ Hprel as Pl2.
@@ -1374,18 +1514,24 @@ Proof.
            lia.
            fold (Frel k1 F1 F2). eapply Frel_downclosed. exact H1.
            Unshelve. lia.
-        ** (* false guard *)
-           inv H3. inv H8.
-           destruct hd'; simpl in H6; destruct H6 as [_ [_ H6]];
-           try contradiction.
-           subst.
-           eapply IHlist_biforall in H13 as [k4 D].
-           eexists. constructor. exact D.
-           lia.
+        ** (* guard is not true *)
+           inversion H3 as [|? v' ? ? Hvv Hnil]; subst. inversion Hnil; subst.
+           (* the related guard value is not true either *)
+           assert (v' <> VLit "true"%string) as Hneq. {
+             intro. subst v'. rewrite Vrel_Fix_eq in Hvv.
+             destruct v; destruct Hvv as [_ [_ Hvv]]; try contradiction.
+             subst. contradiction.
+           }
+           edestruct IHlist_biforall as [Hval _].
+           1: lia.
            2: exact H1.
-           1-2: lia.
-           eapply biforall_impl. 2: exact H2.
-           intros. eapply Vrel_downclosed. exact H4. Unshelve. lia.
+           1: lia.
+           edestruct Hval as [k4 D].
+           3: eassumption.
+           1: lia.
+           1: { eapply biforall_impl. 2: exact H2. intros. eapply Vrel_downclosed. eassumption. }
+           eexists. eapply step_case_false. exact Hneq. exact D.
+           Unshelve. lia.
       + (* exception *)
         intros. inv H4. eapply H1 in H10 as [k4 D]. eexists. constructor.
         reflexivity.
@@ -1416,8 +1562,10 @@ Qed.
     reasoning about scopes is long and repetitive.
     reasoning about the evaluation is quite simple, and nice. *)
 
-Global Hint Resolve Erel_Case_compat_closed : core.
+#[global]
+Hint Resolve Erel_Case_compat_closed : core.
 
+(** `case` expressions preserve relatedness (open version). *)
 Lemma Erel_Case_compat : forall Γ e1 e1' l l',
   Erel_open Γ e1 e1' ->
   list_biforall (
@@ -1469,9 +1617,11 @@ Proof.
  Unshelve. all: lia.
 Qed.
 
-Global Hint Resolve Erel_Case_compat : core.
+#[global]
+Hint Resolve Erel_Case_compat : core.
 
 
+(** A variable in scope is related to itself as an expression. *)
 Lemma Erel_Var_compat :
   forall Γ n,
     n < Γ ->
@@ -1480,8 +1630,10 @@ Proof.
   auto.
 Qed.
 
-Global Hint Resolve Erel_Var_compat : core.
+#[global]
+Hint Resolve Erel_Var_compat : core.
 
+(** Function identifiers with the same index are related as expressions. *)
 (* TODO NOTE: currently, function arities are not yet checked when doing the substitution, however, this is going to change! *)
 Lemma Erel_FunId_compat :
   forall Γ n a,
@@ -1491,8 +1643,10 @@ Proof.
   auto.
 Qed.
 
-Global Hint Resolve Erel_FunId_compat : core.
+#[global]
+Hint Resolve Erel_FunId_compat : core.
 
+(** Literals are related to themselves as expressions. *)
 Lemma Erel_Lit_compat :
   forall Γ l,
     Erel_open Γ (˝VLit l) (˝VLit l).
@@ -1500,8 +1654,11 @@ Proof.
   auto.
 Qed.
 
-Global Hint Resolve Erel_Lit_compat : core.
+#[global]
+Hint Resolve Erel_Lit_compat : core.
 
+(** Function expressions with the same arity and related bodies are
+    related. *)
 Lemma Erel_Fun_compat :
   forall Γ (vl vl' : nat) b b',
     vl = vl' ->
@@ -1529,8 +1686,11 @@ Proof.
   Unshelve. lia.
 Qed.
 
-Global Hint Resolve Erel_Fun_compat : core.
+#[global]
+Hint Resolve Erel_Fun_compat : core.
 
+(** `let` expressions with related bound expressions, and related bodies
+    for all related bound values are related. *)
 Lemma Erel_Let_compat_closed :
   forall n x y (e2 e2' : Exp), x = y ->
     (forall m (Hmn : m <= n) vl vl',
@@ -1545,9 +1705,7 @@ Proof.
   intros n y x e2 e2' Hs. subst. intros.
   destruct (Erel_closed H0) as [IsClosed_e1 IsClosed_e2].
   unfold Erel, exp_rel.
-  assert (list_biforall (Vrel 0) (repeat VNil x) (repeat VNil x)) as H'H. {
-    clear. induction x; simpl; constructor; auto.
-  }
+  pose proof (Vrel_Nil_many 0 x) as H'H.
   epose proof (H 0 ltac:(lia) (repeat VNil x) (repeat VNil x) _ H'H) as H'.
   Unshelve.
   2: { now rewrite repeat_length. }
@@ -1598,9 +1756,10 @@ Proof.
   all: lia.
 Qed.
 
-Global Hint Resolve Erel_Let_compat_closed : core.
+#[global]
+Hint Resolve Erel_Let_compat_closed : core.
 
-
+(** `let` expressions preserve relatedness (open version). *)
 Lemma Erel_Let_compat :
   forall Γ x x' (e1 e1' e2 e2': Exp),
     x = x' ->
@@ -1635,8 +1794,10 @@ Proof.
   lia.
 Qed.
 
-Global Hint Resolve Erel_Let_compat : core.
+#[global]
+Hint Resolve Erel_Let_compat : core.
 
+(** Sequencing preserves relatedness. *)
 Lemma Erel_Seq_compat_closed :
   forall m (e1 e1' e2 e2': Exp),
     Erel m e1 e1' ->
@@ -1673,8 +1834,10 @@ Unshelve.
   all:lia.
 Qed.
 
-Global Hint Resolve Erel_Seq_compat_closed : core.
+#[global]
+Hint Resolve Erel_Seq_compat_closed : core.
 
+(** Sequencing preserves relatedness (open version). *)
 Lemma Erel_Seq_compat :
   forall Γ (e1 e1' e2 e2': Exp),
   Erel_open Γ e1 e1' ->
@@ -1685,8 +1848,12 @@ Proof.
   apply Erel_Seq_compat_closed; auto.
 Qed.
 
-Global Hint Resolve Erel_Seq_compat : core.
+#[global]
+Hint Resolve Erel_Seq_compat : core.
 
+(** `try` expressions are related, if their protected expressions are
+    related, and their success and exception handler bodies are related for
+    all related bound values. *)
 Lemma Erel_Try_compat_closed :
   forall n x x' (e2 e2' : Exp), x = x' ->
     (forall m (Hmn : m <= n) vl vl',
@@ -1708,12 +1875,8 @@ Proof.
   subst. intros.
   destruct (Erel_closed He1) as [IsClosed_e1 IsClosed_e2].
   unfold Erel, exp_rel.
-  assert (list_biforall (Vrel 0) (repeat VNil x') (repeat VNil x')) as H'xs. {
-    clear. induction x'; simpl; constructor; auto.
-  }
-  assert (list_biforall (Vrel 0) (repeat VNil y') (repeat VNil y')) as H'ys. {
-    clear. induction y'; simpl; constructor; auto.
-  }
+  pose proof (Vrel_Nil_many 0 x') as H'xs.
+  pose proof (Vrel_Nil_many 0 y') as H'ys.
   epose proof (He2 0 ltac:(lia) (repeat VNil x') (repeat VNil x') _ H'xs) as H'.
   epose proof (He3 0 ltac:(lia) (repeat VNil y') (repeat VNil y') _ H'ys) as H''.
   Unshelve.
@@ -1785,8 +1948,10 @@ Unshelve.
   all: lia.
 Qed.
 
-Global Hint Resolve Erel_Try_compat_closed : core.
+#[global]
+Hint Resolve Erel_Try_compat_closed : core.
 
+(** `try` expressions preserve relatedness (open version). *)
 Lemma Erel_Try_compat :
   forall Γ x x' y y' (e1 e1' e2 e2' e3 e3' : Exp),
     x = x' -> y = y' ->
@@ -1840,8 +2005,11 @@ Unshelve.
   all: lia.
 Qed.
 
-Global Hint Resolve Erel_Try_compat : core.
+#[global]
+Hint Resolve Erel_Try_compat : core.
 
+(** `letrec` expressions are related, if their bodies are related after
+    substituting the (well-scoped) recursive closures. *)
 (* TODO: 0 identifiers are going to change *)
 Lemma Erel_LetRec_compat_closed :
   forall n l l' (e e' : Exp) m (Hmn : m <= n),
@@ -1908,67 +2076,11 @@ Proof.
   lia.
 Qed.
 
-Global Hint Resolve Erel_LetRec_compat_closed : core.
+#[global]
+Hint Resolve Erel_LetRec_compat_closed : core.
 
-Lemma Vrel_Clos_compat_closed :
-  forall n ext1 ext2 id1 id2 vl1 vl2 e1 e2,
-  vl1 = vl2 -> id1 = id2 ->
-  Forall (fun '(id1, vl1, e1) => EXP length ext1 + vl1 ⊢ e1) ext1 ->
-  Forall (fun '(id1, vl1, e1) => EXP length ext2 + vl1 ⊢ e1) ext2 ->
-  (forall m (Hmn : m <= n) vl vl',
-        length vl = vl1 ->
-        list_biforall (Vrel m) vl vl' ->
-        Erel m e1.[list_subst (convert_to_closlist ext1 ++ vl) idsubst]
-               e2.[list_subst (convert_to_closlist ext2 ++ vl') idsubst]) ->
-  Vrel n (VClos ext1 id1 vl1 e1) (VClos ext2 id2 vl2 e2).
-Proof.
-  intros. rewrite Vrel_Fix_eq. simpl. split. 2: split.
-  1: {
-    constructor.
-    * intros. do 2 rewrite map_nth with (d := (0, 0, ˝VNil)).
-      rewrite indexed_to_forall with (def := (0, 0, ˝VNil)) in H1.
-      apply H1 in H4. destruct nth, p. cbn. now rewrite Nat.add_0_r.
-    * specialize (H3 n ltac:(lia) (repeat VNil vl1) (repeat VNil vl1)).
-      replace (length ext1 + vl1 + 0) with
-              (length (convert_to_closlist ext1 ++ repeat VNil vl1)).
-      2: { unfold convert_to_closlist.
-           rewrite length_app, length_map, repeat_length. lia. }
-      apply subst_implies_list_scope.
-      apply Forall_app. split.
-      - apply closlist_scope. intros.
-        do 2 rewrite map_nth with (d := (0, 0, ˝VNil)).
-        rewrite indexed_to_forall with (def := (0, 0, ˝VNil)) in H1.
-        apply H1 in H4. destruct nth, p. now rewrite Nat.add_0_r.
-      - now apply Forall_repeat.
-      - apply Erel_closed_l in H3; auto.
-        now rewrite repeat_length.
-        clear. induction vl1; simpl; auto.
-  }
-  1: {
-    constructor.
-    * intros. do 2 rewrite map_nth with (d := (0, 0, ˝VNil)).
-      rewrite indexed_to_forall with (def := (0, 0, ˝VNil)) in H2.
-      apply H2 in H4. destruct nth, p. cbn. now rewrite Nat.add_0_r.
-    * specialize (H3 n ltac:(lia) (repeat VNil vl2) (repeat VNil vl2)).
-      replace (length ext2 + vl2 + 0) with
-              (length (convert_to_closlist ext2 ++ repeat VNil vl2)).
-      2: { unfold convert_to_closlist.
-           rewrite length_app, length_map, repeat_length. lia. }
-      apply subst_implies_list_scope.
-      apply Forall_app. split.
-      - apply closlist_scope. intros.
-        do 2 rewrite map_nth with (d := (0, 0, ˝VNil)).
-        rewrite indexed_to_forall with (def := (0, 0, ˝VNil)) in H2.
-        apply H2 in H4. destruct nth, p. now rewrite Nat.add_0_r.
-      - now apply Forall_repeat.
-      - apply Erel_closed_r in H3; auto.
-        now rewrite repeat_length.
-        clear. induction vl2; simpl; auto.
-  }
-  split; auto. split; auto. subst.
-  intros. apply H3. lia. lia. auto.
-Qed.
-
+(** `letrec` expressions with the same arities, related function bodies and
+    related bodies are related (open version). *)
 Lemma Erel_LetRec_compat :
   forall Γ l l' (e e': Exp), length l = length l' ->
     list_biforall (fun '(v, e) '(v', e') =>
@@ -2058,8 +2170,10 @@ Proof.
     destruct nth, nth, H0; subst; split; auto.
 Qed.
 
-Global Hint Resolve Erel_LetRec_compat : core.
+#[global]
+Hint Resolve Erel_LetRec_compat : core.
 
+(** List construction expressions preserve relatedness. *)
 Lemma Erel_Cons_compat_closed :
   forall m e1 e1' e2 e2', Erel m e1 e1' -> Erel m e2 e2'
  ->
@@ -2112,8 +2226,10 @@ Proof.
   }
 Qed.
 
-Global Hint Resolve Erel_Cons_compat_closed : core.
+#[global]
+Hint Resolve Erel_Cons_compat_closed : core.
 
+(** List construction expressions preserve relatedness (open version). *)
 Lemma Erel_Cons_compat :
   forall Γ v1 v1' v2 v2', Erel_open Γ v1 v1' -> Erel_open Γ v2 v2'
  ->
@@ -2122,27 +2238,11 @@ Proof.
   unfold Erel_open. intros. simpl. apply Erel_Cons_compat_closed; [apply H | apply H0]; auto.
 Qed.
 
-Global Hint Resolve Erel_Cons_compat : core.
+#[global]
+Hint Resolve Erel_Cons_compat : core.
 
-
-(* 
-NOTE: does not work because of the ordering. We need to restrict it to
-values that are inserted to the same position
-
-(* Maps.v *)
-Lemma map_insert_biprop :
-  forall (P : Val -> Val -> Prop)
-    (l l' : list (Val * Val)) (k v k' v' : Val),
-      P k k' -> P v v' ->
-      list_biforall (fun '(v1, v2) '(v1', v2') => P v1 v1' /\ P v2 v2') l l' ->
-  list_biforall (fun '(v1, v2) '(v1', v2') => P v1 v1' /\ P v2 v2')
-  (map_insert k v l) (map_insert k' v' l').
-Proof.
-  intros. induction H1; simpl.
-  * constructor; auto.
-  * destruct hd, hd'. 
-Abort. *)
-
+(** Related values are equal according to `Val_eqb` (which treats all PIDs
+    and closures with the same id as equal). *)
 Lemma Vrel_Val_eqb m v v' :
   Vrel m v v' ->
   v =ᵥ v' = true.
@@ -2151,7 +2251,6 @@ Proof.
   try rewrite Vrel_Fix_eq in H; try destruct v', H as [Hcl1 [Hcl2 H]];
   try contradiction; auto.
   * subst. now rewrite Val_eqb_refl.
-  (* * subst. now rewrite Val_eqb_refl. *)
   * simpl. rewrite IHv1, IHv2; auto. 1-2: now rewrite Vrel_Fix_eq.
   * simpl. clear Hcl1 Hcl2. generalize dependent l0.
     induction IHv; destruct l0; auto; intros.
@@ -2167,6 +2266,7 @@ Proof.
   * subst. apply Val_eqb_refl.
 Qed.
 
+(** A value is never smaller than a related value according to `Val_ltb`. *)
 Lemma Vrel_Val_ltb m v v' :
   Vrel m v v' ->
   v <ᵥ v' = false.
@@ -2179,7 +2279,6 @@ Proof.
   try rewrite Vrel_Fix_eq in H; try destruct v', H as [Hcl1 [Hcl2 H]];
   try contradiction; auto.
   * subst. simpl. apply Lit_ltb_irrefl.
-  (* * subst. simpl. apply Nat.ltb_irrefl. *)
   * simpl. rewrite IHv1, IHv2; auto. 2-3: now rewrite Vrel_Fix_eq.
     now break_match_goal.
   * simpl. clear Hcl1 Hcl2. generalize dependent l0.
@@ -2214,6 +2313,8 @@ Proof.
   * subst. apply Val_ltb_irrefl.
 Qed.
 
+(** Inserting related keys and values into related maps (represented as
+    lists of key-value pairs) results in related maps. *)
 Lemma Vrel_map_insert m l l' k1 v1 k2 v2 :
   list_biforall (fun '(v1, v2) '(v1', v2') => Vrel m v1 v1' /\ Vrel m v2 v2') l l' ->
   Vrel m k1 k2 ->
@@ -2258,6 +2359,8 @@ Proof.
         ** constructor; auto.
 Qed.
 
+(** Building maps from pairwise related flattened key-value lists results in
+    related maps. *)
 Lemma Vrel_make_map m l l' :
   list_biforall (Vrel m) l l' ->
   list_biforall (fun '(v1, v2) '(v1', v2') => Vrel m v1 v1' /\ Vrel m v2 v2')
@@ -2332,6 +2435,8 @@ Proof.
         ** constructor; auto.
 Qed.
 
+(** Putting the same related value under each of the related keys into
+    related maps results in related maps. *)
 Lemma Vrel_fold_map_put m keys keys' v v' l l' :
   list_biforall (Vrel m) keys keys' ->
   Vrel m v v' ->
@@ -2357,6 +2462,7 @@ Proof.
     - eapply Vrel_downclosed_list_biforall; eauto.
 Qed.
 
+(** `badmap` exceptions with related reasons are related. *)
 Lemma Excrel_badmap m v v' :
   Vrel m v v' -> Excrel m (badmap v) (badmap v').
 Proof.
@@ -2368,6 +2474,7 @@ Proof.
   * apply Vrel_Nil_compat_closed.
 Qed.
 
+(** `badfun` exceptions with related reasons are related. *)
 Lemma Excrel_badfun m v v' :
   Vrel m v v' -> Excrel m (badfun v) (badfun v').
 Proof.
@@ -2379,6 +2486,8 @@ Proof.
   * apply Vrel_Nil_compat_closed.
 Qed.
 
+(** `badarity` exceptions with related functions and arguments are
+    related. *)
 Lemma Excrel_badarity m f f' args args' :
   Vrel m f f' -> Vrel m args args' ->
   Excrel m (badarity f args) (badarity f' args').
@@ -2391,13 +2500,22 @@ Proof.
   * apply Vrel_Nil_compat_closed.
 Qed.
 
-(* eval functions *)
+(** * Relatedness of the simulated BIFs and primops
+
+    The `Rel_eval_*` lemmas state that a simulated function produces either
+    related value sequences or related exceptions on related arguments. *)
+
+(** Solves the exception case of a `Rel_eval_*` goal where both sides raise
+    the same exception built from literals. *)
 Ltac solve_refl_Vrel_exc :=
   try now (right; do 2 eexists; split;[|split;reflexivity];split;[auto|split;auto]).
 
+(** Solves the value case of a `Rel_eval_*` goal where both sides return
+    the same literal value sequence. *)
 Ltac solve_refl_Vrel_val :=
   (left; do 2 eexists; split;[|split;reflexivity]; constructor; auto; rewrite Vrel_Fix_eq; auto).
 
+(** IO functions on related arguments give related results. *)
 Lemma Rel_eval_io m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -2416,6 +2534,8 @@ Proof.
   * solve_refl_Vrel_val. 
 Qed.
 
+(** Applies the closed compatibility lemma matching the shape of the values
+    in a `Vrel` goal. Closures are deliberately not handled. *)
 Ltac choose_compat_lemma :=
   match goal with
   | |- Vrel _ (VTuple _) (VTuple _) => apply Vrel_Tuple_compat_closed
@@ -2425,15 +2545,21 @@ Ltac choose_compat_lemma :=
   | |- Vrel _ _ _ => auto
   end.
 
+(** Proves that the two sides raise related exceptions, by relating the
+    exception reasons and details structurally. *)
 Ltac solve_complex_excrel_base :=
   do 2 eexists; split; [|split;reflexivity]; auto; try (split;[reflexivity|split;auto]; choose_compat_lemma; repeat (constructor; try downclose_Vrel; auto)).
 
+(** Solves the exception case (right disjunct) of a `Rel_eval_*` goal. *)
 Ltac solve_complex_Excrel :=
   right; solve_complex_excrel_base.
 
+(** Solves the value case (left disjunct) of a `Rel_eval_*` goal, by
+    relating the results structurally. *)
 Ltac solve_complex_Vrel :=
   left; do 2 eexists; split; [|split;reflexivity]; repeat (constructor; try downclose_Vrel; auto).
 
+(** Arithmetic functions on related arguments give related results. *)
 Lemma Rel_eval_arith m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -2460,6 +2586,7 @@ Unshelve.
   all: try assumption; lia.
 Qed.
 
+(** Logical functions on related arguments give related results. *)
 Lemma Rel_eval_logical m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -2590,6 +2717,7 @@ Unshelve.
   all: assumption.
 Qed.
 
+(** Equality checks on related arguments give the same results. *)
 Lemma Rel_eval_equality m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -2617,6 +2745,7 @@ Proof.
     ].
 Qed.
 
+(** Comparisons on related arguments give the same results. *)
 Lemma Rel_eval_cmp m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -2688,6 +2817,7 @@ Unshelve.
   all: try assumption; lia.
 Qed.
 
+(** Related values are either both proper lists, or neither of them. *)
 Lemma Vrel_is_shallow_proper_list :
   forall v1 v2 m, Vrel m v1 v2 -> is_shallow_proper_list v1 = is_shallow_proper_list v2.
 Proof.
@@ -2701,12 +2831,18 @@ Proof.
   all: destruct H as [_ [_ H]]; try inv H; simpl; auto.
 Qed.
 
+(** Reduces an exception case of a `Rel_eval_*` goal to relating the
+    exception reasons. *)
 Ltac start_solve_complex_Excrel :=
   right; do 2 eexists; split; [|split;reflexivity]; split;[reflexivity|split;auto]; try choose_compat_lemma.
 
+(** Reduces a value case of a `Rel_eval_*` goal to relating the result
+    values. *)
 Ltac start_solve_complex_Vrel :=
   left; do 2 eexists; split; [|split;reflexivity]; try choose_compat_lemma.
 
+(** Removing related elements from related lists results in related
+    lists. *)
 Lemma Rel_subtract_elem m hd hd' tl tl':
   Vrel m hd hd' -> Vrel m tl tl' ->
   Vrel m (subtract_elem tl hd) (subtract_elem tl' hd').
@@ -2736,6 +2872,8 @@ Qed.
 
 
 
+(** Decomposes a `Vrel` hypothesis on lists, tuples or maps into the
+    relatedness of the components. *)
 Ltac destruct_vrel :=
   match goal with
   | [H : Vrel _ (VCons _ _) (VCons _ _) |- _] =>
@@ -2749,6 +2887,56 @@ Ltac destruct_vrel :=
     apply Vrel_Map_compat_rev in H
   end.
 
+(** `split_cons` splits related values in lockstep: either it fails on both,
+    or the resulting prefixes and suffixes are pairwise related. *)
+Lemma Rel_split_cons m n v v' :
+  Vrel m v v' ->
+  (exists l1 l2 l1' l2', split_cons n v = Some (l1, l2) /\
+     split_cons n v' = Some (l1', l2') /\ Vrel m l1 l1' /\ Vrel m l2 l2') \/
+  (split_cons n v = None /\ split_cons n v' = None).
+Proof.
+  revert v v'. induction n; intros v v' Hv.
+  * left. do 4 eexists. split. 2: split. 1-2: reflexivity.
+    split. 2: exact Hv. apply Vrel_Nil_compat_closed.
+  * pose proof Hv as HX. rewrite Vrel_Fix_eq in HX.
+    destruct v, v'; cbn in HX; destruct_hyps; try contradiction.
+    all: try (right; split; reflexivity).
+    apply Vrel_Cons_compat_rev in Hv as [Hhd Htl].
+    simpl. destruct (IHn _ _ Htl) as [[l1 [l2 [l1' [l2' [Hs [Hs' [Hl1 Hl2]]]]]]] | [Hs Hs']].
+    - rewrite Hs, Hs'. left. do 4 eexists. split. 2: split. 1-2: reflexivity.
+      split. 2: exact Hl2. apply Vrel_Cons_compat_closed; assumption.
+    - rewrite Hs, Hs'. right. split; reflexivity.
+Qed.
+
+(** `lists:split/2` on related arguments gives related results. *)
+Lemma Rel_eval_split m v1 v1' v2 v2' :
+  Vrel m v1 v1' -> Vrel m v2 v2' ->
+  (exists vl vl', list_biforall (Vrel m) vl vl' /\
+     eval_split v1 v2 = RValSeq vl /\ eval_split v1' v2' = RValSeq vl') \/
+  (exists ex ex', Excrel m ex ex' /\
+     eval_split v1 v2 = RExc ex /\ eval_split v1' v2' = RExc ex').
+Proof.
+  intros Hv1 Hv2. unfold eval_split.
+  pose proof Hv1 as HX1. rewrite Vrel_Fix_eq in HX1.
+  pose proof Hv2 as HX2. rewrite Vrel_Fix_eq in HX2.
+  destruct v1, v1'; cbn in HX1; destruct_hyps; try contradiction.
+  all: try solve_complex_Excrel.
+  subst. destruct l0. 1: solve_complex_Excrel.
+  (* the second argument has to be a list *)
+  destruct v2, v2'; cbn in HX2; destruct_hyps; try contradiction.
+  all: try solve_complex_Excrel.
+  all: destruct (x <? 0)%Z; [solve_complex_Excrel|].
+  all: destruct (Rel_split_cons m (Z.to_nat x) _ _ Hv2) as [[l1 [l2 [l1' [l2' [Hs [Hs' [Hl1 Hl2]]]]]]] | [Hs Hs']].
+  (* for VNil, both sides are the same term, so one rewrite changes both *)
+  1: rewrite Hs in Hs'; inversion Hs'; subst.
+  all: rewrite Hs; rewrite ?Hs'.
+  all: try solve_complex_Excrel.
+  all: solve_complex_Vrel.
+Unshelve. all: lia.
+Qed.
+
+(** List transformation functions (`++`, `--`, `lists:split/2`) on related
+    arguments give related results. *)
 Lemma Rel_eval_transform_list m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -2802,49 +2990,14 @@ Proof.
       - apply Rel_subtract_elem; auto.
         rewrite Vrel_Fix_eq in H. rewrite Vrel_Fix_eq. apply H.
   }
-  {
-    clear Heqb.
-    pose proof H0 as HX.
-    rewrite Vrel_Fix_eq in H0. destruct hd, hd'; cbn in H0; destruct_hyps; try contradiction.
-    1,3-8: simpl; try now solve_complex_Excrel.
-    subst.
-    destruct l0; simpl.
-    1: now solve_complex_Excrel.
-    break_match_goal. 1: now solve_complex_Excrel.
-    clear -H. remember (Z.to_nat _) as n. clear Heqn.
-    revert hd0 hd'0 H. induction n; simpl; intros.
-    * solve_complex_Vrel.
-    * pose proof H as HX. rewrite Vrel_Fix_eq in H. destruct hd0, hd'0; cbn in H; destruct_hyps; try contradiction.
-      1-3,5-8: simpl; try now solve_complex_Excrel.
-      clear H1 H2. destruct_vrel.
-      apply IHn in H2. clear IHn.
-      destruct (split_cons n hd0_2) eqn:P1. destruct p.
-      destruct (split_cons n hd'0_2) eqn:P2. destruct p.
-      - destruct H2; destruct_hyps.
-        + inv H3. inv H2.
-          destruct_vrel. inv H6. inv H9. clear H8 H10.
-          solve_complex_Vrel.
-        + inv H3.
-      - destruct H2; destruct_hyps; inv H3; inv H4.
-      - destruct (split_cons n hd'0_2) eqn:P2. destruct p.
-        + destruct H2; destruct_hyps; inv H3; inv H4.
-        + destruct H2; destruct_hyps; inv H3.
-          destruct H2.
-          right. do 2 eexists. split. 2: split. 2-3: reflexivity.
-          constructor; auto. intros.
-          apply H3 in Hmn as Hmn'. split.
-          now apply Vrel_Lit_compat_closed.
-          apply Vrel_Tuple_compat_closed.
-          constructor. 2: constructor. 3: constructor; auto.
-          1-2: now apply Vrel_Lit_compat_closed.
-          destruct Hmn'. destruct_vrel.
-          inv H5. inv H11. inv H10.
-          apply Vrel_Cons_compat_closed; downclose_Vrel.
-  }
+  (* splitting *)
+  apply Rel_eval_split; assumption.
   Unshelve. all: lia.
 Qed.
 
 
+(** Conversions between lists and tuples on related arguments give related
+    results. *)
 Lemma Rel_eval_list_tuple m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -2910,6 +3063,8 @@ Unshelve.
   all: assumption.
 Qed.
 
+(** `mk_ascii_list` either fails on both related values, or produces the
+    same character list. *)
 Lemma Rel_mk_ascii_list m v v':
 (Vrel m) v v' ->
   (mk_ascii_list v = mk_ascii_list v').
@@ -2926,6 +3081,25 @@ Proof.
   subst. reflexivity.
 Qed.
 
+(** The same for `mk_byte_list` (used by `list_to_integer`). *)
+Lemma Rel_mk_byte_list m v v':
+(Vrel m) v v' ->
+  (mk_byte_list v = mk_byte_list v').
+Proof.
+  intro. pose proof H. induction H using Vrel_ind.
+  all: simpl; try reflexivity.
+  rewrite Vrel_Fix_eq in H0. simpl in H0.
+  rewrite Vrel_Fix_eq in IHVrel0.
+  destruct_hyps. destruct_scopes.
+  rewrite IHVrel0. 2: assumption.
+  destruct v1, v1'.
+  all: try reflexivity.
+  all: simpl in H1; try destruct_hyps; try contradiction.
+  subst. reflexivity.
+Qed.
+
+(** Conversions between strings, atoms and integers on related arguments
+    give related results. *)
 Lemma Rel_eval_convert m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists eff eff' : option SideEffect, exists vl vl' : list Val,
@@ -2980,6 +3154,7 @@ Unshelve.
   all: assumption.
 Qed.
 
+(** `length/1` on related arguments gives related results. *)
 Lemma Rel_eval_length m l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -3024,6 +3199,7 @@ Unshelve.
   all: lia.
 Qed.
 
+(** `tuple_size/1` on related arguments gives related results. *)
 Lemma Rel_eval_tuple_size m l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -3047,6 +3223,7 @@ Unshelve.
   all: lia.
 Qed.
 
+(** `hd/1` and `tl/1` on related arguments give related results. *)
 Lemma Rel_eval_hd_tl m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -3066,6 +3243,8 @@ Unshelve.
   all: lia.
 Qed.
 
+(** `element/2` and `setelement/3` on related arguments give related
+    results. *)
 Lemma Rel_eval_elem_tuple m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -3128,6 +3307,8 @@ Proof.
     all: auto.
 Qed.
 
+(** Type checks (`is_*` functions) on related arguments give the same
+    results. *)
 Lemma Rel_eval_check m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -3164,6 +3345,8 @@ Unshelve.
   all: try assumption; lia.
 Qed.
 
+(** Exception raising functions on related arguments raise related
+    exceptions. *)
 Lemma Rel_eval_error m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists ex ex' : Exception,
@@ -3186,6 +3369,9 @@ Unshelve.
   all: auto.
 Qed.
 
+(** Concurrent BIFs have no sequential semantics: on related arguments, they
+    either raise related exceptions on both sides, or are undefined on
+    both. *)
 Lemma Rel_eval_concurrent m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists ex ex' : Exception,
@@ -3201,10 +3387,13 @@ Proof.
   all: try now right.
   all: inv H1; try now left; solve_complex_excrel_base.
   all: try now right.
+  all: inv H2; try now left; solve_complex_excrel_base.
+  all: try now right.
 Unshelve.
   all: auto.
 Qed.
 
+(** `erlang:fun_info/2` on related arguments gives related results. *)
 Lemma Rel_eval_funinfo m l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -3228,6 +3417,8 @@ Unshelve.
   all: lia.
 Qed.
 
+(** Converting pairwise related meta-level lists to Core Erlang lists results
+    in related values. *)
 Lemma Vrel_meta_to_cons_biforall :
   forall m l1 l2,
     list_biforall (Vrel m) l1 l2
@@ -3239,6 +3430,7 @@ Proof.
   * apply Vrel_Cons_compat_closed; assumption.
 Qed.
 
+(** A Core Erlang list of literals is related to itself. *)
 Lemma Vrel_refl_meta_to_cons :
   forall m (l : list Lit), Vrel m (meta_to_cons (map VLit l)) (meta_to_cons (map VLit l)).
 Proof.
@@ -3248,6 +3440,8 @@ Proof.
     assumption.
 Qed.
 
+(** Conversions from binaries to lists on related arguments give related
+    results. *)
 Lemma Rel_eval_bin_to_list m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -3284,6 +3478,8 @@ Unshelve.
   all: lia.
 Qed.
 
+(** Size functions of binaries on related arguments give related
+    results. *)
 Lemma Rel_eval_bin_size m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -3307,6 +3503,7 @@ Unshelve.
   all: lia.
 Qed.
 
+(** Map functions on related arguments give related results. *)
 Lemma Rel_eval_map_bifs m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -3407,9 +3604,6 @@ Proof.
   {
     inv H3; try solve_complex_Excrel.
     apply Vrel_possibilities in H1 as H'; intuition; destruct_hyps; subst; try by solve_complex_Excrel.
-    1-5, 7-8: right; do 2 eexists; split; [|split; reflexivity]; apply Excrel_badmap;
-      apply Vrel_Tuple_compat_closed; constructor; [apply Vrel_Lit_compat_closed|];
-      repeat (constructor; [assumption|]); constructor.
     left.
     apply Vrel_Map_compat_rev in H1 as IND.
     clear mname f.
@@ -3458,13 +3652,17 @@ Proof.
     all: lia.
 Qed.
 
-Lemma biforall_fold_cons m l l' t t' :
+(** Prepending the elements of pairwise related lists (in reverse order) to
+    related lists results in related lists. *)
+Lemma Vrel_fold_cons m l l' t t' :
   list_biforall (Vrel m) l l' -> Vrel m t t' ->
   Vrel m (fold_left (fun acc x => VCons x acc) l t) (fold_left (fun acc x => VCons x acc) l' t').
 Proof.
   intros H. revert t t'. induction H; intros; simpl; auto.
 Qed.
 
+(** Membership checks of related elements in related lists give the same
+    result. *)
 Lemma existsb_Val_eqb_related m x x' l l' :
   Vrel m x x' -> list_biforall (Vrel m) l l' ->
   existsb (Val_eqb x) l = existsb (Val_eqb x') l'.
@@ -3474,18 +3672,8 @@ Proof.
   rewrite (Val_eqb_congr _ _ _ _ Hx H), IHlist_biforall. reflexivity.
 Qed.
 
-Lemma biforall_nth_error {A B} (P : A -> B -> Prop) l l' k :
-  list_biforall P l l' ->
-  (nth_error l k = None /\ nth_error l' k = None) \/
-  (exists a b, nth_error l k = Some a /\ nth_error l' k = Some b /\ P a b).
-Proof.
-  intros H. revert k. induction H; intros [|k]; simpl.
-  * left. auto.
-  * left. auto.
-  * right. do 2 eexists. repeat split; eauto.
-  * apply IHlist_biforall.
-Qed.
-
+(** The search predicate of `find_key` gives the same result on related keys
+    and elements. *)
 Lemma key_pred_related m key key' n e e' :
   Vrel m key key' -> Vrel m e e' ->
   (match e with
@@ -3511,6 +3699,8 @@ Proof.
     apply Val_eqb_congr; auto.
 Qed.
 
+(** `find_key` with related keys in related lists either fails on both
+    sides, or finds related elements. *)
 Lemma find_key_related m key key' n items items' :
   Vrel m key key' -> list_biforall (Vrel m) items items' ->
   (find_key key n items = None /\ find_key key' n items' = None) \/
@@ -3530,6 +3720,8 @@ Proof.
     - assumption.
 Qed.
 
+(** Functions of the `lists` module on related arguments give related
+    results. *)
 Lemma Rel_eval_lists_bifs m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -3609,13 +3801,14 @@ Proof.
           constructor; [exact H0 | constructor; [exact H | constructor]].
         + left. do 2 eexists. split; [|split; reflexivity].
           constructor; [|constructor].
-          apply biforall_fold_cons; assumption.
+          apply Vrel_fold_cons; assumption.
       - solve_complex_Excrel.
   }
 Unshelve.
   all: auto.
 Qed.
 
+(** Tuple functions on related arguments give related results. *)
 Lemma Rel_eval_tuple_bifs m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -3692,6 +3885,7 @@ Unshelve.
   all: auto.
 Qed.
 
+(** `erlang:split_binary/2` on related arguments gives related results. *)
 Lemma Rel_eval_split_binary m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -3729,6 +3923,7 @@ Proof.
   * apply Vrel_Cons_compat_closed; auto.
 Qed.
 
+(** Related values have the same bit content as iolists. *)
 Lemma iolist_bits_related m v v' :
   Vrel m v v' -> iolist_bits v = iolist_bits v'.
 Proof.
@@ -3744,15 +3939,21 @@ Proof.
   * rewrite Vrel_Fix_eq in H. destruct H as [_ [_ H]]. simpl in H. subst. reflexivity.
 Qed.
 
+(** Relates a literal or bitstring argument to itself (or uses an
+    assumption). *)
 Ltac vrel_lit_or_bitstring := first [assumption | apply Vrel_Lit_compat_closed | apply Vrel_Bitstring_compat_closed].
 
+(** Solves a `badarg` case of a one-argument conversion function. *)
 Ltac badarg_1_arg :=
   right; do 2 eexists; split; [|split; reflexivity];
   apply Excrel_badarg_args; constructor; [vrel_lit_or_bitstring | constructor].
+(** Solves a `badarg` case of a two-argument conversion function. *)
 Ltac badarg_2_arg :=
   right; do 2 eexists; split; [|split; reflexivity];
   apply Excrel_badarg_args; constructor; [vrel_lit_or_bitstring | constructor; [vrel_lit_or_bitstring | constructor]].
 
+(** Conversion functions between binaries, atoms, integers and lists on
+    related arguments give related results. *)
 Lemma Rel_eval_conversion m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists eff eff' : option SideEffect, exists vl vl' : list Val,
@@ -3769,8 +3970,8 @@ Proof.
   1: {
     inv H. solve_complex_Excrel.
     inv H1.
-    * rewrite (Rel_mk_ascii_list _ _ _ H0).
-      destruct (mk_ascii_list hd') as [cs|]; [|badarg_1_arg].
+    * rewrite (Rel_mk_byte_list _ _ _ H0).
+      destruct (mk_byte_list hd') as [cs|]; [|badarg_1_arg].
       destruct (parse_integer 10 cs) as [z|]; [|badarg_1_arg].
       left. do 4 eexists. split; [|split; reflexivity]. constructor; [apply Vrel_Lit_compat_closed | constructor].
     * Vrel_possibilities H.
@@ -3778,8 +3979,8 @@ Proof.
       all: try badarg_2_arg.
       all: try solve_complex_Excrel.
       all: try (destruct x as [a|base]); try solve_complex_Excrel.
-      rewrite (Rel_mk_ascii_list _ _ _ H0).
-      destruct (mk_ascii_list hd') as [cs|]; [|badarg_2_arg].
+      rewrite (Rel_mk_byte_list _ _ _ H0).
+      destruct (mk_byte_list hd') as [cs|]; [|badarg_2_arg].
       destruct (parse_integer (Z.to_nat base) cs) as [z|]; [|badarg_2_arg].
       left. do 4 eexists. split; [|split; reflexivity]. constructor; [apply Vrel_Lit_compat_closed | constructor].
   }
@@ -3838,7 +4039,7 @@ Proof.
     all: try solve_complex_Excrel.
     all: try badarg_1_arg.
     all: try rewrite (iolist_bits_related _ _ _ H0).
-    all: match goal with |- context [iolist_bits ?t] => destruct (iolist_bits t) as [b|] end.
+    all: break_match_goal.
     all: try (left; do 4 eexists; split; [|split; reflexivity]; constructor; [apply Vrel_Bitstring_compat_closed | constructor]).
     all: try badarg_1_arg.
   }
@@ -3864,26 +4065,28 @@ Unshelve.
   all: auto.
 Qed.
 
-(* Ltac Rel_solver :=
-  try apply Rel_eval_io;
-  try apply Rel_eval_arith;
-  try apply Rel_eval_logical;
-  try apply Rel_eval_equality;
-  try apply Rel_eval_cmp;
-  try apply Rel_eval_transform_list;
-  try apply Rel_eval_list_tuple;
-  try apply Rel_eval_length;
-  try apply Rel_eval_tuple_size;
-  try apply Rel_eval_hd_tl;
-  try apply Rel_eval_elem_tuple;
-  try apply Rel_eval_check;
-  try apply Rel_eval_funinfo. *)
+(** Turns a `Rel_eval_*` result `HR` into the corresponding case of the
+    `Rel_eval` goal. *)
+Ltac Rel_eval_macro HR :=
+  destruct HR as [[? [? [? [E1 E2]]]] | [? [? [? [E1 E2]]]]];
+  rewrite E1, E2; left; do 2 eexists;
+  [solve_complex_Vrel; auto | solve_complex_Excrel; auto].
 
-Ltac Rel_eval_macro H0 H2 := (* FRAGILE! H0, H2 are generated from destruct_hyps! *)
-intuition; destruct_hyps;
-  [ rewrite H0, H2; left; do 2 eexists; solve_complex_Vrel; auto |
-    rewrite H0, H2; left; do 2 eexists; solve_complex_Excrel; auto ].
+(** The same as `Rel_eval_macro`, for `Rel_eval_*` results that also
+    existentially quantify over the side effects. *)
+Ltac Rel_eval_macro_eff HR :=
+  destruct HR as [[? [? [? [? [? [E1 E2]]]]]] | [? [? [? [E1 E2]]]]];
+  rewrite E1, E2; left; do 2 eexists;
+  [solve_complex_Vrel; auto | solve_complex_Excrel; auto].
 
+(** The same as `Rel_eval_macro`, for `Rel_eval_*` results that either raise
+    related exceptions or are undefined on both sides. *)
+Ltac Rel_eval_macro_exc HR :=
+  destruct HR as [[? [? [? [E1 E2]]]] | [E1 E2]]; rewrite E1, E2;
+  [left; do 2 eexists; solve_complex_Excrel | right; split; reflexivity].
+
+(** Every simulated BIF on related arguments gives related results with some
+    side effects, or it is undefined on both sides. *)
 Lemma Rel_eval m mname mname0 f f0 l l':
   f = f0 -> mname = mname0 ->
   list_biforall (Vrel m) l l' ->
@@ -3897,88 +4100,60 @@ Lemma Rel_eval m mname mname0 f f0 l l':
    (eval mname0 f0 l') = Some (RExc ex', eff'))) \/
   (eval mname f l) = None /\ (eval mname0 f0 l') = None.
 Proof.
-  intros. subst.
+  intros Hf Hm Hl. subst.
   unfold eval.
   break_match_goal.
-  1-13: pose proof (Rel_eval_arith m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-13: Rel_eval_macro (Rel_eval_arith m mname0 f0 _ _ Hl).
   1-2: shelve.
-  1-4: pose proof (Rel_eval_logical m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-4: pose proof (Rel_eval_equality m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-3: pose proof (Rel_eval_transform_list m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-4: pose proof (Rel_eval_lists_bifs m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-2: pose proof (Rel_eval_list_tuple m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-2: pose proof (Rel_eval_convert m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-7: pose proof (Rel_eval_conversion m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-4: pose proof (Rel_eval_cmp m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1: pose proof (Rel_eval_length _ _ _ H1); Rel_eval_macro H0 H2.
-  1: pose proof (Rel_eval_tuple_size _ _ _ H1); Rel_eval_macro H0 H2.
-  1-2: pose proof (Rel_eval_hd_tl m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-2: pose proof (Rel_eval_elem_tuple m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-12: pose proof (Rel_eval_check m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-4: Rel_eval_macro (Rel_eval_logical m mname0 f0 _ _ Hl).
+  1-4: Rel_eval_macro (Rel_eval_equality m mname0 f0 _ _ Hl).
+  1-3: Rel_eval_macro (Rel_eval_transform_list m mname0 f0 _ _ Hl).
+  1-4: Rel_eval_macro (Rel_eval_lists_bifs m mname0 f0 _ _ Hl).
+  1-2: Rel_eval_macro (Rel_eval_list_tuple m mname0 f0 _ _ Hl).
+  1-2: Rel_eval_macro_eff (Rel_eval_convert m mname0 f0 _ _ Hl).
+  1-7: Rel_eval_macro_eff (Rel_eval_conversion m mname0 f0 _ _ Hl).
+  1-4: Rel_eval_macro (Rel_eval_cmp m mname0 f0 _ _ Hl).
+  1: Rel_eval_macro (Rel_eval_length _ _ _ Hl).
+  1: Rel_eval_macro (Rel_eval_tuple_size _ _ _ Hl).
+  1-2: Rel_eval_macro (Rel_eval_hd_tl m mname0 f0 _ _ Hl).
+  1-2: Rel_eval_macro (Rel_eval_elem_tuple m mname0 f0 _ _ Hl).
+  1-12: Rel_eval_macro (Rel_eval_check m mname0 f0 _ _ Hl).
   1-10: shelve.
   1: left; do 2 eexists; solve_complex_Excrel.
-  1: pose proof (Rel_eval_funinfo m _ _ H1); Rel_eval_macro H0 H2.
-  1-2: pose proof (Rel_eval_map_bifs m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-2: pose proof (Rel_eval_bin_size m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-2: pose proof (Rel_eval_bin_to_list m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-4: pose proof (Rel_eval_tuple_bifs m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-2: pose proof (Rel_eval_map_bifs m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-2: pose proof (Rel_eval_cmp m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1: pose proof (Rel_eval_split_binary m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1: Rel_eval_macro (Rel_eval_funinfo m _ _ Hl).
+  1-2: Rel_eval_macro (Rel_eval_map_bifs m mname0 f0 _ _ Hl).
+  1-2: Rel_eval_macro (Rel_eval_bin_size m mname0 f0 _ _ Hl).
+  1-2: Rel_eval_macro (Rel_eval_bin_to_list m mname0 f0 _ _ Hl).
+  1-4: Rel_eval_macro (Rel_eval_tuple_bifs m mname0 f0 _ _ Hl).
+  1-2: Rel_eval_macro (Rel_eval_map_bifs m mname0 f0 _ _ Hl).
+  1-2: Rel_eval_macro (Rel_eval_cmp m mname0 f0 _ _ Hl).
+  1: Rel_eval_macro (Rel_eval_split_binary m mname0 f0 _ _ Hl).
   Unshelve.
-  * left. pose proof (Rel_eval_io m mname0 f0 _ _ H1).
-    destruct eval_io, eval_io. simpl in *; subst.
-    intuition; destruct_hyps; try rewrite H0; try rewrite H2; subst.
+  * left. pose proof (Rel_eval_io m mname0 f0 _ _ Hl) as HR.
+    destruct eval_io, eval_io. simpl in HR.
+    destruct HR as [[? [? [? [E1 E2]]]] | [? [? [? [E1 E2]]]]]; subst.
     - do 2 eexists. now solve_complex_Vrel.
     - do 2 eexists. solve_complex_Excrel.
-  * left. pose proof (Rel_eval_io m mname0 f0 _ _ H1).
-    destruct eval_io, eval_io. simpl in *; subst.
-    intuition; destruct_hyps; try rewrite H0; try rewrite H2; subst.
+  * left. pose proof (Rel_eval_io m mname0 f0 _ _ Hl) as HR.
+    destruct eval_io, eval_io. simpl in HR.
+    destruct HR as [[? [? [? [E1 E2]]]] | [? [? [? [E1 E2]]]]]; subst.
     - do 2 eexists. now solve_complex_Vrel.
     - do 2 eexists. solve_complex_Excrel.
-  * pose proof (Rel_eval_error m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_error m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_error m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
+  * Rel_eval_macro_exc (Rel_eval_error m mname0 f0 _ _ Hl).
+  * Rel_eval_macro_exc (Rel_eval_error m mname0 f0 _ _ Hl).
+  * Rel_eval_macro_exc (Rel_eval_error m mname0 f0 _ _ Hl).
+  * Rel_eval_macro_exc (Rel_eval_concurrent m mname0 f0 _ _ Hl).
+  * Rel_eval_macro_exc (Rel_eval_concurrent m mname0 f0 _ _ Hl).
+  * Rel_eval_macro_exc (Rel_eval_concurrent m mname0 f0 _ _ Hl).
+  * Rel_eval_macro_exc (Rel_eval_concurrent m mname0 f0 _ _ Hl).
+  * Rel_eval_macro_exc (Rel_eval_concurrent m mname0 f0 _ _ Hl).
+  * Rel_eval_macro_exc (Rel_eval_concurrent m mname0 f0 _ _ Hl).
+  * Rel_eval_macro_exc (Rel_eval_concurrent m mname0 f0 _ _ Hl).
 Qed.
 
 
+(** Every simulated primop on related arguments gives related results, or it
+    is undefined on both sides. *)
 Lemma Rel_primop_eval m f f0 l l':
   f = f0 ->
   list_biforall (Vrel m) l l' ->
@@ -4027,6 +4202,8 @@ Unshelve.
   all: try assumption; try lia.
 Qed.
 
+(** Constructing a bitstring from pairwise related segment values gives the
+    same result. *)
 Lemma Rel_construct_bitstring m l l' :
   list_biforall (Vrel m) l l' ->
   construct_bitstring l = construct_bitstring l'.
@@ -4048,6 +4225,19 @@ Local Ltac solve_badfun :=
             |constructor; [eapply Vrel_downclosed; eassumption | constructor]]
         | eapply Vrel_downclosed; eassumption ].
 
+(** Calls with non-atom module or function names raise `badarg` with the
+    details `{apply, M, F, Args}` *)
+Local Ltac solve_badarg_apply :=
+  left; do 2 eexists; right; right; do 2 eexists; split; [|split; reflexivity];
+  apply Excrel_badarg_args;
+  constructor; [eapply Vrel_downclosed; eassumption|];
+  constructor; [eapply Vrel_downclosed; eassumption|];
+  constructor; [apply Vrel_meta_to_cons_biforall; assumption | constructor].
+
+(** `create_result` on related arguments and related frame identifiers gives
+    related expressions (at every smaller index), related values, related
+    exceptions, or it is undefined on both sides. The identifiers need to be
+    related only at index `S m`. *)
 Lemma Rel_create_result_relaxed m l l' ident ident' :
   list_biforall (Vrel m) l l' ->
   IRel (S m) ident ident' ->
@@ -4081,13 +4271,13 @@ Proof.
       by eapply Vrel_downclosed_list_biforall.
   * destruct H0.
     apply Vrel_possibilities in H0 as Hvrel; intuition; destruct_hyps; subst.
-    1,3-8: solve_badfun.
+    1,3-8: solve_badarg_apply.
     destruct x.
-    2: solve_badfun.
+    2: solve_badarg_apply.
     apply Vrel_possibilities in H1 as Hvrel; intuition; destruct_hyps; subst.
-    1,3-8: solve_badfun.
+    1,3-8: solve_badarg_apply.
     destruct x.
-    2: solve_badfun.
+    2: solve_badarg_apply.
     pose proof (Rel_eval m s s s0 s0 _ _ eq_refl eq_refl H).
     intuition; destruct_hyps; subst.
     destruct H2; destruct_hyps; subst; rewrite H3, H4; left; do 2 eexists; right.
@@ -4128,6 +4318,9 @@ Proof.
     all: try lia.
 Qed.
 
+(** `create_result` on related arguments and related frame identifiers gives
+    related expressions (at every strictly smaller index), related values,
+    related exceptions, or it is undefined on both sides. *)
 Lemma Rel_create_result m l l' ident ident' :
   list_biforall (Vrel m) l l' ->
   IRel m ident ident' ->
@@ -4163,13 +4356,13 @@ Proof.
       by eapply Vrel_downclosed_list_biforall.
   * destruct H0.
     apply Vrel_possibilities in H0 as Hvrel; intuition; destruct_hyps; subst.
-    1,3-8: solve_badfun.
+    1,3-8: solve_badarg_apply.
     destruct x.
-    2: solve_badfun.
+    2: solve_badarg_apply.
     apply Vrel_possibilities in H1 as Hvrel; intuition; destruct_hyps; subst.
-    1,3-8: solve_badfun.
+    1,3-8: solve_badarg_apply.
     destruct x.
-    2: solve_badfun.
+    2: solve_badarg_apply.
     pose proof (Rel_eval m s s s0 s0 _ _ eq_refl eq_refl H).
     intuition; destruct_hyps; subst.
     destruct H2; destruct_hyps; subst; rewrite H3, H4; left; do 2 eexists; right.
@@ -4210,6 +4403,11 @@ Proof.
     all: try lia.
 Qed.
 
+(** Parameter list evaluation frames with related identifiers, related
+    already evaluated values and related remaining expressions behave the same
+    way, when continued with related expressions on related stacks. The side
+    conditions ensure that map frames contain an odd number of elements (the
+    current expression completes the key-value pairs). *)
 Lemma Erel_Params_compat_closed :
   forall m l l',
   list_biforall (Erel m) l l' ->
@@ -4373,6 +4571,8 @@ Proof.
 Qed.
 
 
+(** The variant of `Erel_Params_compat_closed` where the frames are
+    continued with related value sequences. *)
 Lemma Vrel_Params_compat_closed :
   forall m l l',
   list_biforall (Erel m) l l' ->
@@ -4433,6 +4633,9 @@ Proof.
       Unshelve. lia.
 Qed.
 
+(** The variant of `Erel_Params_compat_closed` where the frames are
+    continued with `RBox` (i.e., parameter lists that start evaluation). Map
+    frames should contain an even number of elements here. *)
 Corollary Erel_Params_compat_closed_box :
   forall m l l',
   list_biforall (Erel m) l l' ->
@@ -4494,6 +4697,7 @@ Proof.
     all: lia.
 Qed.
 
+(** Tuple expressions with pairwise related elements are related. *)
 Lemma Erel_Tuple_compat_closed :
   forall m l l',
   list_biforall (Erel m) l l' ->
@@ -4516,8 +4720,10 @@ Proof.
   Unshelve. lia.
 Qed.
 
-Global Hint Resolve Erel_Tuple_compat_closed : core.
+#[global]
+Hint Resolve Erel_Tuple_compat_closed : core.
 
+(** Tuple expressions preserve relatedness (open version). *)
 Lemma Erel_Tuple_compat :
   forall Γ l l',
   list_biforall (Erel_open Γ) l l' ->
@@ -4528,8 +4734,11 @@ Proof.
   induction H; constructor; auto.
 Qed.
 
-Global Hint Resolve Erel_Tuple_compat : core.
+#[global]
+Hint Resolve Erel_Tuple_compat : core.
 
+(** Bitstring construction expressions with pairwise related segments are
+    related. *)
 Lemma Erel_Bin_compat_closed :
   forall m l l',
   list_biforall (Erel m) l l' ->
@@ -4552,8 +4761,11 @@ Proof.
   Unshelve. lia.
 Qed.
 
-Global Hint Resolve Erel_Bin_compat_closed : core.
+#[global]
+Hint Resolve Erel_Bin_compat_closed : core.
 
+(** Bitstring construction expressions preserve relatedness (open
+    version). *)
 Lemma Erel_Bin_compat :
   forall Γ l l',
   list_biforall (Erel_open Γ) l l' ->
@@ -4564,8 +4776,11 @@ Proof.
   induction H; constructor; auto.
 Qed.
 
-Global Hint Resolve Erel_Bin_compat : core.
+#[global]
+Hint Resolve Erel_Bin_compat : core.
 
+(** If a segment with related value and size is converted successfully,
+    then the related segment is converted to the same bitstring. *)
 Lemma Rel_segment_to_bitstring_ok {m v v' vsize vsize' unit type endian bvn} :
   Vrel m v v' ->
   Vrel m vsize vsize' ->
@@ -4580,6 +4795,9 @@ Proof.
   all: repeat case_match; simpl in *; try congruence.
 Qed.
 
+(** If the conversion of a segment with related value and size raises an
+    exception, then the conversion of the related segment raises a related
+    exception. *)
 Lemma Rel_segment_to_bitstring_exc {m v v' vsize vsize' unit type endian exc} :
   Vrel m v v' ->
   Vrel m vsize vsize' ->
@@ -4603,6 +4821,8 @@ Unshelve.
   all: lia.
 Qed.
 
+(** Bitstring segments with related values, related sizes and the same
+    specifiers are related. *)
 Lemma Erel_Seg_compat_closed :
   forall m seg seg',
   (seg_type seg) = (seg_type seg') ->
@@ -4678,8 +4898,10 @@ Proof.
 Unshelve. all: lia.
 Qed.
 
-Global Hint Resolve Erel_Seg_compat_closed : core.
+#[global]
+Hint Resolve Erel_Seg_compat_closed : core.
 
+(** Bitstring segments preserve relatedness (open version). *)
 Lemma Erel_Seg_compat :
   forall Γ seg seg',
   (seg_type seg) = (seg_type seg') ->
@@ -4695,8 +4917,11 @@ Proof.
   apply Erel_Seg_compat_closed; simpl in *; by auto.
 Qed.
 
-Global Hint Resolve Erel_Seg_compat : core.
+#[global]
+Hint Resolve Erel_Seg_compat : core.
 
+(** Value sequence expressions with pairwise related elements are
+    related. *)
 Lemma Erel_Values_compat_closed :
   forall m l l',
   list_biforall (Erel m) l l' ->
@@ -4719,8 +4944,10 @@ Proof.
   Unshelve. lia.
 Qed.
 
-Global Hint Resolve Erel_Values_compat_closed : core.
+#[global]
+Hint Resolve Erel_Values_compat_closed : core.
 
+(** Value sequence expressions preserve relatedness (open version). *)
 Lemma Erel_Values_compat :
   forall Γ l l',
   list_biforall (Erel_open Γ) l l' ->
@@ -4731,8 +4958,10 @@ Proof.
   induction H; constructor; auto.
 Qed.
 
-Global Hint Resolve Erel_Values_compat : core.
+#[global]
+Hint Resolve Erel_Values_compat : core.
 
+(** Map expressions with pairwise related keys and values are related. *)
 Lemma Erel_Map_compat_closed :
   forall m l l',
   list_biforall (fun '(e1, e2) '(e1', e2') =>
@@ -4824,8 +5053,10 @@ Proof.
     all: lia.
 Qed.
 
-Global Hint Resolve Erel_Map_compat_closed : core.
+#[global]
+Hint Resolve Erel_Map_compat_closed : core.
 
+(** Map expressions preserve relatedness (open version). *)
 Lemma Erel_Map_compat :
   forall Γ l l',
   list_biforall (fun '(e1, e2) '(e1', e2') =>
@@ -4839,8 +5070,11 @@ Proof.
   destruct hd, hd', H; split; auto.
 Qed.
 
-Global Hint Resolve Erel_Map_compat : core.
+#[global]
+Hint Resolve Erel_Map_compat : core.
 
+(** Inter-module calls with related module, function and argument
+    expressions are related. *)
 Lemma Erel_Call_compat_closed :
   forall m mname mname' l l' f f',
   Erel m mname mname' ->
@@ -4893,8 +5127,10 @@ Proof.
   Unshelve. all: try lia.
 Qed.
 
-Global Hint Resolve Erel_Call_compat_closed : core.
+#[global]
+Hint Resolve Erel_Call_compat_closed : core.
 
+(** Inter-module calls preserve relatedness (open version). *)
 Lemma Erel_Call_compat :
   forall Γ l l' m m' f f',
   Erel_open Γ m m' ->
@@ -4907,8 +5143,10 @@ Proof.
   induction H1; constructor; auto.
 Qed.
 
-Global Hint Resolve Erel_Call_compat : core.
+#[global]
+Hint Resolve Erel_Call_compat : core.
 
+(** Primop calls with the same name and related arguments are related. *)
 Lemma Erel_PrimOp_compat_closed :
   forall m l l' f f',
   f = f' ->
@@ -4931,8 +5169,10 @@ Proof.
   Unshelve. lia.
 Qed.
 
-Global Hint Resolve Erel_PrimOp_compat_closed : core.
+#[global]
+Hint Resolve Erel_PrimOp_compat_closed : core.
 
+(** Primop calls preserve relatedness (open version). *)
 Lemma Erel_PrimOp_compat :
   forall Γ l l' f f',
   f = f' ->
@@ -4944,8 +5184,10 @@ Proof.
   induction H0; constructor; auto.
 Qed.
 
-Global Hint Resolve Erel_PrimOp_compat : core.
+#[global]
+Hint Resolve Erel_PrimOp_compat : core.
 
+(** A value related to a closure is a closure with the same arity. *)
 Lemma Vrel_Fun_right : forall m v2 ext id1 vl b,
   Vrel m (VClos ext id1 vl b) v2 ->
   exists ext' id' b' vl',
@@ -4955,6 +5197,8 @@ Proof.
   split. 2: split. all: try reflexivity.
 Qed.
 
+(** Function applications with related function and argument expressions
+    are related. *)
 Lemma Erel_App_compat_closed :
   forall n e es e' es',
   Erel n e e' -> list_biforall (Erel n) es es'
@@ -5004,8 +5248,10 @@ Unshelve.
   lia.
 Qed.
 
-Global Hint Resolve Erel_App_compat_closed : core.
+#[global]
+Hint Resolve Erel_App_compat_closed : core.
 
+(** Function applications preserve relatedness (open version). *)
 Lemma Erel_App_compat :
   forall Γ e es e' es',
   Erel_open Γ e e' -> list_biforall (Erel_open Γ) es es'
@@ -5020,57 +5266,71 @@ Proof.
   eapply biforall_map; eauto.
 Qed.
 
-Global Hint Resolve Erel_App_compat : core.
+#[global]
+Hint Resolve Erel_App_compat : core.
 
 
+(** The empty list pattern is related to itself. *)
 Lemma Prel_Nil_compat_closed n :
   Prel n PNil PNil.
 Proof.
   by simpl.
 Qed.
 
-Global Hint Resolve Prel_Nil_compat_closed : core.
+#[global]
+Hint Resolve Prel_Nil_compat_closed : core.
 
+(** The empty list pattern is related to itself (open version). *)
 Lemma Prel_Nil_compat :
   forall Γ, Prel_open Γ PNil PNil.
 Proof.
   by simpl.
 Qed.
 
-Global Hint Resolve Prel_Nil_compat : core.
+#[global]
+Hint Resolve Prel_Nil_compat : core.
 
+(** Literal patterns are related to themselves. *)
 Lemma Prel_Lit_compat_closed n l:
   Prel n (PLit l) (PLit l).
 Proof.
   by simpl.
 Qed.
 
-Global Hint Resolve Prel_Lit_compat_closed : core.
+#[global]
+Hint Resolve Prel_Lit_compat_closed : core.
 
+(** Literal patterns are related to themselves (open version). *)
 Lemma Prel_Lit_compat l :
   forall Γ, Prel_open Γ (PLit l) (PLit l).
 Proof.
   by simpl.
 Qed.
 
-Global Hint Resolve Prel_Lit_compat : core.
+#[global]
+Hint Resolve Prel_Lit_compat : core.
 
+(** The variable pattern is related to itself. *)
 Lemma Prel_Var_compat_closed n :
   Prel n PVar PVar.
 Proof.
   by simpl.
 Qed.
 
-Global Hint Resolve Prel_Var_compat_closed : core.
+#[global]
+Hint Resolve Prel_Var_compat_closed : core.
 
+(** The variable pattern is related to itself (open version). *)
 Lemma Prel_Var_compat :
   forall Γ, Prel_open Γ PVar PVar.
 Proof.
   by simpl.
 Qed.
 
-Global Hint Resolve Prel_Var_compat : core.
+#[global]
+Hint Resolve Prel_Var_compat : core.
 
+(** List patterns with related head and tail patterns are related. *)
 Lemma Prel_Cons_compat_closed n p1 p1' p2 p2':
   Prel n p1 p1' ->
   Prel n p2 p2' ->
@@ -5079,8 +5339,10 @@ Proof.
   intros. by simpl.
 Qed.
 
-Global Hint Resolve Prel_Cons_compat_closed : core.
+#[global]
+Hint Resolve Prel_Cons_compat_closed : core.
 
+(** List patterns preserve relatedness (open version). *)
 Lemma Prel_Cons_compat :
   forall Γ p1 p1' p2 p2',
   Prel_open Γ p1 p1' ->
@@ -5092,8 +5354,10 @@ Proof.
   by apply H. by apply H0.
 Qed.
 
-Global Hint Resolve Prel_Cons_compat : core.
+#[global]
+Hint Resolve Prel_Cons_compat : core.
 
+(** Tuple patterns with pairwise related elements are related. *)
 Lemma Prel_Tuple_compat_closed n l l':
   list_biforall (Prel n) l l' ->
   Prel n (PTuple l) (PTuple l').
@@ -5104,8 +5368,10 @@ Proof.
   by apply list_biforall_fix_2.
 Qed.
 
-Global Hint Resolve Prel_Tuple_compat_closed : core.
+#[global]
+Hint Resolve Prel_Tuple_compat_closed : core.
 
+(** Tuple patterns preserve relatedness (open version). *)
 Lemma Prel_Tuple_compat :
   forall Γ l l',
   list_biforall (Prel_open Γ) l l' ->
@@ -5118,8 +5384,11 @@ Proof.
   assumption.
 Qed.
 
-Global Hint Resolve Prel_Tuple_compat : core.
+#[global]
+Hint Resolve Prel_Tuple_compat : core.
 
+(** Map patterns with pairwise related key and value patterns are
+    related. *)
 Lemma Prel_Map_compat_closed n l l' :
   list_biforall (fun '(p1, p2) '(p1', p2') => Prel n p1 p1' /\ Prel n p2 p2') l l' ->
   Prel n (PMap l) (PMap l').
@@ -5131,8 +5400,10 @@ Proof.
   assumption.
 Qed.
 
-Global Hint Resolve Prel_Map_compat_closed : core.
+#[global]
+Hint Resolve Prel_Map_compat_closed : core.
 
+(** Map patterns preserve relatedness (open version). *)
 Lemma Prel_Map_compat :
   forall Γ l l',
   list_biforall (fun '(p1, p2) '(p1', p2') => Prel_open Γ p1 p1' /\ Prel_open Γ p2 p2') l l' ->
@@ -5146,8 +5417,11 @@ Proof.
   split; by apply H.
 Qed.
 
-Global Hint Resolve Prel_Map_compat : core.
+#[global]
+Hint Resolve Prel_Map_compat : core.
 
+(** Bitstring patterns with pairwise related segments (related subpatterns
+    and size expressions, same specifiers) are related. *)
 Lemma Prel_Bin_compat_closed n l l':
   list_biforall (fun seg seg' =>
     Prel n (seg_val seg) (seg_val seg') /\
@@ -5164,8 +5438,10 @@ Proof.
   destruct hd, hd'; by intuition.
 Qed.
 
-Global Hint Resolve Prel_Bin_compat_closed : core.
+#[global]
+Hint Resolve Prel_Bin_compat_closed : core.
 
+(** Bitstring patterns preserve relatedness (open version). *)
 Lemma Prel_Bin_compat :
   forall Γ l l',
   list_biforall (fun seg seg' =>
@@ -5185,8 +5461,13 @@ Proof.
   destruct hd, hd'; simpl in *; by intuition.
 Qed.
 
-Global Hint Resolve Prel_Bin_compat : core.
+#[global]
+Hint Resolve Prel_Bin_compat : core.
 
+(** * The fundamental property *)
+
+(** Every well-scoped expression, value and pattern is related to itself
+    (the combined statement for the mutual induction). *)
 Theorem Rel_Fundamental_helper :
   (forall (e : Exp) (Γ : nat),
     EXP Γ ⊢ e ->
@@ -5325,6 +5606,7 @@ Proof.
     intros. apply (H4 (S i)). slia.
 Qed.
 
+(** Every well-scoped value is related to itself. *)
 Corollary Vrel_Fundamental :
   forall (v : Val) (Γ : nat),
     VAL Γ ⊢ v ->
@@ -5333,8 +5615,10 @@ Proof.
   apply Rel_Fundamental_helper.
 Qed.
 
-Global Hint Resolve Vrel_Fundamental : core.
+#[global]
+Hint Resolve Vrel_Fundamental : core.
 
+(** Every well-scoped expression is related to itself. *)
 Corollary Erel_Fundamental :
   forall (e : Exp) (Γ : nat),
     EXP Γ ⊢ e ->
@@ -5343,8 +5627,10 @@ Proof.
   apply Rel_Fundamental_helper.
 Qed.
 
-Global Hint Resolve Erel_Fundamental : core.
+#[global]
+Hint Resolve Erel_Fundamental : core.
 
+(** Every well-scoped pattern is related to itself. *)
 Corollary Prel_Fundamental :
   forall (p : Pat) (Γ : nat),
     PAT Γ ⊢ p ->
@@ -5353,8 +5639,10 @@ Proof.
   apply Rel_Fundamental_helper.
 Qed.
 
-Global Hint Resolve Prel_Fundamental : core.
+#[global]
+Hint Resolve Prel_Fundamental : core.
 
+(** The identity substitution is related to itself in the empty context. *)
 Lemma Grel_ids : forall n, Grel n 0 idsubst idsubst.
 Proof.
   intros.
@@ -5363,6 +5651,7 @@ Proof.
   exfalso; auto. inversion H.
 Qed.
 
+(** Every closed value is related to itself. *)
 Theorem Vrel_Fundamental_closed :
   forall (v : Val),
     VALCLOSED v ->
@@ -5373,8 +5662,10 @@ Proof.
   eapply Vrel_Fundamental; eauto using Grel_ids. apply idsubst_is_id.
 Qed.
 
-Global Hint Resolve Vrel_Fundamental_closed : core.
+#[global]
+Hint Resolve Vrel_Fundamental_closed : core.
 
+(** Every closed expression is related to itself. *)
 Theorem Erel_Fundamental_closed :
   forall (e : Exp),
     EXPCLOSED e ->
@@ -5386,8 +5677,10 @@ Proof.
   apply idsubst_is_id.
 Qed.
 
-Global Hint Resolve Erel_Fundamental_closed : core.
+#[global]
+Hint Resolve Erel_Fundamental_closed : core.
 
+(** Every closed pattern is related to itself. *)
 Theorem Prel_Fundamental_closed :
   forall (p : Pat),
     PATCLOSED p ->
@@ -5399,8 +5692,10 @@ Proof.
   apply idsubst_is_id.
 Qed.
 
-Global Hint Resolve Prel_Fundamental_closed : core.
+#[global]
+Hint Resolve Prel_Fundamental_closed : core.
 
+(** Every closing substitution of `Γ` is related to itself. *)
 Theorem Grel_Fundamental :
   forall (ξ : Substitution) (Γ : nat),
     SUBSCOPE Γ ⊢ ξ ∷ 0 ->
@@ -5413,8 +5708,10 @@ Proof.
   specialize (H x H0). rewrite Heqs in H. inversion H.
 Qed.
 
-Global Hint Resolve Grel_Fundamental : core.
+#[global]
+Hint Resolve Grel_Fundamental : core.
 
+(** The default substitution of a closed value is related to itself. *)
 Corollary default_subst_Grel :
   forall m Γ v, VALCLOSED v -> Grel m Γ (default_subst v) (default_subst v).
 Proof.
@@ -5423,6 +5720,7 @@ Proof.
   now apply Vrel_Fundamental_closed.
 Qed.
 
+(** Every closed exception is related to itself. *)
 Theorem Excrel_Fundamental_closed :
   forall m c r v, VALCLOSED r -> VALCLOSED v ->
   Excrel m (c, r, v) (c, r, v).
@@ -5430,6 +5728,10 @@ Proof.
   intros. split; auto.
 Qed.
 
+(** The following `Frel_*` lemmas state that each frame preserves the
+    relatedness of frame stacks, if its components are related. *)
+
+(** Module-evaluation frames of calls. *)
 Lemma Frel_CallMod :
   forall n (f1 f2 : Exp) (l1 l2 : list Exp),
   Erel n f1 f2 ->
@@ -5482,6 +5784,7 @@ Unshelve.
   all: lia.
 Qed.
 
+(** Function-name-evaluation frames of calls. *)
 Lemma Frel_CallFun :
   forall n (m1 m2 : Val) (l1 l2 : list Exp),
   Vrel n m1 m2 ->
@@ -5514,6 +5817,7 @@ Unshelve. all: lia.
 Qed.
 
 
+(** Tail-evaluation frames of list construction. *)
 Lemma Frel_Cons_tail :
     forall n (e2 e2' : Exp),
     (forall m, m <= n -> Erel m e2 e2') ->
@@ -5566,6 +5870,7 @@ Unshelve.
   all: lia.
 Qed.
 
+(** Head-evaluation frames of list construction. *)
 Lemma Frel_Cons_head :
     forall n (v1 v1' : Val),
     (forall m, m <= n -> Vrel m v1 v1') ->
@@ -5597,28 +5902,14 @@ Unshelve.
   all: lia.
 Qed.
 
-Lemma Vrel_VNil_many :
-  forall m x, list_biforall (Vrel m) (repeat VNil x) (repeat VNil x).
-Proof.
-  intros. induction x; constructor; auto.
-Qed.
-
-Lemma VCLOSED_VNil_many :
-  forall x, Forall (fun v => VALCLOSED v) (repeat VNil x).
-Proof.
-  intros. induction x; constructor; auto.
-Qed.
-
-#[global]
-Hint Resolve VCLOSED_VNil_many : core.
-
+(** `let` frames. *)
 Lemma Frel_Let :
     forall n (e2 e2' : Exp) x x', x = x' ->
     (forall m vl1 vl2, m <= n -> length vl1 = x -> list_biforall (Vrel m) vl1 vl2 -> Erel m (e2.[list_subst vl1 idsubst]) (e2'.[list_subst vl2 idsubst])) ->
     forall m F1 F2, m <= n -> Frel m F1 F2 -> Frel m (FLet x e2::F1) (FLet x' e2'::F2).
 Proof.
   intros. subst.
-  specialize (H0 m (repeat VNil x') (repeat VNil x') H1 (repeat_length _ x') (Vrel_VNil_many _ x')) as H'.
+  specialize (H0 m (repeat VNil x') (repeat VNil x') H1 (repeat_length _ x') (Vrel_Nil_many _ x')) as H'.
   apply Erel_closed in H' as v. destruct v.
   eapply subst_implies_list_scope in H, H3; auto; rewrite repeat_length in H, H3.
   split. 2: split.
@@ -5647,6 +5938,7 @@ Unshelve.
   all: lia.
 Qed.
 
+(** Sequencing frames. *)
 Lemma Frel_Seq :
     forall n (e2 e2' : Exp),
     (forall m, m <= n -> Erel m e2 e2') ->
@@ -5679,6 +5971,7 @@ Unshelve.
 Qed.
 
 
+(** `try` frames. *)
 Lemma Frel_Try :
     forall n (e2 e2' : Exp) (e3 e3' : Exp) x x' y y', x = x' -> y = y' ->
     (forall m vl1 vl2, m <= n -> length vl1 = x -> list_biforall (Vrel m) vl1 vl2 -> Erel m (e2.[list_subst vl1 idsubst]) (e2'.[list_subst vl2 idsubst])) ->
@@ -5687,8 +5980,8 @@ Lemma Frel_Try :
     Frel m (FTry x e2 y e3::F1) (FTry x' e2' y' e3'::F2).
 Proof.
   intros. subst.
-  specialize (H1 m (repeat VNil x') (repeat VNil x') H3 (repeat_length _ x') (Vrel_VNil_many _ x')) as H'.
-  specialize (H2 m (repeat VNil y') (repeat VNil y') H3 (repeat_length _ y') (Vrel_VNil_many _ y')) as H''.
+  specialize (H1 m (repeat VNil x') (repeat VNil x') H3 (repeat_length _ x') (Vrel_Nil_many _ x')) as H'.
+  specialize (H2 m (repeat VNil y') (repeat VNil y') H3 (repeat_length _ y') (Vrel_Nil_many _ y')) as H''.
   apply Erel_closed in H' as [H'cl1 H'cl2].
   apply Erel_closed in H'' as [H''cl1 H''cl2].
   eapply subst_implies_list_scope in H'cl1, H'cl2, H''cl1, H''cl2. 
@@ -5727,6 +6020,8 @@ Unshelve.
   all: lia.
 Qed.
 
+(** Parameter list evaluation frames (with the same side conditions on maps
+    as `Erel_Params_compat_closed`). *)
 Lemma Frel_Params :
   forall n (el el' : list Exp) (vl vl' : list Val),
   list_biforall (Erel n) el el' ->
@@ -5792,6 +6087,7 @@ Proof.
     all: lia.
 Qed.
 
+(** Function-evaluation frames of applications. *)
 Lemma Frel_App1 :
   forall n (es es' : list Exp),
   list_biforall (Erel n) es es' ->
@@ -5829,6 +6125,7 @@ Unshelve.
   all: lia.
 Qed.
 
+(** A list of closed expressions is pairwise related to itself. *)
 Corollary Erel_biforall_fundamental :
   forall l,
     Forall (fun e => EXPCLOSED e) l ->
@@ -5841,6 +6138,7 @@ Qed.
 #[global]
 Hint Resolve Erel_biforall_fundamental : core.
 
+(** A list of closed values is pairwise related to itself. *)
 Corollary Vrel_biforall_fundamental :
   forall l,
     Forall (fun e => VALCLOSED e) l ->
@@ -5853,6 +6151,8 @@ Qed.
 #[global]
 Hint Resolve Vrel_biforall_fundamental : core.
 
+(** Size-evaluation frames of bitstring segments (the value is already
+    evaluated). *)
 Lemma Frel_Seg2 :
   forall n (v v' : Val) unit type sign endian,
   (forall m, m <= n -> Vrel m v v') ->
@@ -5886,6 +6186,8 @@ Unshelve.
   all: lia.
 Qed.
 
+(** Value-evaluation frames of bitstring segments (the size expression is
+    still to be evaluated). *)
 Lemma Frel_Seg1 :
   forall n (size size' : Exp) unit type sign endian,
   (forall m, m <= n -> Erel m size size') ->
@@ -5916,6 +6218,7 @@ Unshelve.
   all: lia.
 Qed.
 
+(** Clause-selection frames of `case`, with related clauses. *)
 Lemma Frel_Case1 :
   forall n l l',
   list_biforall (
@@ -6028,14 +6331,22 @@ Proof.
             eexists. econstructor. exact D1.
             3: eassumption. 3: lia. lia. lia.
             eapply Frel_downclosed; eassumption.
-          - inv H3. inv H9. apply Vrel_possibilities in H7.
-            intuition; destruct_hyps; subst; try congruence.
-            inv H5.
-            eapply IHIH in H14 as [k1 D1].
-            eexists. constructor. exact D1.
-            3: reflexivity. lia.
-            eapply Frel_downclosed; eassumption.
-            eapply biforall_impl. 2: eassumption. intros. downclose_Vrel.
+          - (* guard is not true *)
+            inversion H3 as [|? v' ? ? Hvv Hnil]; subst. inversion Hnil; subst.
+            (* the related guard value is not true either *)
+            assert (v' <> VLit "true"%string) as Hneq. {
+              intro. subst v'. rewrite Vrel_Fix_eq in Hvv.
+              destruct v; destruct Hvv as [_ [_ Hvv]]; try contradiction.
+              subst. contradiction.
+            }
+            edestruct (IHIH (S k)) as [_ [_ [Hval _]]].
+            1: lia.
+            1: eapply Frel_downclosed; eassumption.
+            edestruct Hval as [k1 D1].
+            3: eassumption.
+            1: lia.
+            1: { eapply biforall_impl. 2: eassumption. intros. downclose_Vrel. }
+            eexists. eapply step_case_false. exact Hneq. exact D1.
         }
         {
           intros. inv H8. eapply H1 in H16 as [k1 D1].
@@ -6069,6 +6380,8 @@ Proof.
     exact k. all: lia.
 Qed.
 
+(** Guard-evaluation frames of `case`, with related matched values,
+    related clause bodies and related remaining clauses. *)
 Lemma Frel_Case2 :
   forall n l l',
   list_biforall (
@@ -6137,16 +6450,22 @@ Proof.
       eapply H1 in H12 as [k1 D1].
       eexists. econstructor. exact D1. exact H2. lia.
       eapply Frel_downclosed; eassumption.
-    * inv H4. inv H9. apply Vrel_possibilities in H7.
-      intuition; destruct_hyps; subst; try congruence.
-      inv H7.
-      eapply Frel_Case1 in H12 as [k1 D1].
-      eexists. econstructor. exact D1. 4: reflexivity.
-      exact H.
-      lia.
-      eapply Frel_downclosed; eassumption.
-      eapply biforall_impl. 2: apply H0. intros. downclose_Vrel.
-      eassumption.
+    * (* guard is not true *)
+      inversion H4 as [|? v' ? ? Hvv Hnil]; subst. inversion Hnil; subst.
+      (* the related guard value is not true either *)
+      assert (v' <> VLit "true"%string) as Hneq. {
+        intro. subst v'. rewrite Vrel_Fix_eq in Hvv.
+        destruct v; destruct Hvv as [_ [_ Hvv]]; try contradiction.
+        subst. contradiction.
+      }
+      edestruct (Frel_Case1 n l l' H k F1 F2) as [_ [_ [Hval _]]].
+      1: lia.
+      1: eapply Frel_downclosed; eassumption.
+      edestruct Hval as [k1 D1].
+      3: eassumption.
+      1: lia.
+      1: { eapply biforall_impl. 2: apply (H0 m); lia. intros. downclose_Vrel. }
+      eexists. eapply step_case_false. exact Hneq. exact D1.
   }
   {
     intros. inv H5. eapply H3 in H11 as [k1 D1].
@@ -6160,6 +6479,7 @@ Unshelve.
   all: lia.
 Qed.
 
+(** Every closed, well-formed frame stack is related to itself. *)
 Theorem Frel_Fundamental_closed :
   forall (F : FrameStack) (n : nat),
     FSCLOSED F ->
@@ -6269,9 +6589,11 @@ Proof.
     all: lia.
 Qed.
 
-Global Hint Resolve Frel_Fundamental_closed : core.
+#[global]
+Hint Resolve Frel_Fundamental_closed : core.
 
 
+(** Every closed redex is related to itself. *)
 Theorem Rrel_Fundamental_closed :
   forall n r, REDCLOSED r -> Rrel n r r.
 Proof.
@@ -6284,12 +6606,14 @@ Proof.
     auto.
 Qed.
 
+(** Related redexes are closed. *)
 Lemma Rrel_closed : forall n r1 r2,
   Rrel n r1 r2 -> REDCLOSED r1 /\ REDCLOSED r2.
 Proof.
   intros. split; apply H.
 Qed.
 
+(** Related open redexes are well-scoped in their context. *)
 Lemma Rrel_open_scope : forall Γ r1 r2,
   Rrel_open Γ r1 r2 -> RED Γ ⊢ r1 /\ RED Γ ⊢ r2.
 Proof.
@@ -6297,23 +6621,28 @@ Proof.
   split; eapply subst_implies_scope_red with (Γ' := 0); intros; apply (H 0 ξ ξ); auto.
 Qed.
 
+(** The left side of related open redexes is well-scoped. *)
 Corollary Rrel_open_scope_l : forall Γ r1 r2,
   Rrel_open Γ r1 r2 -> RED Γ ⊢ r1.
 Proof.
   now apply Rrel_open_scope.
 Qed.
 
-Global Hint Resolve Rrel_open_scope_l : core.
+#[global]
+Hint Resolve Rrel_open_scope_l : core.
 
+(** The right side of related open redexes is well-scoped. *)
 Corollary Rrel_open_scope_r : forall Γ r1 r2,
   Rrel_open Γ r1 r2 -> RED Γ ⊢ r2.
 Proof.
   now apply Rrel_open_scope.
 Qed.
 
-Global Hint Resolve Rrel_open_scope_r : core.
+#[global]
+Hint Resolve Rrel_open_scope_r : core.
 
 
+(** Related expressions are related as redexes. *)
 Lemma Rrel_exp_compat_closed :
   forall n e1 e2, Erel n e1 e2 -> Rrel n e1 e2.
 Proof.
@@ -6326,6 +6655,7 @@ Qed.
 #[global]
 Hint Resolve Rrel_exp_compat_closed : core.
 
+(** Pairwise related value sequences are related as redexes. *)
 Lemma Rrel_valseq_compat_closed :
   forall n vl1 vl2, list_biforall (Vrel n) vl1 vl2 -> Rrel n (RValSeq vl1) (RValSeq vl2).
 Proof.
@@ -6341,6 +6671,7 @@ Qed.
 #[global]
 Hint Resolve Rrel_valseq_compat_closed : core.
 
+(** Related exceptions are related as redexes. *)
 Lemma Rrel_exc_compat_closed :
   forall n ex1 ex2, Excrel n ex1 ex2 ->
   Rrel n (RExc ex1) (RExc ex2).
@@ -6368,6 +6699,7 @@ Qed.
 #[global]
 Hint Resolve Rrel_exc_compat_closed : core.
 
+(** Related open expressions are related as open redexes. *)
 Corollary Rrel_exp_compat :
   forall Γ e1 e2, Erel_open Γ e1 e2 -> Rrel_open Γ e1 e2.
 Proof.
@@ -6378,6 +6710,7 @@ Qed.
 #[global]
 Hint Resolve Rrel_exp_compat : core.
 
+(** Pairwise related open value sequences are related as open redexes. *)
 Lemma Rrel_valseq_compat :
   forall Γ vl1 vl2, list_biforall (Vrel_open Γ) vl1 vl2 ->
   Rrel_open Γ (RValSeq vl1) (RValSeq vl2).
@@ -6390,6 +6723,7 @@ Qed.
 #[global]
 Hint Resolve Rrel_valseq_compat : core.
 
+(** Related open exceptions are related as open redexes. *)
 Lemma Rrel_exc_compat :
   forall Γ ex1 ex2, Excrel_open Γ ex1 ex2 ->
   Rrel_open Γ (RExc ex1) (RExc ex2).
@@ -6400,29 +6734,31 @@ Proof.
 Qed.
 
 #[global]
-Hint Resolve Rrel_exc_compat_closed : core.
+Hint Resolve Rrel_exc_compat : core.
 
+(** Every well-scoped redex is related to itself. *)
 Theorem Rrel_Fundamental :
   forall Γ r, RED Γ ⊢ r -> Rrel_open Γ r r.
 Proof.
   intros.
-  destruct r; intros; inv H; auto.
-  * apply Rrel_valseq_compat.
-    induction H1; auto.
+  inversion H as [| ? e He | ? ? ? ? Hr Hd | ? ? Hvs]; subst; auto.
+  * unfold Rrel_open. intros. simpl. apply Rrel_Fundamental_closed.
+    auto.
   * apply Rrel_exc_compat.
     unfold Excrel_open, Excrel, exc_rel. simpl. intros.
     split. auto.
     intros. split.
-    - apply Vrel_Fundamental in H1. unfold Vrel_open in H1.
-      apply H1. eapply Grel_downclosed; eassumption.
-    - apply Vrel_Fundamental in H2. unfold Vrel_open in H2.
-      apply H2. eapply Grel_downclosed; eassumption.
-  * unfold Rrel_open. intros. simpl. apply Rrel_Fundamental_closed.
-    auto.
+    - apply Vrel_Fundamental in Hr. unfold Vrel_open in Hr.
+      apply Hr. eapply Grel_downclosed; eassumption.
+    - apply Vrel_Fundamental in Hd. unfold Vrel_open in Hd.
+      apply Hd. eapply Grel_downclosed; eassumption.
+  * apply Rrel_valseq_compat.
+    induction Hvs; auto.
 Unshelve.
   all: lia.
 Qed.
 
+(** Expressions related as redexes are related as expressions. *)
 Corollary Rrel_exp_compat_closed_reverse :
   forall n (e1 e2 : Exp), Rrel n e1 e2 -> Erel n e1 e2.
 Proof.
@@ -6431,6 +6767,7 @@ Proof.
   split. 2: split. all: auto.
 Qed.
 
+(** Open expressions related as redexes are related as expressions. *)
 Corollary Rrel_exp_compat_reverse :
   forall Γ (e1 e2 : Exp), Rrel_open Γ e1 e2 -> Erel_open Γ e1 e2.
 Proof.
@@ -6438,6 +6775,10 @@ Proof.
   intros. apply H in H0. now apply Rrel_exp_compat_closed_reverse.
 Qed.
 
+(** * Transitivity *)
+
+(** If `e1` is related to `e2` at index `j`, and `e2` is related to `e3` at
+    every index, then `e1` is related to `e3` at index `j`. *)
 (* NOTE: this does not work with exact indices - since the "result" derivation
    is unbounded in Erel. *)
 Lemma Erel_trans :
@@ -6447,10 +6788,7 @@ Lemma Erel_trans :
     Erel j e1 e3.
 Proof.
   intros j e1 e2 e3 H1 H2.
-(*   assert (HC : CIU (RExp e2) (RExp e3)).
-  { apply CIU_iff_Rrel_closed. intros m. apply Rrel_exp_compat_closed. apply H2. } *)
   destruct H1 as [Hc1 [Hc2 H1]].
-  (* destruct HC as [_ [_ HC]]. *)
   split; [exact Hc1|]. split; [exact (Erel_closed_r (H2 0))|].
   intros m Hmn F1 F2 HF HT.
   pose proof (H1 m Hmn F1 F2 HF HT) as HT2.
@@ -6460,12 +6798,20 @@ Proof.
   apply Frel_Fundamental_closed; apply HF.
 Qed.
 
-(* Determines the shape of the target value z from [forall m, Vrel m y z]. *)
+(** Determines the shape of the target value z from [forall m, Vrel m y z].
+    The leftover equations between the tuple/map components of y are
+    redundant, and they would block the induction on the components. *)
 Local Ltac vrel_shape Hall :=
   pose proof (Vrel_possibilities (Hall 0)) as ?P;
   destruct_hyps; intuition; subst; try congruence;
-  try (destruct_hyps; subst; try congruence).
+  try (destruct_hyps; subst; try congruence);
+  repeat match goal with
+  | H : VTuple _ = VTuple _ |- _ => clear H
+  | H : VMap _ = VMap _ |- _ => clear H
+  end.
 
+(** If `x` is related to `y` at index `n`, and `y` is related to `z` at
+    every index, then `x` is related to `z` at index `n`. *)
 Lemma Vrel_trans :
   forall n x y z,
     Vrel n x y ->
@@ -6511,7 +6857,6 @@ Proof.
     assert (HH : forall m, list_biforall (Vrel m) l' x0)
       by (intros m; exact (Vrel_Tuple_compat_rev _ _ _ (Hall m))).
     clear Hall. apply Vrel_Tuple_compat_closed.
-    repeat match goal with H : VTuple _ = VTuple _ |- _ => clear H end.
     revert x0 Hvrel0 HH. induction H; intros.
     - inv Hvrel0. specialize (HH 0). inv HH. constructor.
     - inv Hvrel0. specialize (HH 0) as H'. inv H'. constructor.
@@ -6522,20 +6867,20 @@ Proof.
     assert (HH : forall m, list_biforall (fun '(a, b) '(c, d) => Vrel m a c /\ Vrel m b d) l' x0)
       by (intros m; exact (Vrel_Map_compat_rev _ _ _ (Hall m))).
     clear Hall. apply Vrel_Map_compat_closed.
-    repeat match goal with H : VMap _ = VMap _ |- _ => clear H end.
     revert x0 Hvrel0 HH. induction H; intros.
     - inv Hvrel0. specialize (HH 0). inv HH. constructor.
-    - inv Hvrel0. specialize (HH 0) as H'. inv H'. constructor.
+    - inversion Hvrel0 as [|? ? ? ? Hhd Htl]; subst.
+      specialize (HH 0) as H'. inv H'. constructor.
       + destruct hd as [xa xb], hd' as [ha hb], hd'0 as [hc hd]. destruct H as [Ha Hb].
-        destruct H4 as [A B]. split.
-        { eapply Ha; [exact A | intros m; specialize (HH m); inv HH;
-            match goal with Hm : Vrel m _ _ /\ Vrel m _ _ |- _ => exact (proj1 Hm) end]. }
-        { eapply Hb; [exact B | intros m; specialize (HH m); inv HH;
-            match goal with Hm : Vrel m _ _ /\ Vrel m _ _ |- _ => exact (proj2 Hm) end]. }
+        destruct Hhd as [A B]. split.
+        { eapply Ha; [exact A | intros m; specialize (HH m); inv HH; eapply proj1; eassumption]. }
+        { eapply Hb; [exact B | intros m; specialize (HH m); inv HH; eapply proj2; eassumption]. }
       + eapply IHlist_biforall; [eassumption | intros m; specialize (HH m); inv HH; assumption].
   * vrel_shape Hall. all: auto.
 Qed.
 
+(** A variant of `Erel_Case_compat_closed` for clauses with syntactically
+    equal (closed) patterns. *)
 Corollary Erel_Case_compat_closed_eq : forall n e1 e1' l l',
     Erel n e1 e1' ->
     list_biforall (
@@ -6558,6 +6903,8 @@ Proof.
   induction Hpat; constructor; by auto.
 Qed.
 
+(** A variant of `Erel_Case_compat` for clauses with syntactically equal
+    (well-scoped) patterns. *)
 Corollary Erel_Case_compat_eq : forall Γ e1 e1' l l',
   Erel_open Γ e1 e1' ->
   list_biforall (

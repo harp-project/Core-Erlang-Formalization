@@ -192,6 +192,10 @@ Definition inf :=
     [(0, °EApp (˝VFunId (0, 0)) [])]
     (EApp (˝VFunId (0, 0)) []).
 
+(* `simpl` should not unfold `inf`, so that its occurrences remain readable
+   (and recognisable by tactics, e.g., `inf_congr` in `CIU.v`). *)
+Arguments inf : simpl never.
+
 (** Shorthands: *)
 Definition VEmptyMap : Val := VMap [].
 Definition VEmptyTuple : Val := VTuple [].

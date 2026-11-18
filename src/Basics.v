@@ -487,6 +487,9 @@ Section list_biforall.
 
 End list_biforall.
 
+#[global]
+Hint Constructors list_biforall : core.
+
 (**
   Connection between a predicate that is satisfied by a pair of lists and
   list transformation (with `map`).
@@ -631,6 +634,17 @@ Ltac destruct_forall :=
   end.
 
 Ltac destruct_foralls := repeat destruct_forall.
+
+(** `forall_to_Forall` converts an indexed hypothesis
+    `forall i, i < length l -> P (nth i l d)` into `Forall P l`;
+    `foralls_to_Foralls` converts all of them. *)
+Ltac forall_to_Forall :=
+  match goal with
+  | [H : forall i : nat, i < length _ -> ?P (nth i _ _) |- _] =>
+    apply indexed_to_forall in H
+  end.
+Ltac foralls_to_Foralls :=
+  repeat forall_to_Forall.
 
 (** The following tactics are macros for commonly used tactic combinations
     to ease proofs. *)
@@ -916,9 +930,9 @@ Proof. intros A B f ll. destruct ll; reflexivity. Qed.
 Lemma biforall_rev {A B} (P : A -> B -> Prop) l l' :
   list_biforall P l l' -> list_biforall P (List.rev l) (List.rev l').
 Proof.
-  intros H. induction H; simpl; auto. constructor.
-  apply biforall_app; auto.
-  constructor. assumption. constructor.
+  intros H. induction H; simpl.
+  * constructor.
+  * apply biforall_app; auto.
 Qed.
 
 Lemma biforall_nth_error {A B} (P : A -> B -> Prop) l l' k :
