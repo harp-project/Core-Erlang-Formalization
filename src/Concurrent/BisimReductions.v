@@ -118,7 +118,7 @@ Proof with by setoid_rewrite lookup_insert; destruct_decide_eq.
     - subst. exfalso. by apply (H1 eq_refl).
     - rewrite etherAdd_swap_2; auto. by apply n_send.
     - rewrite etherAdd_swap_1; auto. by apply n_send.
-  * by apply etherPop_greater.
+  * by apply etherPop_etherAdd.
   * econstructor; try eassumption.
     intro. apply appearsEther_etherAdd_rev in H. congruence.
     1-3: apply (H0 ι' eq_refl).
@@ -238,7 +238,7 @@ Proof.
      (* message send *)
      (* TODO: proofs for these cases are almost identical *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              constructor.
            }
         right.
@@ -261,7 +261,7 @@ Proof.
              eapply n_send. by constructor.
       (* exit send *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              constructor.
            }
         right.
@@ -284,7 +284,7 @@ Proof.
              eapply n_send. by constructor.
       (* link send *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              constructor.
            }
         right.
@@ -307,7 +307,7 @@ Proof.
              eapply n_send. by constructor.
       (* unlink send *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              constructor.
            }
         right.
@@ -657,14 +657,14 @@ TODO: this cases a lot of boiler plate
      (* message send *)
      (* TODO: proofs for these cases are almost identical *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              constructor. set_solver.
            }
         right.
         eapply n_send. by constructor.
       (* exit send *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              constructor. set_solver.
            }
         right.
@@ -673,7 +673,7 @@ TODO: this cases a lot of boiler plate
       + inv H. (* can't be done *)
       (* unlink send *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              constructor.
              set_solver.
            }
@@ -800,10 +800,10 @@ TODO: this cases a lot of boiler plate
      (* message send *)
      (* TODO: proofs for these cases are almost identical *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              apply p_exit_terminate. set_solver.
            }
-        left. simpl. eexists. split. 1: by apply etherPop_greater.
+        left. simpl. eexists. split. 1: by apply etherPop_etherAdd.
         f_equal. apply map_eq.
         intros. destruct (decide (ι = i)).
         1: subst; by setoid_rewrite lookup_insert; destruct_decide_eq.
@@ -812,10 +812,10 @@ TODO: this cases a lot of boiler plate
         by setoid_rewrite lookup_insert_ne in H'.
       (* exit send *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              apply p_exit_terminate. set_solver.
            }
-        left. simpl. eexists. split. 1: by apply etherPop_greater.
+        left. simpl. eexists. split. 1: by apply etherPop_etherAdd.
         f_equal. apply map_eq.
         intros. destruct (decide (ι = i)).
         1: subst; by setoid_rewrite lookup_insert; destruct_decide_eq.
@@ -1092,7 +1092,7 @@ TODO: this cases a lot of boiler plate
      (* message send *)
      (* TODO: proofs for these cases are almost identical *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              apply p_exit_convert. assumption.
            }
         right.
@@ -1119,7 +1119,7 @@ TODO: this cases a lot of boiler plate
         eapply n_send. by constructor.
       (* exit send *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              apply p_exit_convert. assumption.
            }
         right.
@@ -1146,7 +1146,7 @@ TODO: this cases a lot of boiler plate
         eapply n_send. by constructor.
       (* link send - maybe this should not be proved? *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              apply p_exit_convert.
              clear -H5. set_solver.
            }
@@ -1557,7 +1557,7 @@ TODO: this cases a lot of boiler plate
      (* message send *)
      (* TODO: proofs for these cases are almost identical *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              constructor.
            }
         right.
@@ -1580,7 +1580,7 @@ TODO: this cases a lot of boiler plate
         eapply n_send. by constructor.
       (* exit send *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              constructor.
            }
         right.
@@ -1603,7 +1603,7 @@ TODO: this cases a lot of boiler plate
         eapply n_send. by constructor.
       (* link send - maybe this should not be proved? *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              constructor.
            }
         right.
@@ -1975,7 +1975,7 @@ TODO: this cases a lot of boiler plate
      (* message send *)
      (* TODO: proofs for these cases are almost identical *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              constructor.
            }
         right.
@@ -1998,7 +1998,7 @@ TODO: this cases a lot of boiler plate
         eapply n_send. by constructor.
       (* exit send *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              constructor.
            }
         right.
@@ -2021,7 +2021,7 @@ TODO: this cases a lot of boiler plate
         eapply n_send. by constructor.
       (* link send - maybe this should not be proved? *)
       + eexists. split.
-        1: { constructor. apply etherPop_greater. eassumption.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
              constructor.
            }
         right.

@@ -1,6 +1,13 @@
 (**
   This file contains the inter-process semantics of Core Erlang. This semantics
   defines how concurrent actions should be propagated between processes.
+
+  The file contains:
+  - the ether (the signals in transit), process pools and nodes;
+  - the operations of the ether and their properties;
+  - the inter-process (node) semantics and its reflexive, transitive closure;
+  - the PIDs used in ethers and process pools;
+  - PID renaming in process pools and ethers.
 *)
 
 From CoreErlang.Concurrent Require Export ProcessSemantics.
@@ -8,50 +15,71 @@ From stdpp Require Export base fin_maps gmap.
 
 Import ListNotations.
 
-Theorem Signal_eq_dec (s s' : Signal) : {s = s'} + {s <> s'}.
-Proof. decide equality; try apply Val_eq_dec; try apply Nat.eq_dec. decide equality. Qed.
+(** * Ethers, process pools and nodes *)
 
-(** This representation assures that messages sent from the same process,
-    are delivered in the same order *)
+(** The ether contains the signals in transit, indexed by their source and
+    destination. This representation assures that signals sent from the same
+    process to the same destination are delivered in the same order. *)
 Definition Ether : Set := gmap (PID * PID) (list Signal).
 
-Local Goal ((<[(1, 2):=[]]>∅ : Ether) !! (1, 2)) = Some [].
+(** Inserting a list of signals into the ether *)
+Local Example ether_insert_lookup :
+  ((<[(1, 2):=[]]>∅ : Ether) !! (1, 2)) = Some [].
 Proof.
   cbn. reflexivity.
 Qed.
 
-Local Goal dom (<[(1, 2):=[]]>∅ : Ether) = {[(1,2)]}.
+(** The domain of an ether with a single inserted entry *)
+Local Example ether_insert_dom :
+  dom (<[(1, 2):=[]]>∅ : Ether) = {[(1,2)]}.
 Proof.
   reflexivity.
 Qed.
 
-Definition fresh_pid (K : gset nat) : nat := fresh K.
+(** A PID that is not in the set `K` *)
+Definition fresh_pid (K : gset PID) : PID := fresh K.
 
-Local Goal fresh_pid ({[1;2;3]} : gset nat) ≠ 1.
+(** `fresh_pid` does not return an element of the set. *)
+Local Example fresh_pid_test :
+  fresh_pid ({[1;2;3]} : gset PID) ≠ 1.
 Proof.
-  epose proof (is_fresh {[1;2;3]}). set_solver.
-  Unshelve. exact nat. exact (gset nat). all: typeclasses eauto.
-Defined.
+  pose proof (is_fresh ({[1;2;3]} : gset PID)). unfold fresh_pid. set_solver.
+Qed.
 
+(** Process pools map PIDs to processes. *)
 Definition ProcessPool : Set := gmap PID Process.
-Local Goal (<[1:=inl ([], RValSeq [VNil], ([], []), ∅, false)]>∅ : ProcessPool) !! 1 <> None.
+
+(** Inserting a process into a pool *)
+Local Example pool_insert_lookup :
+  (<[1:=inl ([], RValSeq [VNil], ([], []), ∅, false)]>∅ : ProcessPool) !! 1 <> None.
 Proof.
   intro. inv H.
 Qed.
 
+(** `ι ↦ p ∥ Π` inserts the process `p` with PID `ι` into the pool `Π`, and
+    `Π -- ι` removes the process with PID `ι`. *)
 Notation "pid ↦ p ∥ n" := (@insert PID Process ProcessPool _ pid p n) (at level 32, right associativity).
 Notation "n -- pid" := (delete pid n) (at level 31, left associativity).
 
+(** Nodes consist of an ether and a process pool. *)
 Definition Node : Set := Ether * ProcessPool.
-Local Goal (<[1:=inl ([], RValSeq [VNil], ([], []), ∅, false)]>∅ -- 1 : ProcessPool) = ∅.
+
+(** Removing a process from a pool *)
+Local Example pool_insert_delete :
+  (<[1:=inl ([], RValSeq [VNil], ([], []), ∅, false)]>∅ -- 1 : ProcessPool) = ∅.
 Proof. cbn. reflexivity. Qed.
 
+(** * Ether operations *)
+
+(** Appends the signal `m` from `source` to `dest` to the ether. *)
 Definition etherAdd (source dest : PID) (m : Signal) (n : Ether) : Ether :=
   match n !! (source, dest) with
   | Some l => <[(source, dest) := l ++ [m]]>n
   | None   => <[(source, dest) := [m]]>n
   end.
 
+(** Removes the first signal in transit from `source` to `dest` from the
+    ether, if there is one. *)
 Definition etherPop (source dest : PID) (n : Ether) :
   option (Signal * Ether) :=
 match n !! (source, dest) with
@@ -59,7 +87,8 @@ match n !! (source, dest) with
 | Some (x::xs) => Some (x, <[(source, dest):=xs]>n)
 end.
 
-Lemma etherPop_greater :
+(** Popping a signal from the ether commutes with adding a signal. *)
+Lemma etherPop_etherAdd :
   forall ι ether s ι' ether', etherPop ι ι' ether = Some (s, ether') ->
   forall ι'' ι''' s', etherPop ι ι' (etherAdd ι'' ι''' s' ether) = Some (s, etherAdd ι'' ι''' s' ether').
 Proof.
@@ -92,52 +121,59 @@ Proof.
   * congruence.
 Qed.
 
+(** Adding signals between different source-destination pairs can be done in
+    either order. *)
+Lemma etherAdd_swap :
+  forall ether ιs1 ιd1 m1 ιs2 ιd2 m2, (ιs1, ιd1) <> (ιs2, ιd2) ->
+    etherAdd ιs1 ιd1 m1 (etherAdd ιs2 ιd2 m2 ether) =
+    etherAdd ιs2 ιd2 m2 (etherAdd ιs1 ιd1 m1 ether).
+Proof.
+  intros. unfold etherAdd.
+  destruct (ether !! _) eqn:D1; break_match_goal.
+  all: (* normal rewrite fails on the potential different type class instances *)
+    setoid_rewrite lookup_insert_ne in Heqo; [|congruence];
+    setoid_rewrite Heqo;
+    setoid_rewrite lookup_insert_ne; [|congruence];
+    setoid_rewrite D1;
+    setoid_rewrite Heqo;
+    apply insert_insert_ne; congruence.
+Qed.
+
+(** Adding signals from different sources can be done in either order. *)
 Corollary etherAdd_swap_1 :
   forall ether ιs1 ιd1 m1 ιs2 ιd2 m2, ιs1 <> ιs2 ->
     etherAdd ιs1 ιd1 m1 (etherAdd ιs2 ιd2 m2 ether) =
     etherAdd ιs2 ιd2 m2 (etherAdd ιs1 ιd1 m1 ether).
 Proof.
-  intros. unfold etherAdd.
-  destruct (ether !! _) eqn:D1; break_match_goal.
-  all: (* normal rewrite fails on the potential different type class instances *)
-    setoid_rewrite lookup_insert_ne in Heqo; [|intro D; inv D; congruence];
-    setoid_rewrite Heqo;
-    setoid_rewrite lookup_insert_ne; [|intro D; inv D; congruence];
-    setoid_rewrite D1;
-    setoid_rewrite Heqo;
-    apply insert_insert_ne; intro D; inv D; congruence.
+  intros. apply etherAdd_swap. congruence.
 Qed.
 
+(** Adding signals to different destinations can be done in either order. *)
 Corollary etherAdd_swap_2 :
   forall ether ιs1 ιd1 m1 ιs2 ιd2 m2, ιd1 <> ιd2 ->
     etherAdd ιs1 ιd1 m1 (etherAdd ιs2 ιd2 m2 ether) =
     etherAdd ιs2 ιd2 m2 (etherAdd ιs1 ιd1 m1 ether).
 Proof.
-  intros. unfold etherAdd.
-  destruct (ether !! _) eqn:D1; break_match_goal.
-  all: (* normal rewrite fails on the potential different type class instances *)
-    setoid_rewrite lookup_insert_ne in Heqo; [|intro D; inv D; congruence];
-    setoid_rewrite Heqo;
-    setoid_rewrite lookup_insert_ne; [|intro D; inv D; congruence];
-    setoid_rewrite D1;
-    setoid_rewrite Heqo;
-    apply insert_insert_ne; intro D; inv D; congruence.
+  intros. apply etherAdd_swap. congruence.
 Qed.
 
-(* Targetedness checks whether the ether potentially contains (or contained)
-   signals with the given destination *)
+(** * PIDs appearing in the ether *)
+
+(** Targetedness checks whether the ether potentially contains (or
+    contained) signals with the given destination. *)
 Definition isTargetedEther (ι : PID) (n : Ether) : Prop :=
   exists ι' l, n !! (ι', ι) = Some l.
 
-(* If a PID appears in the ether, it is either targeted, or is a source of a signal
-   or it appears inside a signal's PIDs.
-  *)
+(** If a PID appears in the ether, it is either targeted, or it is the
+    source of a signal, or it appears inside a signal. *)
 Definition appearsEther (ι : PID) (eth : Ether) : Prop :=
   isTargetedEther ι eth \/
   (exists (ι' : PID), eth !! (ι, ι') ≠ None) \/
   (exists (ιs ιd : PID) (t : list Signal),
      eth !! (ιs, ιd) = Some t /\ ι ∈ (flat_union usedPIDsSignal t)).
 
+(** A PID does not appear in the ether, if it is neither the destination nor
+    the source of signals, and it does not occur in any signal. *)
 Proposition not_appearsEther_alt :
   forall ι eth, ¬appearsEther ι eth <->
     (
@@ -163,6 +199,7 @@ Proof.
     - set_solver.
 Qed.
 
+(** Adding a signal preserves targetedness. *)
 Lemma isTargetedEther_etherAdd :
   forall ether ι ι' ι'' s,
     isTargetedEther ι ether ->
@@ -177,6 +214,7 @@ Proof.
   all: eexists; try reflexivity; try eassumption.
 Qed.
 
+(** Adding a signal preserves the PIDs appearing in the ether. *)
 Lemma appearsEther_etherAdd :
   forall ether ι ι' ι'' s,
     appearsEther ι ether ->
@@ -216,6 +254,8 @@ Proof.
   }
 Qed.
 
+(** If a PID is targeted after adding a signal with a different destination,
+    then it was targeted before adding the signal as well. *)
 Lemma isTargetedEther_etherAdd_rev :
   forall ether ι ι' ι'' s,
     isTargetedEther ι (etherAdd ι' ι'' s ether) ->
@@ -230,6 +270,9 @@ Proof.
   * do 2 eexists. eassumption.
 Qed.
 
+(** If a PID appears in the ether after adding a signal in which it does not
+    occur (neither as source, nor as destination, nor in the signal), then it
+    appeared in the ether before adding the signal as well. *)
 Lemma appearsEther_etherAdd_rev :
   forall ether ι ι' ι'' s,
     appearsEther ι (etherAdd ι' ι'' s ether) ->
@@ -289,6 +332,8 @@ Proof.
   }
 Qed.
 
+(** Popping a signal preserves targetedness, except possibly for the
+    destination of the popped signal. *)
 Lemma isTargetedEther_etherPop :
   forall {ether ι ι' ι'' s ether'},
     isTargetedEther ι ether ->
@@ -306,6 +351,9 @@ Proof.
   eexists. eassumption.
 Qed.
 
+(** Popping a signal preserves the PIDs appearing in the ether, except
+    possibly for the source, the destination and the PIDs of the popped
+    signal. *)
 Lemma appearsEther_etherPop :
   forall {ether ι ι' ι'' s ether'},
     appearsEther ι ether ->
@@ -352,6 +400,8 @@ Proof.
   }
 Qed.
 
+(** If a PID is targeted after popping a signal, then it was targeted before
+    popping the signal as well. *)
 Lemma isTargetedEther_etherPop_rev :
   forall {ether ι ι' ι'' s ether'},
     isTargetedEther ι ether' ->
@@ -370,6 +420,8 @@ Proof.
     exists ι'0. eexists. eassumption.
 Qed.
 
+(** If a PID appears in the ether after popping a signal, then it appeared in
+    the ether before popping the signal as well. *)
 Lemma appearsEther_etherPop_rev :
   forall {ether ι ι' ι'' s ether'},
     appearsEther ι ether' ->
@@ -410,15 +462,21 @@ Proof.
   }
 Qed.
 
+(** * Inter-process semantics *)
+
+(** A PID is used in a pool if it is associated with a process, or it occurs
+    in a process. *)
 Definition isUsedPool (ι : PID) (Π : ProcessPool) :=
   Π !! ι <> None \/
   (exists ι' p, Π !! ι' = Some p /\ ι ∈ (usedPIDsProc p)).
 
-(* In this definition O is used for observed PIDs - these can be assumed
-   to have associated processes that consume the signals sent to these PIDs.
-   This is exploited in the bisimulation-based program equivalence definitions
-   which check the communication on these PIDs *)
 Reserved Notation "n -[ a | ι ]ₙ-> n' 'with' O" (at level 50).
+(** `n -[ a | ι ]ₙ-> n' with O`: the node `n` can take a step to `n'`, in
+    which the process `ι` performs the action `a`. `O` is the set of observed
+    PIDs - these can be assumed to have associated processes that consume
+    the signals sent to these PIDs. This is exploited in the
+    bisimulation-based program equivalence definitions which check the
+    communication on these PIDs. *)
 Inductive interProcessStep (O : gset PID) : Node -> Action -> PID -> Node -> Prop :=
 (** sending any signal *)
 | n_send p p' ether prs (ι ι' : PID) t :
@@ -427,7 +485,7 @@ Inductive interProcessStep (O : gset PID) : Node -> Action -> PID -> Node -> Pro
   (ether, ι ↦ p ∥ prs) -[ASend ι ι' t | ι]ₙ->  (etherAdd ι ι' t ether, ι ↦ p' ∥ prs) with O
 
 (** This leads to the loss of determinism: *)
-(** arrial of any signal *)
+(** arrival of any signal *)
 | n_arrive ι ι0 p p' ether ether' prs t:
   etherPop ι0 ι ether = Some (t, ether') ->
   p -⌈AArrive ι0 ι t⌉-> p' ->
@@ -451,7 +509,6 @@ Inductive interProcessStep (O : gset PID) : Node -> Action -> PID -> Node -> Pro
      (i.e., if they appear either as a source or target of a floating message,
      inside a floating message, process, or they are associated with a process).
 
-
      link_flag influences whether spawn_link was called or just spawn
    *)
   ~isUsedPool ι' (ι ↦ p ∥ Π) ->
@@ -462,28 +519,32 @@ Inductive interProcessStep (O : gset PID) : Node -> Action -> PID -> Node -> Pro
 ->
   (ether, ι ↦ p ∥ Π) -[ASpawn ι' v1 v2 link_flag | ι]ₙ-> (ether, ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι]} else ∅, false) ∥ ι ↦ p' ∥ Π) with O
 
-(* (** Process termination, no more notifyable links *)
-| n_terminate ether ι Π :
-  (ether, ι ↦ inr [] ∥ Π) -[ADestroy | ι]ₙ-> (ether, Π -- ι) *)
-
 where "n -[ a | ι ]ₙ-> n' 'with' O" := (interProcessStep O n a ι n').
 
-(** Refexive, transitive closure, with action logs: *)
 Reserved Notation "n -[ l ]ₙ->* n' 'with' O" (at level 50).
+(** Reflexive, transitive closure of the inter-process semantics, with the
+    log of the actions and the acting processes. *)
 Inductive closureNodeSem (O : gset PID) : Node -> list (Action * PID) -> Node -> Prop :=
-| n_refl n (* n'  *): (* Permutation n n' -> *) n -[ [] ]ₙ->* n with O(* ' *)
+| n_refl n : n -[ [] ]ₙ->* n with O
 | n_trans n n' n'' l a ι:
   n -[a|ι]ₙ-> n' with O -> n' -[l]ₙ->* n'' with O
 ->
   n -[(a,ι)::l]ₙ->* n'' with O
 where "n -[ l ]ₙ->* n' 'with' O" := (closureNodeSem O n l n').
 
+(** * PIDs used in nodes *)
 
+(** All PIDs of an ether: the sources, the destinations and the PIDs used in
+    the signals. *)
 Definition allPIDsEther (eth : Ether) : gset PID :=
   flat_union (fun '((ιs, ιd), sigs) => {[ιs; ιd]} ∪ flat_union usedPIDsSignal sigs) (map_to_list eth).
+
+(** All PIDs of a process pool: the PIDs of the processes and the PIDs used
+    in them. *)
 Definition allPIDsPool (Π : ProcessPool) : gset PID :=
   flat_union (fun '(ι, proc) => {[ι]} ∪ usedPIDsProc proc) (map_to_list Π).
 
+(** A PID that is not in `allPIDsPool` is not used in the pool. *)
 Lemma allPIDsPool_isNotUsed_1 :
   forall ι Π,
     ι ∉ allPIDsPool Π -> ¬isUsedPool ι Π.
@@ -500,6 +561,8 @@ Proof.
     set_solver.
 Qed.
 
+(** A PID that is not used in the pool is not in `allPIDsPool` (the converse
+    of `allPIDsPool_isNotUsed_1`). *)
 Lemma allPIDsPool_isNotUsed_2 :
   forall ι Π,
     ¬isUsedPool ι Π ->
@@ -515,6 +578,7 @@ Proof.
   * right. exists ι', proc. split; assumption.
 Qed.
 
+(** A PID that is not in `allPIDsEther` does not appear in the ether. *)
 Lemma allPIDsEther_does_not_appear_1 :
   forall ι eth,
     ι ∉ allPIDsEther eth -> ¬appearsEther ι eth.
@@ -537,6 +601,8 @@ Proof.
     set_solver.
 Qed.
 
+(** A PID that does not appear in the ether is not in `allPIDsEther` (the
+    converse of `allPIDsEther_does_not_appear_1`). *)
 Lemma allPIDsEther_does_not_appear_2 :
   forall ι eth,
     ¬appearsEther ι eth ->
@@ -554,15 +620,178 @@ Proof.
   * right. right. exists ιs, ιd, l. split; assumption.
 Qed.
 
-(* ONLY keys are symmetrically replaced  *)
+(** * PID renaming in nodes *)
+
+(** PID renaming in process pools. Only the keys are swapped (`p` and `p'`
+    are exchanged, to keep the keys injective); inside the processes, `p` is
+    renamed to `p'` (with `renamePIDProc`), which is not a swap. *)
 Definition renamePIDPool (p p' : PID) (Π : ProcessPool) : ProcessPool :=
   kmap (renamePIDPID_sym p p') (renamePIDProc p p' <$> Π).
 
+(** Notation for PID renaming in process pools *)
 Notation "e .[ x ⇔ y ]ₚₚ" := (renamePIDPool x y e) (at level 1, left associativity).
 
-(* ONLY keys are symmetrically replaced  *)
+(** PID renaming in ethers. Only the keys (the source and destination PIDs)
+    are swapped; inside the signals, `p` is renamed to `p'` (with
+    `renamePIDSignal`), which is not a swap. *)
 Definition renamePIDEther (p p' : PID) (eth : Ether) : Ether :=
   kmap (prod_map (renamePIDPID_sym p p') (renamePIDPID_sym p p'))
     ((map (renamePIDSignal p p')) <$> eth).
 
+(** Notation for PID renaming in ethers *)
 Notation "e .[ x ⇔ y ]ₑ" := (renamePIDEther x y e) (at level 1, left associativity).
+
+(** * Properties of process pools and ethers *)
+
+(** If inserting into two maps at the same key results in equal maps, then
+    the inserted elements are equal. *)
+Lemma insert_eq : forall {K T} {H : EqDecision K} {H0: Countable K} ι (p p' : T) (Π Π' : gmap K T),
+  <[ι:=p]>Π = <[ι:=p']> Π' -> p = p'.
+Proof.
+  intros. apply map_eq_iff with (i := ι) in H1.
+  setoid_rewrite lookup_insert in H1. simplify_map_eq. reflexivity. 
+Qed.
+
+(** If inserting into two maps at the same key results in equal maps, then
+    inserting any other element at that key also results in equal maps. *)
+Lemma insert_eq_Π : forall {K T} {H : EqDecision K} {H0: Countable K} ι (p p' : T) (Π Π' : gmap K T),
+  <[ι:=p]>Π = <[ι:=p']>Π' -> forall p'', <[ι:=p'']>Π = <[ι:=p'']>Π'.
+Proof.
+  intros.
+  apply map_eq_iff. intro ι''.
+  apply map_eq_iff with (i := ι'') in H1.
+  destruct (decide (ι'' = ι)).
+  * subst. setoid_rewrite lookup_insert. by destruct_decide_eq.
+  * setoid_rewrite lookup_insert_ne in H1; auto.
+  setoid_rewrite lookup_insert_ne; auto.
+Qed.
+
+(** A PID used in a pool after inserting a process is either used in the
+    rest of the pool, or it is the PID of the process, or it is used by the
+    process. *)
+Lemma isUsedPool_insert_1 :
+  forall prs ι ι0 p,
+    isUsedPool ι (ι0 ↦ p ∥ prs) ->
+    isUsedPool ι (prs -- ι0) \/ ι = ι0 \/ ι ∈ (usedPIDsProc p).
+Proof.
+  intros. unfold isUsedPool in *. destruct (decide (ι = ι0)).
+  * subst. setoid_rewrite lookup_insert in H; intros.
+    all: right. left. reflexivity. 
+  * setoid_rewrite lookup_insert_ne in H at 1; auto. intros; destruct_or!.
+    (* all: try now firstorder. *)
+    - left. left. intro. apply lookup_delete_None in H0. firstorder.
+    - destruct H as [ι' [p0 [H_1 H_2]]].
+      destruct (decide (ι0 = ι')).
+      + subst. setoid_rewrite lookup_insert in H_1. inv H_1.
+        destruct_decide_eq.
+        inv H0.
+        set_solver.
+      + setoid_rewrite lookup_insert_ne in H_1; auto.
+        left. right. exists ι', p0. split; auto.
+        apply lookup_delete_Some. split; auto.
+Qed.
+
+(** The converse of `isUsedPool_insert_1`. *)
+Lemma isUsedPool_insert_2 :
+  forall prs ι ι0 p,
+    (isUsedPool ι (prs -- ι0)) \/ ι = ι0 \/ ι ∈ (usedPIDsProc p) ->
+    isUsedPool ι (ι0 ↦ p ∥ prs).
+Proof.
+  intros. unfold isUsedPool in *.
+  destruct (decide (ι = ι0)).
+  * subst. setoid_rewrite lookup_insert. simplify_map_eq. by left.
+  * setoid_rewrite lookup_insert_ne at 1; auto. destruct_or!.
+    - left. intro. apply H. apply lookup_delete_None. by right.
+    - destruct_hyps. right. exists x, x0.
+      apply lookup_delete_Some in H as [H_1 H_2].
+      setoid_rewrite lookup_insert_ne; set_solver.
+    - right. exists ι0, p. split; auto.
+      by setoid_rewrite lookup_insert. set_solver.
+    - right. exists ι0, p. setoid_rewrite lookup_insert.
+      destruct_decide_eq. by split.
+Qed.
+
+(** A PID which is not used in a pool after inserting a process is neither in
+    the domain of the rest of the pool, nor the PID of the process. *)
+Lemma not_isUsedPool_insert_1 :
+  forall Π ι' ι p,
+  ¬ isUsedPool ι' (ι ↦ p ∥ Π) ->
+  (ι' ∉ dom Π) /\ ι' <> ι.
+Proof.
+  intros. unfold isUsedPool in H.
+  split; intro; apply H.
+  * left. apply elem_of_dom in H0. unfold is_Some in H0. destruct_hyps.
+    destruct (decide (ι = ι')); subst.
+    - setoid_rewrite lookup_insert. by destruct_decide_eq.
+    - setoid_rewrite lookup_insert_ne; auto. by setoid_rewrite H0.
+  * left. subst. setoid_rewrite lookup_insert. by destruct_decide_eq.
+Qed.
+
+(** Targetedness is decidable. *)
+Proposition isTargetedEther_dec :
+  forall ι ether, isTargetedEther ι ether \/ ~isTargetedEther ι ether.
+Proof.
+  intros.
+  unfold isTargetedEther.
+  remember (base.filter (fun '((ιs, ιd), l) => ι = ιd) ether) as newmap.
+  destruct (map_eq_dec_empty newmap).
+  * right. intro. destruct H as [x [l H]].
+    subst newmap.
+    destruct (ether !! (x, ι)) eqn:P. 2: congruence. inv H.
+    eapply map_filter_empty_not_lookup with (i := (x, ι)) (x := l) in e.
+    contradiction. auto.
+  * left.
+    apply map_choose in n as n'. destruct n' as [x [l H]].
+    destruct x.
+    subst newmap. exists p.
+    apply map_lookup_filter_Some_1_2 in H as H'. destruct H'.
+    apply map_lookup_filter_Some_1_1 in H. subst.
+    setoid_rewrite H. now do 2 eexists.
+Qed.
+
+(** Whether a PID appears in the ether is decidable. *)
+Proposition appearsEther_dec :
+  forall ι ether, appearsEther ι ether \/ ~appearsEther ι ether.
+Proof.
+  intros.
+  unfold appearsEther.
+  remember (base.filter (fun '((ιs, ιd), l) => ι = ιd \/ ι = ιs \/ ι ∈ flat_union  usedPIDsSignal l) ether) as newmap.
+  destruct (map_eq_dec_empty newmap).
+  * right. intro. destruct H. 2: destruct H.
+    {
+      destruct H as [x [l H]].
+      subst newmap.
+      destruct (ether !! (x, ι)) eqn:P. 2: congruence. inv H.
+      eapply map_filter_empty_not_lookup with (i := (x, ι)) (x := l) in e.
+      contradiction. auto.
+    }
+    {
+      subst newmap. destruct_hyps.
+      destruct (ether !! (ι, x)) eqn:P. 2: congruence.
+      eapply map_filter_empty_not_lookup with (i := (ι, x)) (x := l) in e.
+      contradiction. auto.
+    }
+    {
+      subst newmap. destruct_hyps.
+      destruct (ether !! (x, x0)) eqn:P. 2: congruence. inv H.
+      eapply map_filter_empty_not_lookup with (i := (x, x0)) (x := x1) in e.
+      contradiction. auto.
+    }
+  * left.
+    apply map_choose in n as n'. destruct n' as [x [l H]].
+    destruct x.
+    subst newmap.
+    apply map_lookup_filter_Some_1_1 in H as Hin.
+    apply map_lookup_filter_Some_1_2 in H.
+    destruct H. 2: destruct H.
+    {
+      subst. left. do 2 eexists. exact Hin.
+    }
+    {
+      subst. right. left. exists p0. intro. by setoid_rewrite Hin in H.
+    }
+    {
+      right. right.
+      do 3 eexists. split. exact Hin. assumption.
+    }
+Qed.

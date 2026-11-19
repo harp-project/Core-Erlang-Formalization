@@ -79,6 +79,33 @@ Definition match_and {A B C} (f : A -> B -> C) (r1 : Match A) (r2 : Match B) : M
   | _, _ => NotMatches
   end.
 
+(** `Match` is a functor: `fmap` transforms the bindings of a successful
+    match. *)
+#[global] Instance FMap_Match : FMap Match :=
+{  fmap {A B} (f : A -> B) m :=
+     match m with
+     | Matches x => Matches (f x)
+     | NotMatches => NotMatches
+     | NotSupported => NotSupported
+     end;
+}.
+
+(** Mapping a function over the bindings commutes with combining binding
+    lists with `match_and`. *)
+Lemma map_match_and_app : forall {A B} (f : A -> B) r1 r2,
+  fmap (map f) (match_and (fun l1 l2 => l1 ++ l2) r1 r2) =
+  match_and (fun l1 l2 => l1 ++ l2) (fmap (map f) r1) (fmap (map f) r2).
+Proof.
+  intros. destruct r1, r2; simpl; try reflexivity. now rewrite map_app.
+Qed.
+
+(** `fmap` distributes into the continuation of `bind_match`. *)
+Lemma map_match_bind_id : forall {A B C} (m : Match A) (g : A -> Match B) (f : B -> C),
+  fmap f (bind_match m g) = bind_match m (fun x => fmap f (g x)).
+Proof.
+  intros. destruct m; reflexivity.
+Qed.
+
 (** Decodes the bits of a segment into a value based on its type: integer
     segments are decoded as integers, binary and bitstring segments as
     bitstrings (for binaries, the size has to be a multiple of the unit).

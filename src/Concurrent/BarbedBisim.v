@@ -2,42 +2,58 @@
   This file defines an even weaker variant of barbed bisimulation. We refer to
   this concept as bisimulation in this and every other file which is followed
   by this file in the compilation order.
+
+  The file contains:
+  - the definition of (barbed) bisimulation, and the facts that it is an
+    equivalence relation which is coarser than weak bisimulation;
+  - barbed expansion, and its properties;
+  - bisimulation up to expansion;
+  - the characterisation of bisimilarity as the largest bisimulation
+    (`is_barbed_bisim_alt`);
+  - the preservation of the barbs by reductions that do not send signals to
+    observed PIDs.
 *)
 
-From CoreErlang Require Export Concurrent.PIDRenaming
-                               Concurrent.WeakBisim.
+From CoreErlang Require Export Concurrent.WeakBisim.
 
 Import ListNotations.
 
-CoInductive barbedBisim (O : gset PID) : (* nat -> *) Node -> Node -> Prop :=
+(** * Barbed bisimulation *)
+
+(** `A ~ᵇ B observing O`: the nodes `A` and `B` are (barbed) bisimilar with
+    the observed PIDs `O`. Every step of one of the nodes has to be matched
+    by a reduction sequence (of any actions) of the other node. The signals
+    in transit to an observed PID (the barbs) in one node have to be equal
+    (`Signal_eq`) to the signals in transit to the same PID in a node
+    reachable from the other node; the sources of these signals can differ.
+    The barb conditions could be adjusted based on the equivalence we are
+    interested in. *)
+CoInductive barbedBisim (O : gset PID) : Node -> Node -> Prop :=
 | is_bisim (A B : Node) :
   (forall A' a ι,
       A -[a | ι]ₙ-> A' with O ->
         exists B' l,
-          B -[l]ₙ->* B' with O /\ barbedBisim O (* n *) A' B') ->
+          B -[l]ₙ->* B' with O /\ barbedBisim O A' B') ->
   (forall source dest,
       dest ∈ O ->
       exists source' l B',
       B -[l]ₙ->* B' with O /\
-      option_list_biforall Signal_eq (A.1 !! (source, dest)) (B'.1 !! (source', dest))
-      (* NOTE: this part could be adjusted based on the equivalence we are
-               interested in *)) ->
+      option_list_biforall Signal_eq (A.1 !! (source, dest)) (B'.1 !! (source', dest))) ->
   (forall B' a ι,
       B -[a | ι]ₙ-> B' with O ->
         exists A' l,
-          A -[l]ₙ->* A' with O /\ barbedBisim O (* n *) A' B') ->
+          A -[l]ₙ->* A' with O /\ barbedBisim O A' B') ->
   (forall source dest,
       dest ∈ O ->
       exists source' l A',
       A -[l]ₙ->* A' with O /\
-      option_list_biforall Signal_eq (B.1 !! (source, dest)) (A'.1 !! (source', dest))
-      (* NOTE: this part could be adjusted based on the equivalence we are
-               interested in *)) ->
-  barbedBisim O (* (S n) *) A B
+      option_list_biforall Signal_eq (B.1 !! (source, dest)) (A'.1 !! (source', dest))) ->
+  barbedBisim O A B
 .
 
-Notation "A ~ᵇ B 'observing' O" := (barbedBisim O (* n *) A B) (at level 70).
+Notation "A ~ᵇ B 'observing' O" := (barbedBisim O A B) (at level 70).
 
+(** Weakly bisimilar nodes are bisimilar. *)
 Theorem weak_is_barbed :
   forall O A B, A ~ʷ B observing O -> A ~ᵇ B observing O.
 Proof.
@@ -69,26 +85,29 @@ Proof.
     by apply Signal_eq_sym.
 Qed.
 
+(** Bisimilarity is reflexive. *)
 Theorem barbedBisim_refl :
-  forall (* n *) O A, (* ether_wf A.1 -> *) A ~ᵇ A observing O.
+  forall O A, A ~ᵇ A observing O.
 Proof.
   intros.
   apply weak_is_barbed, strong_is_weak, equality_is_strong_bisim.
 Qed.
 
+(** Bisimilarity is symmetric. *)
 Corollary barbedBisim_sym :
   forall O A B, A ~ᵇ B observing O -> B ~ᵇ A observing O.
 Proof.
   cofix IH; intros; constructor; inv H; auto.
-(*   * by apply symClos_sym. *)
   * intros. apply H2 in H. destruct_hyps.
     exists x, x0. split; try assumption.
     by apply IH.
   * intros. apply H0 in H. destruct_hyps.
     exists x, x0. split; try assumption.
     by apply IH.
-Defined.
+Qed.
 
+(** Reduction sequences of a node can be matched by reduction sequences of a
+    bisimilar node. *)
 Lemma barbedBisim_many :
   forall O A A' l, A -[l]ₙ->* A' with O ->
     forall B, A ~ᵇ B observing O ->
@@ -105,12 +124,11 @@ Proof.
     destruct_hyps.
     exists B'', (l' ++ l''). split.
     eapply closureNodeSem_trans; eassumption. by simpl.
-Defined.
+Qed.
 
-
-(** NOTE: this theorem is needed separately to prove transitivity, because
-    using symmetry in the proof for transitivity breaks the guardedness
-    conditions! *)
+(** The symmetric version of `barbedBisim_many`. NOTE: this theorem is needed
+    separately to prove transitivity, because using symmetry in the proof for
+    transitivity breaks the guardedness conditions! *)
 Corollary barbedBisim_many_sym :
   forall O A A' l, A -[l]ₙ->* A' with O ->
     forall B, B ~ᵇ A observing O ->
@@ -122,17 +140,15 @@ Proof.
   pose proof (barbedBisim_many _ _ _ _ H _ H0).
   destruct_hyps. exists x, x0. (split; auto).
   now apply barbedBisim_sym.
-Defined.
+Qed.
 
-
+(** Bisimilarity is transitive. *)
 Theorem barbedBisim_trans :
   forall O A B C,
     A ~ᵇ B observing O -> B ~ᵇ C observing O -> A ~ᵇ C observing O.
 Proof.
   cofix IH. intros.
   pose proof (H) as AB. inv H. pose proof (H0) as BC. inv H0. constructor; auto.
-(*   * clear -H1 H. destruct H1, H. split.
-    1-2: eapply preCompatibleNodes_trans; eassumption. *)
   * clear H7. intros. apply H1 in H0 as H0'.
     destruct H0' as [B' [l [H0']]]. destruct_hyps.
     pose proof (barbedBisim_many _ _ _ _ H0' _ BC) as P.
@@ -155,11 +171,8 @@ Proof.
       intros. eapply Signal_eq_trans; eassumption.
   * intros. rename B' into C'. apply H6 in H0 as H0'.
     destruct H0' as [B' [l [H0']]]. destruct_hyps.
-    (* assert (B ~ A observing O) as BA by now apply barbedBisim_sym. *)
     pose proof (barbedBisim_many_sym _ _ _ _ H0' _ AB) as P.
     destruct P as [A' [l']]. destruct_hyps.
-    (* apply barbedBisim_sym in H15. *)
-    (* specialize (IH _ _ _ _ H15 H19). *)
     epose proof (IH _ _ _ _ H10 H8) as IH2. clear IH.
     exists A', l'.
     split. assumption. assumption.
@@ -175,23 +188,28 @@ Proof.
     exists sourceA, (As ++ As'), A''.
     split.
     - eapply closureNodeSem_trans; eassumption.
-    - (* rewrite <- H29. assumption. (* transitivity is needed here! *) *)
-      clear -H11 H9.
+    - clear -H11 H9. (* transitivity is needed here! *)
       eapply option_biforall_trans; eauto.
       intros. eapply Signal_eq_trans; eassumption.
-Defined.
+Qed.
 
+(** * Barbed expansion *)
+
+(** `A ⪯ B observing O`: `A` is expanded by `B`, i.e., `B` is a bisimilar,
+    but more efficient version of `A`. Every step of `A` has to be matched by
+    at most one step of `B`, and every step of `B` by at least one step of
+    `A`. The barbs of `A` have to be present in `B` directly (with possibly
+    different sources), while the barbs of `B` have to be reachable from
+    `A`. *)
 CoInductive barbedExpansion (O : gset PID) : Node -> Node -> Prop :=
 | is_expansion A B:
-  (forall A' a ι, A -[a | ι]ₙ-> A' with O -> exists B' l, 
+  (forall A' a ι, A -[a | ι]ₙ-> A' with O -> exists B' l,
     length l <= 1 /\ B -[l]ₙ->* B' with O /\ barbedExpansion O A' B')
   ->
   (forall source dest,
       dest ∈ O ->
       exists source',
-      option_list_biforall Signal_eq (A.1 !! (source, dest)) (B.1 !! (source', dest))
-      (* NOTE: this part could be adjusted based on the equivalence we are
-               interested in *)) ->
+      option_list_biforall Signal_eq (A.1 !! (source, dest)) (B.1 !! (source', dest))) ->
   (forall B' a ι, B -[a | ι]ₙ-> B' with O -> exists A' l,
     length l >= 1 /\ A -[l]ₙ->* A' with O /\ barbedExpansion O A' B')
   ->
@@ -204,6 +222,7 @@ CoInductive barbedExpansion (O : gset PID) : Node -> Node -> Prop :=
   barbedExpansion O A B.
 Notation "A ⪯ B 'observing' O" := (barbedExpansion O A B) (at level 70).
 
+(** Expansion implies bisimilarity. *)
 Theorem barbedExpansion_implies_bisim :
   forall O A B, A ⪯ B observing O -> A ~ᵇ B observing O.
 Proof.
@@ -214,38 +233,40 @@ Proof.
     exists x, [], B. split; auto. now constructor.
   * intros. apply H2 in H. destruct H as [A' [l H]]. destruct_hyps.
     apply IH in H5. exists A', l. now auto.
-Defined.
+Qed.
 
+(** * Bisimulation up to expansion *)
+
+(** `A ~⪯~ B observing O`: `A` and `B` are bisimilar up to expansion: the
+    derivatives of matched steps only have to be related up to expansion on
+    both sides. *)
 CoInductive barbedBisimUpTo (O : gset PID) : Node -> Node -> Prop :=
 | is_bisim_up_to (A B : Node) :
   (forall A' a ι,
       A -[a | ι]ₙ-> A' with O ->
         exists B' A'' B'' l,
           B -[l]ₙ->* B' with O /\
-          A'' ⪯ A' observing O /\ B' ⪯ B'' observing O /\ barbedBisimUpTo O (* n *) A'' B'') ->
+          A'' ⪯ A' observing O /\ B' ⪯ B'' observing O /\ barbedBisimUpTo O A'' B'') ->
   (forall source dest,
       dest ∈ O ->
       exists source' l B',
       B -[l]ₙ->* B' with O /\
-      option_list_biforall Signal_eq (A.1 !! (source, dest)) (B'.1 !! (source', dest))
-      (* NOTE: this part could be adjusted based on the equivalence we are
-               interested in *)) ->
+      option_list_biforall Signal_eq (A.1 !! (source, dest)) (B'.1 !! (source', dest))) ->
   (forall B' a ι,
       B -[a | ι]ₙ-> B' with O ->
         exists A' B'' A'' l,
           A -[l]ₙ->* A' with O /\
-          A' ⪯ A'' observing O /\ B'' ⪯ B' observing O /\ barbedBisimUpTo O (* n *) A'' B'') ->
+          A' ⪯ A'' observing O /\ B'' ⪯ B' observing O /\ barbedBisimUpTo O A'' B'') ->
   (forall source dest,
       dest ∈ O ->
       exists source' l A',
       A -[l]ₙ->* A' with O /\
-      option_list_biforall Signal_eq (B.1 !! (source, dest)) (A'.1 !! (source', dest))
-      (* NOTE: this part could be adjusted based on the equivalence we are
-               interested in *))
+      option_list_biforall Signal_eq (B.1 !! (source, dest)) (A'.1 !! (source', dest)))
 ->
   barbedBisimUpTo O A B.
 Notation "A ~⪯~ B 'observing' O" := (barbedBisimUpTo O A B) (at level 70).
 
+(** If `A ~ᵇ A'`, `B ~ᵇ B'` and `A' ~ᵇ B'`, then `A ~ᵇ B`. *)
 Corollary diamond_trans :
   forall O A B A' B',
     A ~ᵇ A' observing O -> B ~ᵇ B' observing O -> A' ~ᵇ B' observing O ->
@@ -255,11 +276,11 @@ Proof.
   eapply barbedBisim_trans. exact AA'.
   eapply barbedBisim_trans. exact A'B'.
   now apply barbedBisim_sym.
-Defined.
+Qed.
 
-
+(** Expansion is reflexive. *)
 Lemma barbedExpansion_refl :
-  forall O A, (* ether_wf A.1 ->  *) A ⪯ A observing O.
+  forall O A, A ⪯ A observing O.
 Proof.
   cofix H. intros.
   constructor.
@@ -276,8 +297,9 @@ Proof.
   * intros. exists source, [], A.
     split. constructor.
     apply option_biforall_refl. intros. apply Signal_eq_refl.
-Defined.
+Qed.
 
+(** Expansion implies bisimilarity up to expansion. *)
 Lemma barbedExpansion_is_expansion_up_to :
   forall O A B,
     A ⪯ B observing O -> A ~⪯~ B observing O.
@@ -295,8 +317,10 @@ Proof.
     2: split.
     1-2: apply barbedExpansion_refl.
     now apply IH.
-Defined.
+Qed.
 
+(** Reduction sequences of `A` can be matched by at most as long reduction
+    sequences of a node `B` expanding `A`. *)
 Lemma barbedExpansion_many :
   forall O A A' l, A -[l]ₙ->* A' with O ->
     forall B, A ⪯ B observing O ->
@@ -316,8 +340,10 @@ Proof.
     - eapply closureNodeSem_trans; eassumption.
     - assumption.
     - rewrite length_app. slia.
-Defined.
+Qed.
 
+(** Reduction sequences of `B` can be matched by at least as long reduction
+    sequences of a node `A` expanded by `B`. *)
 Lemma barbedExpansion_many_sym :
   forall O B B' l', B -[l']ₙ->* B' with O ->
     forall A, A ⪯ B observing O ->
@@ -337,8 +363,9 @@ Proof.
     - eapply closureNodeSem_trans; eassumption.
     - assumption.
     - rewrite length_app. slia.
-Defined.
+Qed.
 
+(** Expansion is transitive. *)
 Lemma barbedExpansion_trans :
   forall O A B C,
     A ⪯ B observing O -> B ⪯ C observing O
@@ -380,8 +407,12 @@ Proof.
     - eapply closureNodeSem_trans; eassumption.
     - eapply option_biforall_trans; eauto.
       intros. eapply Signal_eq_trans; eassumption.
-Defined.
+Qed.
 
+(** * Bisimulations as relations *)
+
+(** `R` is a (barbed) bisimulation: related nodes satisfy the conditions of
+    `barbedBisim`, with `R` in place of `barbedBisim`. *)
 Definition is_barbed_bisim_alt (R : Node -> Node -> Prop) (O : gset PID) :=
 forall A B, R A B ->
 (forall A' a ι,
@@ -403,6 +434,8 @@ forall A B, R A B ->
       A -[l]ₙ->* A' with O /\
       option_list_biforall Signal_eq (B.1 !! (source, dest)) (A'.1 !! (source', dest))).
 
+(** Nodes related by a bisimulation are bisimilar (the coinduction principle
+    of `barbedBisim`). *)
 Theorem barbed_alt_barbed_1 :
   forall R O, is_barbed_bisim_alt R O ->
     forall A B, R A B ->
@@ -419,12 +452,14 @@ Proof.
   * intros. by apply H3.
 Qed.
 
+(** Bisimilarity is a bisimulation. *)
 Theorem barbed_alt_barbed_2 :
   forall O, is_barbed_bisim_alt (barbedBisim O) O.
 Proof.
   intros. intros A B IH. by inv IH.
 Qed.
 
+(** Bisimilar nodes are related by a bisimulation. *)
 Corollary barbed_alt_barbed_corr :
   forall A B O, A ~ᵇ B observing O ->
     exists R, is_barbed_bisim_alt R O /\ R A B.
@@ -433,8 +468,7 @@ Proof.
   apply barbed_alt_barbed_2.
 Qed.
 
-
-
+(** Soundness of bisimulation up to expansion. *)
 Theorem barbedBisimUpTo_barbedBisim :
   forall O A B, A ~⪯~ B observing O -> A ~ᵇ B observing O.
 Proof.
@@ -459,7 +493,12 @@ Proof.
   * admit. *)
 Abort.
 
-Lemma reductions_preserve_singals_targeting_O :
+(** * Barbs under reduction *)
+
+(** Reductions that do not send signals to observed PIDs (which are not
+    associated with processes) do not change the signals in transit to
+    observed PIDs. *)
+Lemma reductions_preserve_signals_targeting_O :
   forall O (n n' : Node) l, n -[l]ₙ->* n' with O ->
     O ## dom n.2 ->
     (forall ι, ι ∈ (PIDsOf sendPIDOf l) -> ι ∉ O) ->
