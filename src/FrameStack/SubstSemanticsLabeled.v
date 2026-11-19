@@ -229,6 +229,11 @@ Definition step_any_non_terminal
   exists k, ⟨fs, e⟩ -[k, l]->ₗ ⟨fs', e'⟩.
 Notation "⟨ fs , e ⟩ -[ l ]->ₗ* ⟨ fs' , e' ⟩" := (step_any_non_terminal fs e l fs' e') (at level 0).
 
+(** Takes one step of a labeled multi-step evaluation, leaving the rest
+    of the evaluation and the side-effect trace as goals. *)
+Ltac do_step_labeled :=
+  eapply step_trans; [econstructor;auto|simpl|simpl].
+
 Definition step_any (fs : FrameStack) (e : Redex) (r : Redex) : Prop :=
   exists k l, is_result r /\ ⟨fs, e⟩ -[k, l]->ₗ ⟨[], r⟩.
 Notation "⟨ fs , e ⟩ -->ₗ* v" := (step_any fs e v) (at level 0, v at level 50).

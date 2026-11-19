@@ -1375,6 +1375,20 @@ Proof.
   induction s; simpl; auto.
 Qed.
 
+(** Strings converted to Core Erlang lists can be converted back to
+    character lists. *)
+Lemma string_to_vcons_mk_ascii_list s :
+  mk_ascii_list (string_to_vcons s) = Some (list_ascii_of_string s).
+Proof.
+  induction s as [|a s IHs]; simpl.
+  - reflexivity.
+  - assert (Hb : ((0 <=? Z.of_nat (nat_of_ascii a))%Z &&
+                  (Z.of_nat (nat_of_ascii a) <=? 255)%Z) = true).
+    { pose proof (nat_ascii_bounded a).
+      apply andb_true_intro. split; apply Z.leb_le; lia. }
+    rewrite Hb, IHs, Nat2Z.id, ascii_nat_embedding. reflexivity.
+Qed.
+
 (** The simulated BIFs always produce results (value sequences or
     exceptions). *)
 Lemma eval_is_result :

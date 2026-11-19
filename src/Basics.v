@@ -7,6 +7,7 @@
 Require Export Stdlib.micromega.Lia
                Stdlib.Lists.List
                Stdlib.Arith.PeanoNat.
+From Stdlib Require Import DecimalString.
 Import ListNotations.
 
 
@@ -963,4 +964,31 @@ Lemma biforall_repeat {A B} (P : A -> B -> Prop) a b n :
   P a b -> list_biforall P (repeat a n) (repeat b n).
 Proof.
   intros H. induction n; simpl; constructor; auto.
+Qed.
+
+(** Decimal string representations *)
+
+(** The `NilEmpty` string representation of unsigned decimals is
+    injective. *)
+Lemma NilEmpty_string_of_uint_inj : forall d1 d2,
+  NilEmpty.string_of_uint d1 = NilEmpty.string_of_uint d2
+->
+  d1 = d2.
+Proof.
+  induction d1; destruct d2; simpl; intros H; inversion H as [Hs]; try reflexivity.
+  all: f_equal; apply IHd1; assumption.
+Qed.
+
+(** The `NilZero` string representation of unsigned decimals is injective
+    on non-empty decimals (it represents `Nil` as `"0"`). *)
+Lemma NilZero_string_of_uint_inj :
+  forall d1 d2,
+    d1 <> Decimal.Nil -> d2 <> Decimal.Nil ->
+    NilZero.string_of_uint d1 = NilZero.string_of_uint d2
+  ->
+    d1 = d2.
+Proof.
+  intros d1 d2 H1 H2 H.
+  destruct d1, d2; try reflexivity; try congruence.
+  all: apply NilEmpty_string_of_uint_inj; assumption.
 Qed.

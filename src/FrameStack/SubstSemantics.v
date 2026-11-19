@@ -232,5 +232,10 @@ Definition step_any (fs : FrameStack) (e : Redex) (r : Redex) : Prop :=
   exists k, is_result r /\ ⟨fs, e⟩ -[k]-> ⟨[], r⟩.
 Notation "⟨ fs , e ⟩ -->* v" := (step_any fs e v) (at level 0, v at level 50).
 
+(** A simple evaluation tactic: performs one step of a `-[ k ]->` goal
+    (proving the side conditions of the step with `auto`), and simplifies the
+    rest of the evaluation. *)
+Ltac do_step := econstructor; [constructor;auto| simpl].
+
 Local Lemma test_precedence : ⟨ [], ˝VNil ⟩ -->* RValSeq [VNil].
 Abort.
