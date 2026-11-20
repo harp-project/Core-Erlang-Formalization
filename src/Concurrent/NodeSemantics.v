@@ -157,6 +157,23 @@ Proof.
   intros. apply etherAdd_swap. congruence.
 Qed.
 
+(** An entry of the ether after adding a signal is either an original entry,
+    or the entry of the updated source-destination pair, ending with the new
+    signal. *)
+Lemma etherAdd_lookup :
+  forall ιs ιd ι1 ι2 t l eth,
+    etherAdd ιs ιd t eth !! (ι1, ι2) = Some l ->
+      eth !! (ι1, ι2) = Some l \/
+      (ι1 = ιs /\ ι2 = ιd /\ exists l', l = l' ++ [t]).
+Proof.
+  intros. destruct (decide ((ιs, ιd) = (ι1, ι2))).
+  * inv e. right. intuition.
+    unfold etherAdd in H. case_match; setoid_rewrite lookup_insert_eq in H; inv H.
+    1: by eexists.
+    1: by exists [].
+  * unfold etherAdd in H. case_match; setoid_rewrite lookup_insert_ne in H; auto.
+Qed.
+
 (** * PIDs appearing in the ether *)
 
 (** Targetedness checks whether the ether potentially contains (or

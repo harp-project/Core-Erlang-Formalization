@@ -951,6 +951,10 @@ Proof.
 Qed.
 
 
+(** `do_step`, which also uses the hints of the `examples` database. It is
+    defined outside of the sections to be usable in other files. *)
+Ltac do_step_with_examples := econstructor; [constructor;auto with examples; try congruence| simpl].
+
 Section map_foldr.
 (**
   Equivalence of the usual implementation of `map` and `foldr`:
@@ -988,10 +992,11 @@ Context {l : Val}
 
 Hypothesis f_simulates :
   forall v : Val,
-    In v l' ->
-    exists e_body,
-    create_result (IApp f_clos) [v] = Some (e_body, None) /\
+    v ∈ l' ->
+    exists e_body eff,
+    create_result (IApp f_clos) [v] = Some (e_body, eff) /\
     ⟨[], e_body⟩ -->* RValSeq [f v].
+
 Hypothesis l_is_proper : mk_list l = Some l'.
 Hypothesis l_closed : VALCLOSED l.
 
@@ -1020,9 +1025,6 @@ Hint Resolve map_clos_closed : examples.
 
 Open Scope string_scope.
 
-(** `do_step`, which also uses the hints of the `examples` database *)
-Ltac do_step_with_examples := econstructor; [constructor;auto with examples; try congruence| simpl].
-
 (** `map` applied to `f_clos` and `l` evaluates to the list of `f` applied
     to the elements of `l`. *)
 Theorem map_clos_eval :
@@ -1046,7 +1048,7 @@ Proof.
   }
     clear IHv2.
     destruct IHD as [clock [IHv2 IHD]].
-    epose proof (f_simulates0 v) as [e_v [HRes [k_v [HRv HD]]]].
+    epose proof (f_simulates0 v) as [e_v [eff' [HRes [k_v [HRv HD]]]]].
     1: now left.
     eexists. split.
     {
@@ -1121,7 +1123,7 @@ Proof.
       intros. apply f_simulates. now right.
     }
     destruct IHv2 as [clock [IHv2 IHD]].
-    specialize (f_simulates v ltac:(now left)) as [e_body [H_sim [k [Hr HD]]]].
+    specialize (f_simulates v ltac:(now left)) as [e_body [eff' [H_sim [k [Hr HD]]]]].
     eexists. split.
     {
       simpl. constructor.

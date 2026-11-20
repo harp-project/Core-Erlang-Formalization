@@ -1291,6 +1291,30 @@ Proof.
     now apply IHl2.
 Qed.
 
+(** The correctness of list splitting (`lists:split`): splitting a proper
+    list at a valid index gives the prefix and the suffix of the list. *)
+Lemma eval_split_correct :
+  forall l l' idx,
+  mk_list l = Some l' ->
+  idx < length l' ->
+  eval_split (VLit (Z.of_nat idx)) l = RValSeq [VTuple [meta_to_cons (take idx l'); meta_to_cons (drop idx l')]].
+Proof.
+  intros l l' idx Hl Hidx. simpl.
+  destruct l; try (simpl in Hl; congruence).
+  1: { simpl in Hl. inv Hl. simpl in Hidx. lia. }
+  remember (VCons l1 l2) as l eqn:Heql.
+  case_match.
+  * apply Z.ltb_lt in H. lia.
+  * rewrite Nat2Z.id.
+    clear H Heql l1 l2. revert l l' Hidx Hl. induction idx; intros.
+    - simpl. rewrite drop_0. by erewrite mk_list_meta_to_cons.
+    - simpl. destruct l; inv Hl. simpl in Hidx. lia.
+      case_match. 2: congruence. inv H0. simpl in Hidx.
+      specialize (IHidx l2 l ltac:(lia) H). case_match. 2: congruence.
+      destruct p. simpl.
+      by inv IHidx.
+Qed.
+
 (** Scope of transforming a Core Erlang list to a Rocq list *)
 Lemma mk_list_closed :
   forall l l' Γ,

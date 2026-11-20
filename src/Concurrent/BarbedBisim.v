@@ -494,10 +494,10 @@ Proof.
   * exact H2.
 Qed.
 
-(** The auxiliary relation of the soundness proof: `X` expands `Z`, `Z` is
-    bisimilar to `W` up to expansion, and `W` expands `Y`. *)
-Local Definition upToExpRel (O : gset PID) (X Y : Node) : Prop :=
-  exists Z W, X ⪰ Z observing O /\ Z ~⪯~ W observing O /\ W ⪰ Y observing O.
+(** The auxiliary relation of the soundness proof: `A` expands `N`, `N` is
+    bisimilar to `M` up to expansion, and `M` expands `B`. *)
+Local Definition upToExpRel (O : gset PID) (A B : Node) : Prop :=
+  exists N M, A ⪰ N observing O /\ N ~⪯~ M observing O /\ M ⪰ B observing O.
 
 (** Reduction sequences of the left node of `upToExpRel` can be matched by
     reduction sequences of the right node (by strong induction on the length
@@ -506,55 +506,55 @@ Local Definition upToExpRel (O : gset PID) (X Y : Node) : Prop :=
     handles the converse direction (see `upToExp_bisim`). *)
 Local Lemma upToExpRel_many :
   forall O (* n *) l, (* length l <= n -> *)
-    forall X X', X -[l]ₙ->* X' with O ->
-    forall Y, upToExpRel O X Y ->
-      exists Y' l', Y -[l']ₙ->* Y' with O /\ upToExpRel O X' Y'.
+    forall A A', A -[l]ₙ->* A' with O ->
+    forall B, upToExpRel O A B ->
+      exists B' l', B -[l']ₙ->* B' with O /\ upToExpRel O A' B'.
 Proof.
-  intros O. induction l; intros X X' HX Y [Z [W [HXZ [HZW HWY]]]].
-  * inv HX. exists Y, []. split. constructor. by exists Z, W.
-  * inversion HX as [|? X1 ? l0 a' ι HXstep HXrest]; subst.
-    inversion HXZ as [? ? HXZ1 HXZ2 HXZ3 HXZ4]; subst.
-    destruct (HXZ1 _ _ _ HXstep) as [Z1 [lz [Hlz [HZ HX1Z1]]]].
-    destruct lz as [|[b κ] [|]]; [| |simpl in Hlz; lia].
-    - inv HZ. eapply IHl. exact HXrest.
-      by exists Z1, W.
-    - inversion HZ as [|? Zm ? ? ? ? HZstep HZrest]; subst. inv HZrest.
-      inversion HZW as [? ? HZW1 HZW2 HZW3 HZW4]; subst.
-      destruct (HZW1 _ _ _ HZstep) as [W1 [Z2 [W2 [lw [HW [HZ1Z2 [HW2W1 HZ2W2]]]]]]].
-      destruct (barbedExpansion_many _ _ _ _ HW _ HWY) as [Y1 [ly [HY [HW1Y1 _]]]].
-      destruct (IHl _ _ HXrest Y1) as [Y' [ly' [HY' HU]]].
+  intros O. induction l; intros A A' HA B [N [M [HAN [HNM HMB]]]].
+  * inv HA. exists B, []. split. constructor. by exists N, M.
+  * inversion HA as [|? A1 ? l0 a' ι HAstep HArest]; subst.
+    inversion HAN as [? ? HAN1 HAN2 HAN3 HAN4]; subst.
+    destruct (HAN1 _ _ _ HAstep) as [N1 [ln [Hln [HN HA1N1]]]].
+    destruct ln as [|[b κ] [|]]; [| |simpl in Hln; lia].
+    - inv HN. eapply IHl. exact HArest.
+      by exists N1, M.
+    - inversion HN as [|? Nm ? ? ? ? HNstep HNrest]; subst. inv HNrest.
+      inversion HNM as [? ? HNM1 HNM2 HNM3 HNM4]; subst.
+      destruct (HNM1 _ _ _ HNstep) as [M1 [N2 [M2 [lm [HM [HN1N2 [HM2M1 HN2M2]]]]]]].
+      destruct (barbedExpansion_many _ _ _ _ HM _ HMB) as [B1 [lb [HB [HM1B1 _]]]].
+      destruct (IHl _ _ HArest B1) as [B' [lb' [HB' HU]]].
       {
-        exists Z2, W2. split; [|split].
+        exists N2, M2. split; [|split].
         - eapply barbedExpansion_trans; eassumption.
         - assumption.
         - eapply barbedExpansion_trans; eassumption.
       }
-      exists Y', (ly ++ ly'). split. 2: assumption.
+      exists B', (lb ++ lb'). split. 2: assumption.
       eapply closureNodeSem_trans; eassumption.
 Qed.
 
 (** The barbs of the left node of `upToExpRel` are reachable from the right
     node. *)
 Local Lemma upToExpRel_barbs :
-  forall O X Y, upToExpRel O X Y ->
+  forall O A B, upToExpRel O A B ->
     forall source dest, dest ∈ O ->
-      exists source' l Y', Y -[l]ₙ->* Y' with O /\
-        option_list_biforall Signal_eq (X.1 !! (source, dest)) (Y'.1 !! (source', dest)).
+      exists source' l B', B -[l]ₙ->* B' with O /\
+        option_list_biforall Signal_eq (A.1 !! (source, dest)) (B'.1 !! (source', dest)).
 Proof.
-  intros O X Y [Z [W [HXZ [HZW HWY]]]] source dest Hdest.
-  inversion HXZ as [? ? _ HXZ2 _ _]; subst.
-  destruct (HXZ2 source dest Hdest) as [s1 HXZb].
-  inversion HZW as [? ? _ HZW2 _ _]; subst.
-  destruct (HZW2 s1 dest Hdest) as [s2 [lw [W1 [HW HZWb]]]].
-  destruct (barbedExpansion_many _ _ _ _ HW _ HWY) as [Y1 [ly [HY [HW1Y1 _]]]].
-  inversion HW1Y1 as [? ? _ HW1Y12 _ _]; subst.
-  destruct (HW1Y12 s2 dest Hdest) as [s3 HWYb].
-  exists s3, ly, Y1. split. 1: assumption.
+  intros O A B [N [M [HAN [HNM HMB]]]] source dest Hdest.
+  inversion HAN as [? ? _ HAN2 _ _]; subst.
+  destruct (HAN2 source dest Hdest) as [s1 HANb].
+  inversion HNM as [? ? _ HNM2 _ _]; subst.
+  destruct (HNM2 s1 dest Hdest) as [s2 [lm [M1 [HM HNMb]]]].
+  destruct (barbedExpansion_many _ _ _ _ HM _ HMB) as [B1 [lb [HB [HM1B1 _]]]].
+  inversion HM1B1 as [? ? _ HM1B12 _ _]; subst.
+  destruct (HM1B12 s2 dest Hdest) as [s3 HMBb].
+  exists s3, lb, B1. split. 1: assumption.
   eapply option_biforall_trans. 1: intros; eapply Signal_eq_trans; eassumption.
-  1: exact HXZb.
+  1: exact HANb.
   eapply option_biforall_trans. 1: intros; eapply Signal_eq_trans; eassumption.
-  1: exact HZWb.
-  exact HWYb.
+  1: exact HNMb.
+  exact HMBb.
 Qed.
 
 (** Bisimilarity composed with bisimilarity up to expansion on both sides is
@@ -577,10 +577,10 @@ Proof.
   * intros A' a ι HA.
     destruct (HAX1 _ _ _ HA) as [X' [lx [HX HA'X']]].
     destruct (upToExpRel_many O lx _ _ HX _ HU)
-      as [Y' [ly [HY [Z' [W' [HX'Z' [HZ'W' HW'Y']]]]]]].
+      as [Y' [ly [HY [N [M [HX'N [HNM HMY']]]]]]].
     destruct (barbedBisim_many _ _ _ _ HY _ HYB) as [B' [lb [HB HY'B']]].
     exists B', lb. split. 1: assumption.
-    exists Z', W'. split; [|split].
+    exists N, M. split; [|split].
     - eapply barbedBisim_trans. 1: exact HA'X'.
       by apply barbedExpansion_implies_bisim.
     - assumption.
@@ -606,10 +606,10 @@ Proof.
   * intros B' a ι HB.
     destruct (HYB3 _ _ _ HB) as [Y' [ly [HY HY'B']]].
     destruct (upToExpRel_many O ly _ _ HY _ HU')
-      as [X' [lx [HX [Z' [W' [HY'Z' [HZ'W' HW'X']]]]]]].
+      as [X' [lx [HX [N [M [HY'N [HNM HMX']]]]]]].
     destruct (barbedBisim_many_sym _ _ _ _ HX _ HAX) as [A' [la [HA HA'X']]].
     exists A', la. split. 1: assumption.
-    exists W', Z'. split; [|split].
+    exists M, N. split; [|split].
     - eapply barbedBisim_trans. 1: exact HA'X'.
       by apply barbedBisim_sym, barbedExpansion_implies_bisim.
     - by apply barbedBisimUpTo_sym.

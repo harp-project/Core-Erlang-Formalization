@@ -9,7 +9,9 @@
   - preservation of reduction steps under PID renaming, and the used PIDs of
     nodes during reduction;
   - confluence of steps of different processes;
-  - freshness of PIDs, and decision procedures for the used PIDs.
+  - freshness of PIDs, and decision procedures for the used PIDs;
+  - steps of nodes with updated ethers and dead processes;
+  - evaluating arrivals later (`chain_arrive_later`).
 
   Some proofs rely on classical logic (`Classical_Prop`,
   `Classical_Pred_Type`).
@@ -337,6 +339,42 @@ match a1, a2 with
 | ASpawn ι1 _ _ _, ASpawn ι2 _ _ _ => (ι1 <> ι2)%type
 | _, _ => True
 end.
+
+(** Two actions are either compatible, or one of them spawns a PID `from`,
+    such that renaming `from` to different fresh PIDs in the two actions
+    makes them compatible. *)
+Theorem compatiblePIDOf_options :
+  forall a a',
+    compatiblePIDOf a a' \/
+    (exists from, (Some from = spawnPIDOf a \/ Some from = spawnPIDOf a') /\
+      forall to1 to2, to1 ≠ to2 ->
+      (to1 ∉ usedPIDsAct a) -> (to1 ∉ usedPIDsAct a') ->
+      (to2 ∉ usedPIDsAct a) -> (to2 ∉ usedPIDsAct a') ->
+      compatiblePIDOf (renamePIDAct from to1 a) (renamePIDAct from to2 a')).
+Proof.
+  intros. destruct a, a'; simpl; try by left; intros.
+  * right. exists ι. split. by right. intros. renamePIDPID_case_match. set_solver.
+  * right. exists ι. split. by left.  intros. renamePIDPID_case_match. set_solver.
+  * right. exists ι. split. by left.  intros. renamePIDPID_case_match. set_solver.
+Qed.
+
+(** Two actions are either compatible, or for every PID `to` fresh in them,
+    renaming the PID spawned by one of the actions to `to` makes them
+    compatible. *)
+Theorem compatiblePIDOf_options_alt :
+  forall a a',
+    compatiblePIDOf a a' \/
+    forall to, (to ∉ usedPIDsAct a) -> (to ∉ usedPIDsAct a') ->
+      (exists from, Some from = spawnPIDOf a /\
+        compatiblePIDOf (renamePIDAct from to a) a') \/
+      (exists from, Some from = spawnPIDOf a' /\
+        compatiblePIDOf a (renamePIDAct from to a')).
+Proof.
+  intros. destruct a, a'; simpl; try by left; intros.
+  * right; intros. right. exists ι. split. reflexivity. renamePIDPID_case_match. set_solver.
+  * right; intros. left. exists ι. split. reflexivity. renamePIDPID_case_match. set_solver.
+  * right; intros. left. exists ι. split. reflexivity. renamePIDPID_case_match. set_solver.
+Qed.
 
 (** If the signal `s` from `ι` to `ι'` does not arrive during a reduction
     sequence, then it stays in the ether, and only signals from the front of
@@ -894,42 +932,6 @@ Proof.
         apply elem_of_app. simpl. right. rewrite H0. now constructor.
 Qed.
 
-(** Untaken PIDs are not spawned. *)
-Lemma no_spawn_unTaken :
-  forall O n n' l, n -[l]ₙ->* n' with O ->
-    forall ι, isUntaken ι n ->
-      ι ∉ (PIDsOf spawnPIDOf l).
-Proof.
-  intros O n n' l H. induction H; intros; simpl.
-  * set_solver.
-  * intro Hin. inv H; simpl in *.
-    - apply IHclosureNodeSem in Hin. assumption.
-      destruct H1. split; simpl in *.
-      + repeat processpool_destruct; congruence.
-      + now apply isTargetedEther_etherAdd.
-    - apply IHclosureNodeSem in Hin. assumption.
-      destruct H1. split; simpl in *.
-      + repeat processpool_destruct; congruence.
-      + eapply isTargetedEther_etherPop in H2 as [H2 | H2]; try eassumption.
-        subst. repeat processpool_destruct. congruence.
-    - assert (isUntaken ι0 (ether, ι ↦ p' ∥ Π)). {
-        destruct H1; split; auto.
-        simpl in *. repeat processpool_destruct; congruence.
-      }
-      apply IHclosureNodeSem in H. apply H.
-      destruct a; auto. destruct H3 as [? | [? | ?]]; congruence.
-    - apply elem_of_cons in Hin as [|].
-      + clear H7. subst. destruct H1. simpl in *.
-        apply H5. by left.
-      + clear H6. assert (isUntaken ι0 (ether, ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι]} else ∅, false) ∥ ι ↦ p' ∥ Π)). {
-          destruct H1; split; auto.
-          simpl in *. repeat processpool_destruct; try congruence.
-          exfalso. apply H5. by left.
-        }
-        apply IHclosureNodeSem in H6. now apply H6.
-Qed.
-
-
 (** Spawned PIDs are associated with processes. *)
 Lemma included_spawn :
   forall O (l : list (Action * PID)) (n n' : Node),
@@ -1016,24 +1018,6 @@ Proof.
 
 Abort. *)
 
-(** A PID is untaken in a node with a composed pool iff it is untaken with
-    both components. *)
-Lemma isUntaken_comp :
-  forall eth Π Π' ι, isUntaken ι (eth, Π ∪ Π') <->
-    isUntaken ι (eth, Π) /\ isUntaken ι (eth, Π').
-Proof.
-  split.
-  {
-    intros. destruct H. unfold isUntaken. simpl in *.
-    apply lookup_union_None in H. intuition.
-  }
-  {
-    intros. destruct H, H, H0. simpl in *.
-    split; auto.
-    simpl. now apply lookup_union_None.
-  }
-Qed.
-
 (** `preCompatibleNodes O n1 n2`: the observed PIDs untaken in `n1` are
     untaken in `n2` too. *)
 Definition preCompatibleNodes (O : gset PID) (n1 n2 : Node) : Prop :=
@@ -1054,70 +1038,6 @@ Lemma preCompatibleNodes_refl :
   forall O n, preCompatibleNodes O n n.
 Proof.
   intros. intros ???. assumption.
-Qed.
-
-(** Reduction sequences preserve untaken observed PIDs. *)
-Lemma reduction_produces_preCompatibleNodes :
-  forall O n1 n2 l, n1 -[l]ₙ->* n2 with O ->
-    preCompatibleNodes O n1 n2.
-Proof.
-  intros. induction H.
-  * apply preCompatibleNodes_refl.
-  * eapply preCompatibleNodes_trans. 2: eassumption.
-    clear -H. inv H.
-    - split; intros; destruct H1; simpl.
-      + repeat processpool_destruct; try congruence.
-      + now apply isTargetedEther_etherAdd.
-    - split; intros; destruct H2; simpl.
-      + repeat processpool_destruct; try congruence.
-      + simpl in *.
-        eapply isTargetedEther_etherPop in H0 as [|]; eauto.
-        subst. by setoid_rewrite lookup_insert_eq in H2.
-    - split; intros; destruct H2; simpl.
-      + repeat processpool_destruct; try congruence.
-      + assumption.
-    - split; intros; destruct H6; simpl in *.
-      + repeat processpool_destruct; try congruence.
-      + assumption.
-Qed.
-
-(** If no signal is sent to observed PIDs during a reduction sequence, then
-    the untaken observed PIDs at the end were untaken at the beginning as
-    well. *)
-Lemma reduction_produces_preCompatibleNodes_sym :
-  forall O n1 n2 l, n1 -[l]ₙ->* n2 with O ->
-    (forall ι, ι ∈ (PIDsOf sendPIDOf l) -> ι ∉ O) ->
-    preCompatibleNodes O n2 n1.
-Proof.
-  intros. induction H.
-  * apply preCompatibleNodes_refl.
-  * eapply preCompatibleNodes_trans.
-    1: {
-      apply IHclosureNodeSem.
-      intros. apply H0. unfold PIDsOf. simpl.
-      apply elem_of_app. now right.
-    }
-    clear IHclosureNodeSem.
-    inv H.
-    - split; intros; destruct H3; simpl in *.
-      + repeat processpool_destruct; try congruence.
-      + eapply isTargetedEther_etherAdd_rev in H4.
-        processpool_destruct.
-        destruct (Nat.eq_dec ι' ι0). 2: assumption. subst.
-        specialize (H0 ι0 ltac:(now left)).
-        apply isTargetedEther_no_spawn with (ι := ι0) in H1 as P. 2: assumption.
-        eapply no_spawn_included in P. 2: eassumption.
-        simpl in P. destruct P as [P _].
-        apply P in H3. congruence.
-    - split; intros; destruct H4; simpl in *.
-      + repeat processpool_destruct; try congruence.
-      + eapply isTargetedEther_etherPop_rev in H2; eauto.
-    - split; intros; destruct H4; simpl in *.
-      + repeat processpool_destruct; try congruence.
-      + assumption.
-    - split; intros; destruct H8; simpl in *.
-      + repeat processpool_destruct; try congruence.
-      + assumption.
 Qed.
 
 (** * Composition of process pools *)
@@ -4874,4 +4794,2357 @@ Proof.
         setoid_rewrite elem_of_union in H3. apply not_or_and in H3. destruct H3.
         contradiction.
       - setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. assumption.
+Qed.
+
+(** * Steps of nodes *)
+
+(** A step of a node decomposes into the process-local step of the acting
+    process, and the rest of the pool. *)
+Theorem deconstruct_reduction :
+  forall O A B ι a eth eth',
+    (eth, A) -[a | ι]ₙ-> (eth', B) with O->
+    exists p p' A' B', A = ι ↦ p ∥ A' /\ B = ι ↦ p' ∥ B' /\
+      p -⌈a⌉-> p'.
+Proof.
+  intros. inv H; do 4 eexists; split_and!; try reflexivity; try assumption. 2: eassumption.
+  setoid_rewrite insert_insert at 1. destruct_decide_eq.
+  - exfalso. subst. apply H6. left. setoid_rewrite lookup_insert. by destruct_decide_eq.
+  - by f_equal.
+Qed.
+
+(** Adding a signal to the ether does not prevent a step, if the signal is
+    not in conflict with the step: the spawned PID (if any) does not appear
+    in the signal, and the step does not send to the same target from the
+    same source. *)
+Theorem etherAdd_step :
+  forall A B O ι a,
+    A -[a | ι]ₙ-> B with O ->
+    forall ιs ιd s,
+      (forall ι', spawnPIDOf a = Some ι' -> ιs <> ι' /\ ιd <> ι' /\ (ι' ∉ usedPIDsSignal s)) ->
+      (ι = ιs -> sendPIDOf a <> Some ιd) -> (* The addition to the ether should not be in conflict with the (send) action taken *)
+      (etherAdd ιs ιd s A.1, A.2) -[a | ι]ₙ-> (etherAdd ιs ιd s B.1, B.2) with O.
+Proof with by setoid_rewrite lookup_insert; destruct_decide_eq.
+  intros. inv H; simpl in *; try constructor; auto.
+  * destruct (decide (ιs = ι)). destruct (decide (ιd = ι')).
+    - subst. exfalso. by apply (H1 eq_refl).
+    - rewrite etherAdd_swap_2; auto. by apply n_send.
+    - rewrite etherAdd_swap_1; auto. by apply n_send.
+  * by apply etherPop_etherAdd.
+  * econstructor; try eassumption.
+    intro. apply appearsEther_etherAdd_rev in H. congruence.
+    1-3: apply (H0 ι' eq_refl).
+Qed.
+
+(** A step of a node does not change the dead processes, apart from removing
+    the link to the target of a send from the dead process taking the
+    step. *)
+Theorem dead_processes_stay_dead :
+  forall O (A B : Node) (a : Action) (ι : PID),
+    A -[a | ι]ₙ-> B with O ->
+    forall (ι' : PID) (d : DeadProcess), A.2 !! ι' = Some (inr d) ->
+      B.2 !! ι' = Some (inr (if decide (ι = ι')
+                             then match sendPIDOf a with
+                                  | Some ιd => delete ιd d
+                                  | _ => d
+                                  end
+                             else d)).
+Proof.
+  intros. inv H; simpl in *.
+  * case_match; clear H.
+    - subst. setoid_rewrite lookup_insert.
+      setoid_rewrite lookup_insert in H0. destruct_decide_eq. inv H0. by inv H1.
+    - setoid_rewrite lookup_insert_ne; auto.
+      setoid_rewrite lookup_insert_ne in H0; auto.
+  * case_match; clear H.
+    - subst. setoid_rewrite lookup_insert in H0. destruct_decide_eq. inv H0. inv H2.
+    - setoid_rewrite lookup_insert_ne; auto.
+      setoid_rewrite lookup_insert_ne in H0; auto.
+  * case_match; clear H.
+    - subst. setoid_rewrite lookup_insert in H0. destruct_decide_eq. inv H0.
+      destruct_or!; subst; inv H1.
+    - setoid_rewrite lookup_insert_ne; auto.
+      setoid_rewrite lookup_insert_ne in H0; auto.
+  * clear H5. destruct decide.
+    - subst. setoid_rewrite lookup_insert in H0. destruct_decide_eq. inv H0. inv H6.
+    - setoid_rewrite lookup_insert_ne; auto.
+      setoid_rewrite lookup_insert_ne; auto.
+      setoid_rewrite lookup_insert_ne in H0; auto.
+      intro. subst.
+      apply H3. left. setoid_rewrite lookup_insert_ne; auto.
+      setoid_rewrite lookup_insert_ne in H0; auto.
+      by setoid_rewrite H0.
+Qed.
+
+(** * Evaluating arrivals later *)
+
+(** The actions after which the arrival of a signal to the acting process
+    can still be evaluated (`chain_arrive_later`). Arrive and ε actions
+    create non-confluent reductions with any other reduction of the same
+    process. *)
+Definition isChainable (a : Action) : Prop :=
+match a with
+ | AArrive _ _ _ | ε | ASend _ _ SLink | ASend _ _ SUnlink
+ | ASpawn _ _ _ false => False (* normal spaws are not chainable, because
+                                  they potentially create a process that
+                                  communicates to an observable node, without
+                                  killing it on exit arrival *)
+ | _ => True
+end.
+
+(** `optional_update Π a ιbase s` is the pool `Π`, extended with the effect
+    of `a` taken by the process `ιbase`, when `ιbase` was terminated by the
+    arrival of `s` before `a`: for spawns, the new process is added, and for
+    `spawn_link`, the new process is linked to the (dead) `ιbase`. *)
+Definition optional_update (Π : ProcessPool) (a : Action) (ιbase : PID) (s : Signal) : ProcessPool :=
+match a with
+| ASpawn ι v1 v2 f =>
+  match mk_list v2 with
+  | Some l =>
+    (* NOTE: keep this consistent with the definition in NodeSemantics.v *)
+    match create_result (IApp v1) l, f with
+    | Some (r, eff), true =>
+      match Π !! ιbase, s with
+      (* NOTE: Π !! ιbase is always going to be a dead process where this function is used *)
+      | Some (inr links), SExit reas b =>
+         match b, decide (reas = VLit "kill"%string) with
+         | false, left _ =>
+           ι ↦ inl ([], r, emptyBox, {[ιbase]}, false) ∥
+           ιbase ↦ inr (<[ι:=VLit "killed"%string]>links) ∥ Π
+         | _, _ =>
+           ι ↦ inl ([], r, emptyBox, {[ιbase]}, false) ∥
+           ιbase ↦ inr (<[ι:=reas]>links) ∥ Π
+         end
+      | _, _ => Π
+      end
+    | Some (r, eff), false => ι ↦ inl ([], r, emptyBox, ∅, false) ∥ Π
+    | _, _ => Π
+    end
+  | _ => Π
+  end
+| _ => Π
+end.
+
+(* In Lanese et al., Lemma 9 does not hold for this semantics,
+   because arrival can change the semantics of receive primops!!!
+   E.g., recv_peek_message returns None for empty mailbox, while the
+   first message if it is nonempty (and arrival can put a message into the
+   empty mailbox).
+*)
+
+(** If the process `ι` can take a chainable step `a` and a signal can arrive
+    to it, then the arrival can be evaluated after `a` too, and the results
+    are joinable: either by taking `a` after the arrival, or (if the arrival
+    terminated `ι`) the result is obtained by `optional_update`. *)
+Theorem chain_arrive_later :
+  forall O A B C a ι ιs s,
+  A -[ a | ι ]ₙ-> B with O ->
+  isChainable a ->
+  A -[ AArrive ιs ι s | ι]ₙ-> C with O ->
+  exists D, B -[ AArrive ιs ι s | ι]ₙ-> D with O /\ (* Arrive can be evaluated later *)
+    ((exists neweth, etherPop ιs ι B.1 = Some (s, neweth) /\ (* We remove the arrived signal from B's ether *)
+     (neweth, optional_update C.2 a ι s) = D
+     ) \/ (* For spawns, there is a new process, moreover, for spawn_links the dead process has a new link in the list of links! *)
+     C -[ a | ι ]ₙ-> D with O) (* For most actions, arrives are confluent *).
+Proof.
+  intros * HD1 ? HD2.
+  inv HD2. 2: { destruct_or!; congruence. }
+  inv H7.
+  (* message arrival *)
+  * rename ι0 into ι. inv HD1.
+    - put (lookup ι : ProcessPool -> option _) on H2 as P.
+      setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+      inv H5.
+     (* message send *)
+     (* TODO: proofs for these cases are almost identical *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             constructor.
+           }
+        right.
+        assert (ι
+    ↦ inl
+    (FParams (ICall (VLit "erlang"%string) (VLit "!"%string)) [VPid ι'] []
+    :: fs0, RValSeq [v0], mailboxPush mb v, links, flag) ∥ prs = ι
+    ↦ inl
+    (FParams (ICall (VLit "erlang"%string) (VLit "!"%string)) [VPid ι'] []
+    :: fs0, RValSeq [v0], mailboxPush mb v, links, flag) ∥ prs0). {
+               apply map_eq. intros.
+               clear -H2.
+               put (lookup i : ProcessPool -> _) on H2 as HH.
+               destruct (decide (i = ι)).
+               * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+               * setoid_rewrite lookup_insert_ne; auto.
+                 setoid_rewrite lookup_insert_ne in HH; auto.
+             }
+             setoid_rewrite H0.
+             eapply n_send. by constructor.
+      (* exit send *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             constructor.
+           }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "exit"%string)) [
+        VPid ι'] [] :: fs0, RValSeq [v0], mailboxPush mb v, links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "exit"%string)) [
+        VPid ι'] [] :: fs0, RValSeq [v0], mailboxPush mb v, links, flag) ∥ prs0). {
+               apply map_eq. intros.
+               clear -H2.
+               put (lookup i : ProcessPool -> _) on H2 as HH.
+               destruct (decide (i = ι)).
+               * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+               * setoid_rewrite lookup_insert_ne; auto.
+                 setoid_rewrite lookup_insert_ne in HH; auto.
+             }
+             setoid_rewrite H0.
+             eapply n_send. by constructor.
+      (* link send *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             constructor.
+           }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "link"%string)) [] []
+      :: fs0, RValSeq [VPid ι'], mailboxPush mb v, links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "link"%string)) [] []
+      :: fs0, RValSeq [VPid ι'], mailboxPush mb v, links, flag) ∥ prs0). {
+               apply map_eq. intros.
+               clear -H2.
+               put (lookup i : ProcessPool -> _) on H2 as HH.
+               destruct (decide (i = ι)).
+               * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+               * setoid_rewrite lookup_insert_ne; auto.
+                 setoid_rewrite lookup_insert_ne in HH; auto.
+             }
+             setoid_rewrite H0.
+             eapply n_send. by constructor.
+      (* unlink send *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             constructor.
+           }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "unlink"%string)) [] []
+      :: fs0, RValSeq [VPid ι'], mailboxPush mb v, links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "unlink"%string)) [] []
+      :: fs0, RValSeq [VPid ι'], mailboxPush mb v, links, flag) ∥ prs0). {
+               apply map_eq. intros.
+               clear -H2.
+               put (lookup i : ProcessPool -> _) on H2 as HH.
+               destruct (decide (i = ι)).
+               * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+               * setoid_rewrite lookup_insert_ne; auto.
+                 setoid_rewrite lookup_insert_ne in HH; auto.
+             }
+             setoid_rewrite H0.
+             eapply n_send. by constructor.
+    (* arrivals - cannot happen *)
+    - inv H.
+    (* local actions *)
+    - put (lookup ι : ProcessPool -> option _) on H1 as P.
+      setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+(* case separation is needed at this point, because
+ exists can't be instantiated first, also ε actions
+ could terminate a process -> no chaining
+
+TODO: this cases a lot of boiler plate
+*)
+      destruct_or! H7; subst; inv H2.
+      (* silent steps *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι ↦ inl (fs, e, mailboxPush mb v, links, flag) ∥ prs = ι ↦ inl (fs, e, mailboxPush mb v, links, flag) ∥ Π). {
+               apply map_eq. intros.
+               clear -H1.
+               put (lookup i : ProcessPool -> _) on H1 as HH.
+               destruct (decide (i = ι)).
+               * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+               * setoid_rewrite lookup_insert_ne; auto.
+                 setoid_rewrite lookup_insert_ne in HH; auto.
+             }
+             setoid_rewrite H0.
+             eapply n_other. by constructor. by left.
+      (* recv_peek_message - success *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_peek_message") [] [] :: fs0, RBox,
+      mailboxPush mb v, links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_peek_message") [] [] :: fs0, RBox,
+      mailboxPush mb v, links, flag) ∥ Π). {
+               apply map_eq. intros.
+               clear -H1.
+               put (lookup i : ProcessPool -> _) on H1 as HH.
+               destruct (decide (i = ι)).
+               * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+               * setoid_rewrite lookup_insert_ne; auto.
+                 setoid_rewrite lookup_insert_ne in HH; auto.
+             }
+             setoid_rewrite H0.
+             eapply n_other. eapply p_recv_peek_message_ok.
+             { destruct mb; clear-H9. simpl.
+               destruct l0; inv H9. reflexivity. }
+             by left.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox,
+      mailboxPush mb v, links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox,
+      mailboxPush mb v, links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other.
+        econstructor.
+        {
+          clear -H9. destruct mb. simpl in *.
+          destruct l0; invSome. by simpl.
+        }
+        by left.
+      (* removeMessage *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "remove_message") [] [] :: fs0, RBox,
+      mailboxPush mb v, links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "remove_message") [] [] :: fs0, RBox,
+      mailboxPush mb v, links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other.
+        econstructor.
+        {
+          clear -H9. destruct mb. simpl in *.
+          destruct l0; invSome. simpl.
+          by rewrite app_assoc.
+        }
+        by left.
+      (* recv_wait_timeout infinity *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [VLit "infinity"%string],
+      mailboxPush (oldmb, msg :: newmb) v, links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [VLit "infinity"%string],
+      mailboxPush (oldmb, msg :: newmb) v, links, flag) ∥ Π). {
+               apply map_eq. intros.
+               clear -H1.
+               put (lookup i : ProcessPool -> _) on H1 as HH.
+               destruct (decide (i = ι)).
+               * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+               * setoid_rewrite lookup_insert_ne; auto.
+                 setoid_rewrite lookup_insert_ne in HH; auto.
+             }
+             setoid_rewrite H0.
+             eapply n_other. by constructor. by left.
+      (* recv_wait_timeout 0 *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [
+      VLit 0%Z], mailboxPush mb v, links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [
+      VLit 0%Z], mailboxPush mb v, links, flag) ∥ Π). {
+               apply map_eq. intros.
+               clear -H1.
+               put (lookup i : ProcessPool -> _) on H1 as HH.
+               destruct (decide (i = ι)).
+               * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+               * setoid_rewrite lookup_insert_ne; auto.
+                 setoid_rewrite lookup_insert_ne in HH; auto.
+             }
+             setoid_rewrite H0.
+             eapply n_other. by constructor. by left.
+      (* recv_wait_timeout error *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [
+      v0], mailboxPush mb v, links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [
+      v0], mailboxPush mb v, links, flag) ∥ Π). {
+               apply map_eq. intros.
+               clear -H1.
+               put (lookup i : ProcessPool -> _) on H1 as HH.
+               destruct (decide (i = ι)).
+               * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+               * setoid_rewrite lookup_insert_ne; auto.
+                 setoid_rewrite lookup_insert_ne in HH; auto.
+             }
+             setoid_rewrite H0.
+             eapply n_other. by constructor. by left.
+      (* trap_exit exception *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v0], mailboxPush mb v, links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v0], mailboxPush mb v, links, flag) ∥ Π). {
+               apply map_eq. intros.
+               clear -H1.
+               put (lookup i : ProcessPool -> _) on H1 as HH.
+               destruct (decide (i = ι)).
+               * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+               * setoid_rewrite lookup_insert_ne; auto.
+                 setoid_rewrite lookup_insert_ne in HH; auto.
+             }
+             setoid_rewrite H0.
+             eapply n_other. by constructor. by left.
+      (* self *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "self"%string)) [] []
+      :: fs0, RBox, mailboxPush mb v, links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "self"%string)) [] []
+      :: fs0, RBox, mailboxPush mb v, links, flag) ∥ Π). {
+               apply map_eq. intros.
+               clear -H1.
+               put (lookup i : ProcessPool -> _) on H1 as HH.
+               destruct (decide (i = ι)).
+               * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+               * setoid_rewrite lookup_insert_ne; auto.
+                 setoid_rewrite lookup_insert_ne in HH; auto.
+             }
+             setoid_rewrite H0.
+             eapply n_other. by constructor. by right; left.
+      (* recv_peek_message - fail - This cannot be proved
+         after pushing a message, peekMessage won't fail anymore *)
+      + inv H.
+      (* normal termination *)
+      + inv H. (* arrive can't be chained on a dead process *)
+      (* exceptional termination *)
+      + inv H. (* arrive can't be chained on a dead process *)
+      (* setflag *)
+      + inv H.
+    (* spawns *)
+    - inv H11.
+      (* spawn *)
+      {
+        eexists. split.
+        1: {
+          setoid_rewrite insert_insert. destruct_decide_eq. 1: {
+            exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          }
+          constructor. eassumption.
+          constructor. }
+        right.
+        assert (ι ↦ inl (fs, e, mailboxPush mb v, links, flag) ∥ prs = ι ↦ inl (fs, e, mailboxPush mb v, links, flag) ∥  Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        setoid_rewrite insert_insert. destruct_decide_eq. 1: {
+          exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+        }
+        eapply n_spawn; try eassumption.
+        1: {
+          rewrite <- H0. rewrite H1 in H4.
+          clear -H4 H5 H6.
+          intro. apply isUsedPool_insert_1 in H as [H | [H | H]].
+          * apply H4. apply isUsedPool_insert_2. by left.
+          * subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * simpl in H. rewrite flat_union_app in H. simpl in H.
+            assert (ι' ∉ usedPIDsVal v). {
+              intro. apply H5.
+              unfold etherPop in H6. repeat case_match; try congruence.
+              subst. inv H6.
+              right. right. do 3 eexists. split. exact H1.
+              set_solver.
+            }
+            apply H4. right. exists ι. eexists.
+            split. by setoid_rewrite lookup_insert; destruct_decide_eq.
+            simpl. set_solver.
+        }
+        1: {
+          clear -H5 H6.
+          intro. eapply appearsEther_etherPop_rev in H; eauto.
+        }
+        put (lookup ι : ProcessPool -> option _) on H1 as P.
+        setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+      }
+      { (* spawn_link - the proof is the same *)
+         eexists. split.
+        1: {
+          setoid_rewrite insert_insert. destruct_decide_eq. 1: {
+            exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          }
+          constructor. eassumption.
+          constructor. }
+        right.
+        assert (ι ↦ inl (fs, e, mailboxPush mb v, links, flag) ∥ prs = ι ↦ inl (fs, e, mailboxPush mb v, links, flag) ∥  Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        setoid_rewrite insert_insert. destruct_decide_eq. 1: {
+          exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+        }
+        eapply n_spawn; try eassumption.
+        1: {
+          rewrite <- H0. rewrite H1 in H4.
+          clear -H4 H5 H6.
+          intro. apply isUsedPool_insert_1 in H as [H | [H | H]].
+          * apply H4. apply isUsedPool_insert_2. by left.
+          * subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * simpl in H. rewrite flat_union_app in H. simpl in H.
+            assert (ι' ∉ usedPIDsVal v). {
+              intro. apply H5.
+              unfold etherPop in H6. repeat case_match; try congruence.
+              subst. inv H6.
+              right. right. do 3 eexists. split. exact H1.
+              set_solver.
+            }
+            apply H4. right. exists ι. eexists.
+            split. by setoid_rewrite lookup_insert; destruct_decide_eq.
+            simpl. set_solver.
+        }
+        1: {
+          clear -H5 H6.
+          intro. eapply appearsEther_etherPop_rev in H; eauto.
+        }
+        put (lookup ι : ProcessPool -> option _) on H1 as P.
+        setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+        constructor; assumption.
+      }
+  (* exit dropped - it is potentially influenced by links, process flag *)
+  * inv HD1.
+    - rename ι0 into ι.
+      put (lookup ι : ProcessPool -> option _) on H2 as P.
+      setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+      inv H7.
+     (* message send *)
+     (* TODO: proofs for these cases are almost identical *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             constructor. set_solver.
+           }
+        right.
+        eapply n_send. by constructor.
+      (* exit send *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             constructor. set_solver.
+           }
+        right.
+        eapply n_send. by constructor.
+      (* link send *)
+      + inv H. (* can't be done *)
+      (* unlink send *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             constructor.
+             set_solver.
+           }
+        right.
+        eapply n_send. by constructor.
+    (* arrivals - cannot happen *)
+    - inv H.
+    (* local actions *)
+    - rename ι0 into ι.
+      put (lookup ι : ProcessPool -> option _) on H1 as P.
+      setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+(* case separation is needed at this point, because
+ exists can't be instantiated first, also ε actions
+ could terminate a process -> no chaining
+
+TODO: this cases a lot of boiler plate
+*)
+      destruct_or! H8; subst; inv H2.
+      (* silent steps *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. assumption. }
+        right. eapply n_other. by constructor. by left.
+      (* recv_peek_message - success *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. assumption. }
+        right. eapply n_other. by constructor. by left.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. assumption. }
+        right. eapply n_other. by constructor. by left.
+      (* removeMessage *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. assumption. }
+        right. eapply n_other. by constructor. by intuition.
+      (* recv_wait_timeout infinity *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. assumption. }
+        right. eapply n_other. by constructor. by left.
+      (* recv_wait_timeout 0 *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. assumption. }
+        right. eapply n_other. by constructor. by left.
+      (* recv_wait_timeout error *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. assumption. }
+        right. eapply n_other. by constructor. by left.
+      (* trap_exit exception *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. assumption. }
+        right. eapply n_other. by constructor. by left.
+      (* self *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. assumption. }
+        right. eapply n_other. by constructor. by right;left.
+      (* recv_peek_message - fail *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. assumption. }
+        right. eapply n_other. by constructor. by intuition.
+      (* normal termination *)
+      + inv H. (* arrive can't be chained on a dead process *)
+      (* exceptional termination *)
+      + inv H. (* arrive can't be chained on a dead process *)
+      (* setflag *)
+      + inv H.
+    (* spawn *)
+    - inv H12.
+      { (* spawn *)
+        rename ι0 into ι.
+        put (lookup ι : ProcessPool -> option _) on H1 as P.
+        setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+        eexists. split.
+        1: {
+          setoid_rewrite insert_insert. destruct_decide_eq.
+          exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          constructor. eassumption.
+          constructor. assumption.
+        }
+        right.
+        setoid_rewrite insert_insert. destruct_decide_eq.
+        exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+        eapply n_spawn; try eassumption.
+        1: {
+          clear -H6 H7.
+          intro. eapply appearsEther_etherPop_rev in H; eauto.
+        }
+        constructor; assumption.
+      }
+      { (* spawn_link *)
+        rename ι0 into ι.
+        put (lookup ι : ProcessPool -> option _) on H1 as P.
+        setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+        eexists. split.
+        1: {
+          setoid_rewrite insert_insert. destruct_decide_eq.
+          exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          constructor. eassumption.
+          constructor.
+          assert (ιs ≠ ι'). {
+            intro. subst.
+            apply H7. right. left.
+            exists ι. intro.
+            clear -H0 H6.
+            unfold etherPop in H6. repeat case_match; try congruence.
+          }
+          clear -H5 H0.
+          set_solver.
+        }
+        right.
+        setoid_rewrite insert_insert. destruct_decide_eq.
+        exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+        eapply n_spawn; try eassumption.
+        1: {
+          clear -H6 H7.
+          intro. eapply appearsEther_etherPop_rev in H; eauto.
+        }
+        constructor; assumption.
+      }
+  (* exit terminates - it is potentially influenced by links, process flag *)
+  * inv HD1.
+    - rename ι0 into ι.
+      put (lookup ι : ProcessPool -> option _) on H2 as P.
+      setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+      inv H7.
+     (* message send *)
+     (* TODO: proofs for these cases are almost identical *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl. eexists. split. 1: by apply etherPop_etherAdd.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert; destruct_decide_eq.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H2 as H'.
+        by setoid_rewrite lookup_insert_ne in H'.
+      (* exit send *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl. eexists. split. 1: by apply etherPop_etherAdd.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert; destruct_decide_eq.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H2 as H'.
+        by setoid_rewrite lookup_insert_ne in H'.
+      (* link send - can't be done, since links are potentially modified *)
+      + inv H.
+      (* unlink send - can't be done, since links are potentially modified *)
+      + inv H.
+    (* arrivals - cannot happen *)
+    - inv H.
+    (* local actions *)
+    - rename ι0 into ι.
+      put (lookup ι : ProcessPool -> option _) on H1 as P.
+      setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+(* case separation is needed at this point, because
+ exists can't be instantiated first, also ε actions
+ could terminate a process -> no chaining
+
+TODO: this cases a lot of boiler plate
+*)
+      destruct_or! H8; subst; inv H2.
+      (* silent steps *)
+      + eexists. split.
+        1: { constructor. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl. eexists. split. 1: eassumption.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert; destruct_decide_eq.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H1 as H'.
+        by setoid_rewrite lookup_insert_ne in H'.
+      (* recv_peek_message - success *)
+      + eexists. split.
+        1: { constructor. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl. eexists. split. 1: eassumption.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert; destruct_decide_eq.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H1 as H'.
+        by setoid_rewrite lookup_insert_ne in H'.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl. eexists. split. 1: eassumption.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert; destruct_decide_eq.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H1 as H'.
+        by setoid_rewrite lookup_insert_ne in H'.
+      (* removeMessage *)
+      + eexists. split.
+        1: { constructor. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl. eexists. split. 1: eassumption.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert; destruct_decide_eq.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H1 as H'.
+        by setoid_rewrite lookup_insert_ne in H'.
+        (* recv_wait_timeout infinity *)
+      + eexists. split.
+        1: { constructor. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl. eexists. split. 1: eassumption.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert; destruct_decide_eq.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H1 as H'.
+        by setoid_rewrite lookup_insert_ne in H'.
+      (* recv_wait_timeout 0 *)
+      + eexists. split.
+        1: { constructor. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl. eexists. split. 1: eassumption.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert; destruct_decide_eq.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H1 as H'.
+        by setoid_rewrite lookup_insert_ne in H'.
+      (* recv_wait_timeout error *)
+      + eexists. split.
+        1: { constructor. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl. eexists. split. 1: eassumption.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert; destruct_decide_eq.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H1 as H'.
+        setoid_rewrite lookup_insert_ne in H'; auto.
+      (* trap_exit exception *)
+      + eexists. split.
+        1: { constructor. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl. eexists. split. 1: eassumption.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert; destruct_decide_eq.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H1 as H'.
+        setoid_rewrite lookup_insert_ne in H'; auto.
+      (* self *)
+      + eexists. split.
+        1: { constructor. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl. eexists. split. 1: eassumption.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert; destruct_decide_eq.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H1 as H'.
+        setoid_rewrite lookup_insert_ne in H'; auto.
+      (* recv_peek_message - fail *)
+      + eexists. split.
+        1: { constructor. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl. eexists. split. 1: eassumption.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert; destruct_decide_eq.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H1 as H'.
+        setoid_rewrite lookup_insert_ne in H'; auto.
+      (* normal termination *)
+      + inv H. (* arrive can't be chained on a dead process *)
+      (* exceptional termination *)
+      + inv H. (* arrive can't be chained on a dead process *)
+      (* setflag *)
+      + inv H.
+    (* spawn -
+       if the exit is delivered first, a process cannot be
+       spawned *)
+    - rename ι0 into ι. inv H12.
+      {
+        put (lookup ι : ProcessPool -> option _) on H1 as P.
+        setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+        eexists. split.
+        1: {
+          setoid_rewrite insert_insert; destruct_decide_eq.
+          exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq. 
+          constructor. eassumption.
+          apply p_exit_terminate. eassumption.
+        }
+        left.
+        assert (ι' <> ι). {
+          intro. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+        }
+        eexists; split. simpl. eassumption.
+        simpl. rewrite H2. simpl in H8. rewrite H8.
+        f_equal.
+        setoid_rewrite insert_insert at 1; destruct_decide_eq.
+        apply map_eq. intros.
+        destruct (decide (i = ι)). 2: destruct (decide (i = ι')).
+        all: subst.
+        1: by setoid_rewrite lookup_insert; destruct_decide_eq.
+        1: setoid_rewrite lookup_insert_ne; try lia.
+        1: by setoid_rewrite lookup_insert; destruct_decide_eq.
+        do 2 (setoid_rewrite lookup_insert_ne; try lia).
+        put (lookup i : ProcessPool -> _) on H1 as H'.
+        simpl in H'.
+        by (setoid_rewrite lookup_insert_ne in H'; try lia).
+      }
+      {
+      (* spawn_link is more tricky - can the arrive not termiate it? - potentially
+         not, since ι' does not appear anywhere - thus it could not affect the behaviour *)
+      - put (lookup ι : ProcessPool -> option _) on H1 as P.
+        setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+        eexists. split.
+        1: {
+          setoid_rewrite insert_insert; destruct_decide_eq.
+          exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq. 
+          constructor. eassumption.
+          apply p_exit_terminate.
+          assert (ιs ≠ ι'). {
+            clear -H7 H6. intro. subst. apply H7.
+            right. left. exists ι. intro.
+            unfold etherPop in H6. repeat case_match; try congruence.
+          }
+          Unshelve. 2: exact reason'.
+          clear -H0 H5. set_solver.
+        }
+        left.
+        assert (ι' <> ι). {
+          intro. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+        }
+        eexists; split. simpl. eassumption.
+        simpl. rewrite H2. simpl in H8. rewrite H8.
+        f_equal.
+        setoid_rewrite insert_insert at 1; auto.
+        apply map_eq. intros.
+        setoid_rewrite lookup_insert. destruct_decide_eq.
+        clear H8. repeat case_match; try congruence.
+        { (* NOTE: boiler plate for "killed" reason *)
+          subst.
+          destruct (decide (i = ι)). 2: destruct (decide (i = ι')).
+          all: subst.
+          1: {
+             setoid_rewrite lookup_insert_ne; auto; setoid_rewrite lookup_insert.
+             destruct_decide_eq.
+             setoid_rewrite gset_to_gmap_union_singleton.
+             clear -H5.
+             intuition; subst; auto. congruence.
+          }
+          1: by setoid_rewrite lookup_insert; destruct_decide_eq.
+          repeat (setoid_rewrite lookup_insert_ne; try lia).
+          put (lookup i : ProcessPool -> _) on H1 as H'.
+          simpl in H'.
+          (setoid_rewrite lookup_insert_ne in H'; try lia).
+          by repeat setoid_rewrite lookup_insert_ne.
+        }
+        { (* original reason is kept *)
+          subst.
+          destruct (decide (i = ι)). 2: destruct (decide (i = ι')).
+          all: subst.
+          1: {
+             setoid_rewrite lookup_insert_ne; auto; setoid_rewrite lookup_insert.
+             destruct_decide_eq.
+             setoid_rewrite gset_to_gmap_union_singleton.
+             clear -H5.
+             intuition; subst; auto. congruence.
+          }
+          1: by setoid_rewrite lookup_insert; destruct_decide_eq.
+          repeat (setoid_rewrite lookup_insert_ne; try lia).
+          put (lookup i : ProcessPool -> _) on H1 as H'.
+          simpl in H'.
+          (setoid_rewrite lookup_insert_ne in H'; try lia).
+          by repeat setoid_rewrite lookup_insert_ne.
+        }
+        { (* original reason is kept *)
+          subst.
+          destruct (decide (i = ι)). 2: destruct (decide (i = ι')).
+          all: subst.
+          1: {
+             setoid_rewrite lookup_insert_ne; auto; setoid_rewrite lookup_insert.
+             destruct_decide_eq.
+             setoid_rewrite gset_to_gmap_union_singleton.
+             clear -H5 n.
+             intuition; subst; auto.
+          }
+          1: by setoid_rewrite lookup_insert; destruct_decide_eq.
+          repeat (setoid_rewrite lookup_insert_ne; try lia).
+          put (lookup i : ProcessPool -> _) on H1 as H'.
+          simpl in H'.
+          (setoid_rewrite lookup_insert_ne in H'; try lia).
+          by repeat setoid_rewrite lookup_insert_ne.
+        }
+      }
+  (* exit converted - it is potentially influenced by links, process flag, mailbox *)
+  * rename ι0 into ι.
+    inv HD1.
+    - put (lookup ι : ProcessPool -> option _) on H2 as P.
+      setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+      inv H7.
+     (* message send *)
+     (* TODO: proofs for these cases are almost identical *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             apply p_exit_convert. assumption.
+           }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "!"%string)) [VPid ι'] []
+      :: fs0, RValSeq [v],
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "!"%string)) [VPid ι'] []
+      :: fs0, RValSeq [v],
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ prs0). {
+          apply map_eq. intros.
+          clear -H2.
+          put (lookup i : ProcessPool -> _) on H2 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_send. by constructor.
+      (* exit send *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             apply p_exit_convert. assumption.
+           }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "exit"%string)) [
+        VPid ι'] [] :: fs0, RValSeq [v],
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "exit"%string)) [
+        VPid ι'] [] :: fs0, RValSeq [v],
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ prs0). {
+          apply map_eq. intros.
+          clear -H2.
+          put (lookup i : ProcessPool -> _) on H2 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_send. by constructor.
+      (* link send - maybe this should not be proved? *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             apply p_exit_convert.
+             clear -H5. set_solver.
+           }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "link"%string)) [] []
+      :: fs0, RValSeq [VPid ι'],
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "link"%string)) [] []
+      :: fs0, RValSeq [VPid ι'],
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ prs0). {
+        apply map_eq. intros.
+        clear -H2.
+        put (lookup i : ProcessPool -> _) on H2 as HH.
+        destruct (decide (i = ι)).
+        * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+        * setoid_rewrite lookup_insert_ne; auto.
+          setoid_rewrite lookup_insert_ne in HH; auto.
+      }
+      setoid_rewrite H0.
+      eapply n_send. by constructor.
+      (* unlink send - can't be proved, list of links influence the behaviour of exits *)
+      + inv H.
+    (* arrivals - cannot happen *)
+    - inv H.
+    (* local actions *)
+    - put (lookup ι : ProcessPool -> option _) on H1 as P.
+      setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+(* case separation is needed at this point, because
+ exists can't be instantiated first, also ε actions
+ could terminate a process -> no chaining
+
+TODO: this cases a lot of boiler plate
+*)
+      destruct_or! H8; subst; inv H2.
+      (* silent steps *)
+      + eexists. split.
+        1: { constructor. eassumption. apply p_exit_convert. assumption. }
+        right.
+        assert (ι
+ ↦ inl
+     (fs, e, mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]),
+      links, true) ∥ prs = ι
+ ↦ inl
+     (fs, e, mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]),
+      links, true) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
+      (* recv_peek_message - success *)
+      + eexists. split.
+        1: { constructor. eassumption. by apply p_exit_convert. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_peek_message") [] [] :: fs0, RBox,
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_peek_message") [] [] :: fs0, RBox,
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. eapply p_recv_peek_message_ok.
+        { destruct mb; clear-H10. simpl.
+          destruct l0; inv H10. reflexivity. }
+        by left.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption. by apply p_exit_convert. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox,
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox,
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ Π). {
+         apply map_eq. intros.
+         clear -H1.
+         put (lookup i : ProcessPool -> _) on H1 as HH.
+         destruct (decide (i = ι)).
+         * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+         * setoid_rewrite lookup_insert_ne; auto.
+           setoid_rewrite lookup_insert_ne in HH; auto.
+       }
+       setoid_rewrite H0.
+       eapply n_other.
+       econstructor.
+       {
+         clear -H10. destruct mb. simpl in *.
+         destruct l0; invSome. by simpl.
+       }
+       by intuition.
+      (* removeMessage *)
+      + eexists. split.
+        1: { constructor. eassumption. by apply p_exit_convert. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "remove_message") [] [] :: fs0, RBox,
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "remove_message") [] [] :: fs0, RBox,
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ Π). {
+         apply map_eq. intros.
+         clear -H1.
+         put (lookup i : ProcessPool -> _) on H1 as HH.
+         destruct (decide (i = ι)).
+         * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+         * setoid_rewrite lookup_insert_ne; auto.
+           setoid_rewrite lookup_insert_ne in HH; auto.
+       }
+       setoid_rewrite H0.
+       eapply n_other.
+       econstructor.
+       {
+         clear -H10. destruct mb. simpl in *.
+         destruct l0; invSome. simpl.
+         by rewrite app_assoc.
+       }
+       by intuition.
+      (* recv_wait_timeout infinity *)
+      + eexists. split.
+        1: { constructor. eassumption. by apply p_exit_convert. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [VLit "infinity"%string],
+      mailboxPush (oldmb, msg :: newmb) (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true)
+ ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [VLit "infinity"%string],
+      mailboxPush (oldmb, msg :: newmb) (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true)
+ ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
+      (* recv_wait_timeout 0 *)
+      + eexists. split.
+        1: { constructor. eassumption. by apply p_exit_convert. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [
+      VLit 0%Z],
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [
+      VLit 0%Z],
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
+      (* recv_wait_timeout error *)
+      + eexists. split.
+        1: { constructor. eassumption. by apply p_exit_convert. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [v],
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [v],
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
+      (* trap_exit exception *)
+      + eexists. split.
+        1: { constructor. eassumption. by apply p_exit_convert. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v],
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v],
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
+      (* self *)
+      + eexists. split.
+        1: { constructor. eassumption. by apply p_exit_convert. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "self"%string)) [] []
+      :: fs0, RBox,
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "self"%string)) [] []
+      :: fs0, RBox,
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by right; left.
+      (* recv_peek_message - fail - This cannot be proved
+         after pushing a message, peekMessage won't fail anymore *)
+      + inv H.
+      (* normal termination *)
+      + inv H. (* arrive can't be chained on a dead process *)
+      (* exceptional termination *)
+      + inv H. (* arrive can't be chained on a dead process *)
+      (* setflag *)
+      + inv H.
+    (* spawn *)
+    - inv H12.
+      {
+        put (lookup ι : ProcessPool -> option _) on H1 as P.
+        setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+        eexists. split.
+        1: {
+          setoid_rewrite insert_insert; destruct_decide_eq.
+          exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          constructor. eassumption.
+          by apply p_exit_convert.
+        }
+        right.
+        assert (ι
+   ↦ inl
+       (FParams (ICall (VLit "erlang"%string) (VLit "spawn"%string))
+          [VClos ext id vars e0] [] :: fs0, RValSeq [v2],
+        mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+        true) ∥ prs = ι
+   ↦ inl
+       (FParams (ICall (VLit "erlang"%string) (VLit "spawn"%string))
+          [VClos ext id vars e0] [] :: fs0, RValSeq [v2],
+        mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+        true) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        setoid_rewrite insert_insert; destruct_decide_eq.
+        exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+        eapply n_spawn; try eassumption.
+        1: {
+          rewrite <- H0. rewrite H1 in H4.
+          clear -H4 H7 H6.
+          intro. apply isUsedPool_insert_1 in H as [H | [H | H]].
+          * apply H4. apply isUsedPool_insert_2. by left.
+          * subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * simpl in H. rewrite flat_union_app in H. simpl in H.
+            assert ((ι' ∉ usedPIDsVal reason) /\ ι' <> ιs). {
+              unfold etherPop in H6. repeat case_match; try congruence.
+              split.
+              * intro. apply H7.
+                subst. inv H6.
+                right. right. do 3 eexists. split. exact H0.
+                set_solver.
+              * intro. subst. apply H7. right. left.
+                eexists. by rewrite H0.
+            }
+            apply H4. right. exists ι. eexists.
+            split. by setoid_rewrite lookup_insert; destruct_decide_eq.
+            simpl. set_solver.
+        }
+        1: {
+          clear -H6 H7.
+          intro. eapply appearsEther_etherPop_rev in H; eauto.
+        }
+        constructor; assumption.
+      }
+      { (* spawn_link *)
+        put (lookup ι : ProcessPool -> option _) on H1 as P.
+        setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+        eexists. split.
+        1: {
+          setoid_rewrite insert_insert; destruct_decide_eq.
+          exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq. 
+          constructor. eassumption.
+          apply p_exit_convert.
+          (* NOTE: at this point we exploit that ι' is not used anywhere! *)
+          assert (ι' ≠ ιs) as X. {
+            clear -H6 H7. intro. subst.
+            apply H7. right. left. exists ι. intro.
+            unfold etherPop in H6. repeat case_match; try congruence.
+          }
+          clear -X H5. set_solver.
+        }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "spawn_link"%string)) [VClos ext id vars e0] []
+      :: fs0, RValSeq [v2], mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true)
+ ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "spawn_link"%string)) [VClos ext id vars e0] []
+      :: fs0, RValSeq [v2], mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true)
+ ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        setoid_rewrite insert_insert; destruct_decide_eq.
+        exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq. 
+        eapply n_spawn; try eassumption.
+        1: {
+          rewrite <- H0. rewrite H1 in H4.
+          clear -H4 H6 H7.
+          intro. apply isUsedPool_insert_1 in H as [H | [H | H]].
+          * apply H4. apply isUsedPool_insert_2. by left.
+          * subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * simpl in H. rewrite flat_union_app in H. simpl in H.
+            assert ((ι' ∉ usedPIDsVal reason) /\ ι' <> ιs). {
+              unfold etherPop in H6. repeat case_match; try congruence.
+              split.
+              * intro. apply H7.
+                subst. inv H6.
+                right. right. do 3 eexists. split. exact H0.
+                set_solver.
+              * intro. subst. apply H7. right. left.
+                eexists. by rewrite H0.
+            }
+            apply H4. right. exists ι. eexists.
+            split. by setoid_rewrite lookup_insert; destruct_decide_eq.
+            simpl. set_solver.
+        }
+        1: {
+          clear -H6 H7.
+          intro. eapply appearsEther_etherPop_rev in H; eauto.
+        }
+        constructor; assumption.
+      }
+  (* link arrives *)
+  * rename ι0 into ι. inv HD1.
+    - put (lookup ι : ProcessPool -> option _) on H2 as P.
+      setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+      inv H5.
+     (* message send *)
+     (* TODO: proofs for these cases are almost identical *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             constructor.
+           }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "!"%string)) [VPid ι'] []
+      :: fs0, RValSeq [v], mb, {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "!"%string)) [VPid ι'] []
+      :: fs0, RValSeq [v], mb, {[ιs]} ∪ links, flag) ∥ prs0). {
+          apply map_eq. intros.
+          clear -H2.
+          put (lookup i : ProcessPool -> _) on H2 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_send. by constructor.
+      (* exit send *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             constructor.
+           }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "exit"%string)) [
+        VPid ι'] [] :: fs0, RValSeq [v], mb, {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "exit"%string)) [
+        VPid ι'] [] :: fs0, RValSeq [v], mb, {[ιs]} ∪ links, flag) ∥ prs0). {
+          apply map_eq. intros.
+          clear -H2.
+          put (lookup i : ProcessPool -> _) on H2 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_send. by constructor.
+      (* link send - maybe this should not be proved? *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             constructor.
+           }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "link"%string)) [] []
+      :: fs0, RValSeq [VPid ι'], mb, {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "link"%string)) [] []
+      :: fs0, RValSeq [VPid ι'], mb, {[ιs]} ∪ links, flag) ∥ prs0). {
+          apply map_eq. intros.
+          clear -H2.
+          put (lookup i : ProcessPool -> _) on H2 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_send. inv H. (* TODO: links should be formalised as sets *)
+      (* unlink send - can't be proved if the same link is established and deleted in the two reductions *)
+      + inv H.
+    (* arrivals - cannot happen *)
+    - inv H.
+    (* local actions *)
+    - put (lookup ι : ProcessPool -> option _) on H1 as P.
+      setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+(* case separation is needed at this point, because
+ exists can't be instantiated first, also ε actions
+ could terminate a process -> no chaining
+
+TODO: this cases a lot of boiler plate
+*)
+      destruct_or! H7; subst; inv H2.
+      (* silent steps *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι ↦ inl (fs, e, mb, {[ιs]} ∪ links, flag) ∥ prs = ι ↦ inl (fs, e, mb, {[ιs]} ∪ links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
+      (* recv_peek_message - success *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_peek_message") [] [] :: fs0, RBox, mb,
+      {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_peek_message") [] [] :: fs0, RBox, mb,
+      {[ιs]} ∪ links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. eapply p_recv_peek_message_ok.
+        assumption.
+        by intuition.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb,
+      {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb,
+      {[ιs]} ∪ links, flag) ∥ Π). {
+         apply map_eq. intros.
+         clear -H1.
+         put (lookup i : ProcessPool -> _) on H1 as HH.
+         destruct (decide (i = ι)).
+         * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+         * setoid_rewrite lookup_insert_ne; auto.
+           setoid_rewrite lookup_insert_ne in HH; auto.
+       }
+       setoid_rewrite H0.
+       eapply n_other.
+       econstructor.
+       assumption.
+       by intuition.
+      (* removeMessage *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "remove_message") [] [] :: fs0, RBox, mb,
+      {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "remove_message") [] [] :: fs0, RBox, mb,
+      {[ιs]} ∪ links, flag) ∥ Π). {
+         apply map_eq. intros.
+         clear -H1.
+         put (lookup i : ProcessPool -> _) on H1 as HH.
+         destruct (decide (i = ι)).
+         * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+         * setoid_rewrite lookup_insert_ne; auto.
+           setoid_rewrite lookup_insert_ne in HH; auto.
+       }
+       setoid_rewrite H0.
+       eapply n_other.
+       econstructor.
+       assumption.
+       by intuition.
+     (* recv_wait_timeout infinity *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [VLit "infinity"%string],
+      (oldmb, msg :: newmb), {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [VLit "infinity"%string],
+      (oldmb, msg :: newmb), {[ιs]} ∪ links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
+     (* recv_wait_timeout 0 *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [
+      VLit 0%Z], mb, {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [
+      VLit 0%Z], mb, {[ιs]} ∪ links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
+      (* recv_wait_timeout error *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [v], mb,
+      {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [v], mb,
+      {[ιs]} ∪ links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
+      (* trap_exit exception *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v], mb, {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v], mb, {[ιs]} ∪ links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
+      (* self *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "self"%string)) [] []
+      :: fs0, RBox, mb, {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "self"%string)) [] []
+      :: fs0, RBox, mb, {[ιs]} ∪ links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by right; left.
+      (* recv_peek_message - fail *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_peek_message") [] [] :: fs0, RBox, mb,
+      {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_peek_message") [] [] :: fs0, RBox, mb,
+      {[ιs]} ∪ links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. econstructor.
+        assumption.
+        by intuition.
+      (* normal termination *)
+      + inv H. (* arrive can't be chained on a dead process *)
+      (* exceptional termination *)
+      + inv H. (* arrive can't be chained on a dead process *)
+      (* setflag *)
+      + inv H.
+    (* spawn *)
+    - inv H11.
+      {
+        put (lookup ι : ProcessPool -> option _) on H1 as P.
+        setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+        eexists. split.
+        1: {
+          setoid_rewrite insert_insert; destruct_decide_eq.
+          exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq. 
+          constructor. eassumption. constructor.
+        }
+        right.
+        assert (ι
+   ↦ inl
+       (FParams (ICall (VLit "erlang"%string) (VLit "spawn"%string))
+          [VClos ext id vars e0] [] :: fs0, RValSeq [v2], mb, 
+        {[ιs]} ∪ links, flag) ∥ prs = ι
+   ↦ inl
+       (FParams (ICall (VLit "erlang"%string) (VLit "spawn"%string))
+          [VClos ext id vars e0] [] :: fs0, RValSeq [v2], mb, 
+        {[ιs]} ∪ links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        setoid_rewrite insert_insert; destruct_decide_eq.
+        exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq. 
+        eapply n_spawn; try eassumption.
+        1: {
+          rewrite <- H0. rewrite H1 in H4.
+          clear -H4 H5 H6.
+          intro. apply isUsedPool_insert_1 in H as [H | [H | H]].
+          * apply H4. apply isUsedPool_insert_2. by left.
+          * subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * simpl in H.
+            assert (ι' <> ιs). {
+              unfold etherPop in H6. repeat case_match; try congruence.
+              intro. subst. apply H5. right. left.
+              eexists. by rewrite H0.
+            }
+            apply H4. right. exists ι. eexists.
+            split. by setoid_rewrite lookup_insert; destruct_decide_eq.
+            simpl. set_solver.
+        }
+        1: {
+          clear -H5 H6.
+          intro. eapply appearsEther_etherPop_rev in H; eauto.
+        }
+        constructor; assumption.
+      }
+      { (* spawn_link *)
+        put (lookup ι : ProcessPool -> option _) on H1 as P.
+        setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+        eexists. split.
+        1: {
+          setoid_rewrite insert_insert; destruct_decide_eq.
+          exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq. 
+          constructor. eassumption. constructor.
+        }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "spawn_link"%string)) [VClos ext id vars e0] []
+      :: fs0, RValSeq [v2], mb, {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "spawn_link"%string)) [VClos ext id vars e0] []
+      :: fs0, RValSeq [v2], mb, {[ιs]} ∪ links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        setoid_rewrite insert_insert; destruct_decide_eq.
+        exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq. 
+        eapply n_spawn; try eassumption.
+        1: {
+          rewrite <- H0. rewrite H1 in H4.
+          clear -H4 H5 H6.
+          intro. apply isUsedPool_insert_1 in H as [H | [H | H]].
+          * apply H4. apply isUsedPool_insert_2. by left.
+          * subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * simpl in H.
+            assert (ι' <> ιs). {
+              unfold etherPop in H6. repeat case_match; try congruence.
+              intro. subst. apply H5. right. left.
+              eexists. by rewrite H0.
+            }
+            apply H4. right. exists ι. eexists.
+            split. by setoid_rewrite lookup_insert; destruct_decide_eq.
+            simpl. set_solver.
+        }
+        1: {
+          clear -H5 H6.
+          intro. eapply appearsEther_etherPop_rev in H; eauto.
+        }
+        replace ({[ιs]} ∪ ({[ι']} ∪ links)) with
+          ({[ι']} ∪ ({[ιs]} ∪ links)) by (clear; set_solver).
+        constructor; assumption.
+      }
+  (* unlink arrives *)
+  * rename ι0 into ι.
+    inv HD1.
+    - put (lookup ι : ProcessPool -> option _) on H2 as P.
+      setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+      inv H5.
+     (* message send *)
+     (* TODO: proofs for these cases are almost identical *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             constructor.
+           }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "!"%string)) [VPid ι'] []
+      :: fs0, RValSeq [v], mb, links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "!"%string)) [VPid ι'] []
+      :: fs0, RValSeq [v], mb, links ∖ {[ιs]}, flag) ∥ prs0). {
+          apply map_eq. intros.
+          clear -H2.
+          put (lookup i : ProcessPool -> _) on H2 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_send. by constructor.
+      (* exit send *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             constructor.
+           }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "exit"%string)) [
+        VPid ι'] [] :: fs0, RValSeq [v], mb, links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "exit"%string)) [
+        VPid ι'] [] :: fs0, RValSeq [v], mb, links ∖ {[ιs]}, flag) ∥ prs0). {
+          apply map_eq. intros.
+          clear -H2.
+          put (lookup i : ProcessPool -> _) on H2 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_send. by constructor.
+      (* link send - maybe this should not be proved? *)
+      + eexists. split.
+        1: { constructor. apply etherPop_etherAdd. eassumption.
+             constructor.
+           }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "link"%string)) [] []
+      :: fs0, RValSeq [VPid ι'], mb, links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "link"%string)) [] []
+      :: fs0, RValSeq [VPid ι'], mb, links ∖ {[ιs]}, flag) ∥ prs0). {
+          apply map_eq. intros.
+          clear -H2.
+          put (lookup i : ProcessPool -> _) on H2 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_send. inv H. (* TODO: links should be formalised as sets *)
+      (* unlink send - can't be proved if the same link is established and deleted in the two reductions *)
+      + inv H.
+    (* arrivals - cannot happen *)
+    - inv H.
+    (* local actions *)
+    - put (lookup ι : ProcessPool -> option _) on H1 as P.
+      setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+(* case separation is needed at this point, because
+ exists can't be instantiated first, also ε actions
+ could terminate a process -> no chaining
+
+TODO: this cases a lot of boiler plate
+*)
+      destruct_or! H7; subst; inv H2.
+      (* silent steps *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι ↦ inl (fs, e, mb, links ∖ {[ιs]}, flag) ∥ prs = ι ↦ inl (fs, e, mb, links ∖ {[ιs]}, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
+      (* recv_peek_message - success *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_peek_message") [] [] :: fs0, RBox, mb,
+      links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_peek_message") [] [] :: fs0, RBox, mb,
+      links ∖ {[ιs]}, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. eapply p_recv_peek_message_ok.
+        assumption.
+        by intuition.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb, 
+      links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb, 
+      links ∖ {[ιs]}, flag) ∥ Π). {
+           apply map_eq. intros.
+           clear -H1.
+           put (lookup i : ProcessPool -> _) on H1 as HH.
+           destruct (decide (i = ι)).
+           * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+           * setoid_rewrite lookup_insert_ne; auto.
+             setoid_rewrite lookup_insert_ne in HH; auto.
+         }
+         setoid_rewrite H0.
+         eapply n_other. by econstructor.
+         by intuition.
+      (* removeMessage *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "remove_message") [] [] :: fs0, RBox, mb,
+      links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "remove_message") [] [] :: fs0, RBox, mb,
+      links ∖ {[ιs]}, flag) ∥ Π). {
+         apply map_eq. intros.
+         clear -H1.
+         put (lookup i : ProcessPool -> _) on H1 as HH.
+         destruct (decide (i = ι)).
+         * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+         * setoid_rewrite lookup_insert_ne; auto.
+           setoid_rewrite lookup_insert_ne in HH; auto.
+       }
+       setoid_rewrite H0.
+       eapply n_other.
+       econstructor.
+       assumption.
+       by intuition.
+      (* recv_wait_timeout infinity *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
+      RValSeq [VLit "infinity"%string], (oldmb, msg :: newmb), 
+      links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
+      RValSeq [VLit "infinity"%string], (oldmb, msg :: newmb), 
+      links ∖ {[ιs]}, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other.
+        by econstructor.
+        by intuition.
+      (* recv_wait_timeout 0 *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [
+      VLit 0%Z], mb, links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [
+      VLit 0%Z], mb, links ∖ {[ιs]}, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
+      (* recv_wait_timeout error *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [v], mb,
+      links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [v], mb,
+      links ∖ {[ιs]}, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
+      (* trap_exit exception *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v], mb, links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v], mb, links ∖ {[ιs]}, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
+      (* self *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "self"%string)) [] []
+      :: fs0, RBox, mb, links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "self"%string)) [] []
+      :: fs0, RBox, mb, links ∖ {[ιs]}, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by right; left.
+      (* recv_peek_message - fail *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_peek_message") [] [] :: fs0, RBox, mb,
+      links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_peek_message") [] [] :: fs0, RBox, mb,
+      links ∖ {[ιs]}, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. econstructor.
+        assumption.
+        by intuition.
+      (* normal termination *)
+      + inv H. (* arrive can't be chained on a dead process *)
+      (* exceptional termination *)
+      + inv H. (* arrive can't be chained on a dead process *)
+      (* setflag *)
+      + inv H.
+    (* spawn *)
+    - inv H11.
+      {
+        put (lookup ι : ProcessPool -> option _) on H1 as P.
+        setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+        eexists. split.
+        1: {
+          setoid_rewrite insert_insert; destruct_decide_eq.
+          exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq. 
+          constructor. eassumption. constructor.
+        }
+        right.
+        assert (ι
+   ↦ inl
+       (FParams (ICall (VLit "erlang"%string) (VLit "spawn"%string))
+          [VClos ext id vars e0] [] :: fs0, RValSeq [v2], mb, 
+        links ∖ {[ιs]}, flag) ∥ prs = ι
+   ↦ inl
+       (FParams (ICall (VLit "erlang"%string) (VLit "spawn"%string))
+          [VClos ext id vars e0] [] :: fs0, RValSeq [v2], mb, 
+        links ∖ {[ιs]}, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        setoid_rewrite insert_insert; destruct_decide_eq.
+        exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq. 
+        eapply n_spawn; try eassumption.
+        1: {
+          rewrite <- H0. rewrite H1 in H4.
+          clear -H4 H5 H6.
+          intro. apply isUsedPool_insert_1 in H as [H | [H | H]].
+          * apply H4. apply isUsedPool_insert_2. by left.
+          * subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * apply H4. right. exists ι. eexists.
+            split. by setoid_rewrite lookup_insert; destruct_decide_eq.
+            simpl.
+            clear -H. simpl in H.
+            set_solver.
+        }
+        1: {
+          clear -H5 H6.
+          intro. eapply appearsEther_etherPop_rev in H; eauto.
+        }
+        constructor; assumption.
+      }
+      { (* spawn_link *)
+        put (lookup ι : ProcessPool -> option _) on H1 as P.
+        setoid_rewrite lookup_insert in P. destruct_decide_eq. inv P.
+        eexists. split.
+        1: {
+          setoid_rewrite insert_insert; destruct_decide_eq.
+          exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq. 
+          constructor. eassumption. constructor.
+        }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "spawn_link"%string)) [VClos ext id vars e0] []
+      :: fs0, RValSeq [v2], mb, links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "spawn_link"%string)) [VClos ext id vars e0] []
+      :: fs0, RValSeq [v2], mb, links ∖ {[ιs]}, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        setoid_rewrite insert_insert; destruct_decide_eq.
+        exfalso. subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq. 
+        eapply n_spawn; try eassumption.
+        1: {
+          rewrite <- H0. rewrite H1 in H4.
+          clear -H4 H5 H6.
+          intro. apply isUsedPool_insert_1 in H as [H | [H | H]].
+          * apply H4. apply isUsedPool_insert_2. by left.
+          * subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          * apply H4. right. exists ι. eexists.
+            split. by setoid_rewrite lookup_insert; destruct_decide_eq.
+            simpl.
+            clear -H. simpl in H.
+            set_solver.
+        }
+        1: {
+          clear -H5 H6.
+          intro. eapply appearsEther_etherPop_rev in H; eauto.
+        }
+        replace (({[ι']} ∪ links) ∖ {[ιs]}) with
+          ({[ι']} ∪ (links ∖ {[ιs]})). 2: {
+          (* NOTE: we exploit that ι' is fresh *)
+          clear -H5 H6.
+          assert (ι' ≠ ιs) as X. {
+            intro. subst. apply H5.
+            right. left. exists ι. intro.
+            unfold etherPop in H6. repeat case_match; congruence.
+          }
+          set_solver.
+        }
+        constructor; assumption.
+      }
+Qed.
+
+(** The actions which do not modify the ether: τ, `spawn_link` and `self`.
+    For these actions, the arrival of a signal can be evaluated later
+    without modifying the ether of the result (`chain_arrive_later_2`). *)
+Definition isChainable2 (a : Action) : Prop :=
+match a with
+ | τ | ASpawn _ _ _ true | ASelf _  => True
+ | _ => False
+end.
+
+(** The version of `chain_arrive_later` for the actions in `isChainable2`:
+    if the arrival has to be evaluated later, the ether of the result is the
+    ether after the arrival. *)
+Corollary chain_arrive_later_2 :
+  forall O A B C a ι ιs s,
+  A -[ a | ι ]ₙ-> B with O ->
+  isChainable2 a ->
+  A -[ AArrive ιs ι s | ι]ₙ-> C with O ->
+  exists D, B -[ AArrive ιs ι s | ι]ₙ-> D with O /\ (* Arrive can be evaluated later *)
+    ((C.1, optional_update C.2 a ι s) = D \/ (* For spawns, there is a new process, moreover, for spawn_links the dead process has a new link in the list of links! *)
+     C -[ a | ι ]ₙ-> D with O) (* For most actions, arrives are confluent *).
+Proof.
+  intros.
+  opose proof* chain_arrive_later. 1: exact H. 2: exact H1.
+  * destruct a; by trivial.
+  * destruct H2 as [D [HD [|]]].
+    - destruct H2 as [neweth [Eq1 Eq2]].
+      exists D. split. assumption. left.
+      subst D. f_equal. clear HD. destruct B as [Beth BΠ].
+      simpl in Eq1. unfold etherPop in Eq1. case_match. 2: congruence.
+      destruct l. congruence. inv Eq1.
+      inv H1. 2: { destruct_or!; congruence. }
+      simpl. unfold etherPop in H9. case_match. destruct l0. 1,3: congruence.
+      inv H9.
+      inv H; simpl in H0.
+      + contradiction.
+      + contradiction.
+      + reflexivity.
+      + reflexivity.
+    - exists D. split. assumption. by right.
 Qed.

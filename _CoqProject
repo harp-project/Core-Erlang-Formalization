@@ -46,6 +46,8 @@ src/Concurrent/StrongBisim.v
 src/Concurrent/WeakBisim.v
 src/Concurrent/BarbedBisim.v
 src/Concurrent/BisimRenaming.v
+src/Concurrent/BisimUpToRenaming.v
+src/Concurrent/NodeCompatibility.v
 
 src/Concurrent/BisimReductions.v
 src/Concurrent/MapPmap.v
