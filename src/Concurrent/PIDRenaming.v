@@ -1,13 +1,36 @@
 (**
   This file defines the (sequential) renaming of process identifiers to reason
-  about alpha-equivalence of Core Erlang nodes.
+  about alpha-equivalence of Core Erlang nodes. `e.⟦from ↦ to⟧` replaces
+  every occurrence of the PID `from` by `to` in `e`; the renaming is defined
+  for all syntactic categories, redexes and frame stacks.
+
+  The file contains:
+  - the definition of PID renaming and its compatibility with scoping,
+    substitution and pattern matching;
+  - the preservation of the simulated BIFs and of the reduction steps of the
+    frame stack semantics under PID renaming (`renamePID_is_preserved`);
+  - the PIDs used in a term (`usedPIDs*`), and the properties of PID renaming
+    with respect to them: renaming an unused PID is the identity, renaming
+    to an unused PID can be reverted, and the effect of renaming on the used
+    PIDs;
+  - identity PID renamings and the commutation of independent PID
+    renamings;
+  - the fact that substitution, pattern matching and the simulated BIFs do
+    not introduce new PIDs (`*_usedPIDs`).
 *)
 
 From CoreErlang.FrameStack Require Import SubstSemanticsLemmas.
+From CoreErlang.Concurrent Require Export Utilities.
 From stdpp Require Export gmap sets.
+From stdpp Require Import fin_maps.
 
 Import ListNotations.
 
+(** * PID renaming *)
+
+(** Renames the PID `from` to `to` in expressions, values, non-value
+    expressions and patterns (only the sizes of binary segments can contain
+    PIDs in patterns). *)
 Fixpoint renamePID (from to : PID) (e : Exp) : Exp :=
 match e with
  | VVal e => VVal (renamePIDVal from to e)
@@ -25,6 +48,7 @@ match v with
  | VVar n => VVar n
  | VFunId n => VFunId n
  | VClos ext id params e => VClos (map (fun '(id, vl, e) => (id, vl, renamePID from to e)) ext) id params (renamePID from to e)
+ | VBitstring bits => VBitstring bits
 end
 with renamePIDNVal (from to : PID) (n : NonVal) : NonVal :=
 match n with
@@ -32,12 +56,12 @@ match n with
  | EValues el => EValues (map (renamePID from to) el)
  | ECons hd tl => ECons (renamePID from to hd) (renamePID from to tl)
  | ETuple l => ETuple (map (renamePID from to) l)
- | EMap l => EMap (map (fun '(x,y) => (renamePID from to x, renamePID from to y)) l)
+ | EMap l => EMap (map (prod_map (renamePID from to) (renamePID from to)) l)
  | ECall m f l => ECall (renamePID from to m) (renamePID from to f) (map (renamePID from to) l)
  | EPrimOp f l => EPrimOp f (map (renamePID from to) l)
  | EApp exp l => EApp (renamePID from to exp) (map (renamePID from to) l)
  | ECase e l => ECase (renamePID from to e)
-                      (map (fun '(p, g, e) => (p, renamePID from to g, renamePID from to e)) l)
+                      (map (fun '(p, g, e) => (map (renamePIDPat from to) p, renamePID from to g, renamePID from to e)) l)
  | ELet l e1 e2 => ELet l (renamePID from to e1) (renamePID from to e2)
  | ESeq e1 e2 => ESeq (renamePID from to e1) (renamePID from to e2)
  | ELetRec l e => ELetRec (map (fun '(vl, e) => (vl, renamePID from to e)) l)
@@ -45,12 +69,35 @@ match n with
  | ETry e1 vl1 e2 vl2 e3 => ETry (renamePID from to e1)
                                  vl1 (renamePID from to e2)
                                  vl2 (renamePID from to e3)
+ | EBin l => EBin (map (renamePID from to) l)
+ | ESeg (Build_Segment v s u t sgn endi) =>
+    ESeg {| seg_val :=renamePID from to v; seg_size := renamePID from to s;
+            seg_type := t; seg_unit := u; seg_sign := sgn; seg_endian := endi |}
+end
+with renamePIDPat (from to : PID) (p : Pat) : Pat :=
+match p with
+ | PVar => PVar
+ | PLit l => PLit l
+ | PCons hd tl => PCons (renamePIDPat from to hd) (renamePIDPat from to tl)
+ | PTuple l => PTuple (map (renamePIDPat from to) l)
+ | PMap l => PMap (map (prod_map (renamePIDPat from to) (renamePIDPat from to)) l)
+ | PNil => PNil
+ | PBin segments =>
+   PBin (map (fun seg => {| seg_val :=renamePIDPat from to (seg_val seg);
+                            seg_size := renamePIDVal from to (seg_size seg);
+                            seg_unit := seg_unit seg;
+                            seg_type := seg_type seg;
+                            seg_sign := seg_sign seg;
+                            seg_endian := seg_endian seg |}) segments)
 end.
 
-Notation "e .⟦ x ↦ y ⟧" := (renamePID x y e) (at level 2, left associativity).
-Notation "e .⟦ x ↦ y ⟧ᵥ" := (renamePIDVal x y e) (at level 2, left associativity).
-Notation "e .⟦ x ↦ y ⟧ₙ" := (renamePIDNVal x y e) (at level 2, left associativity).
+(** Notations for PID renaming in the four syntactic categories *)
+Notation "e .⟦ x ↦ y ⟧" := (renamePID x y e) (at level 1, left associativity).
+Notation "e .⟦ x ↦ y ⟧ᵥ" := (renamePIDVal x y e) (at level 1, left associativity).
+Notation "e .⟦ x ↦ y ⟧ₙ" := (renamePIDNVal x y e) (at level 1, left associativity).
+Notation "p .⟦ x ↦ y ⟧ₚ" := (renamePIDPat x y p) (at level 1, left associativity).
 
+(** PID renaming in redexes *)
 Definition renamePIDRed (from to : PID) (r : Redex) : Redex :=
 match r with
  | RExp e => RExp (renamePID from to e)
@@ -60,8 +107,9 @@ match r with
  | RBox => RBox
 end.
 
-Notation "e .⟦ x ↦ y ⟧ᵣ" := (renamePIDRed x y e) (at level 2, left associativity).
+Notation "e .⟦ x ↦ y ⟧ᵣ" := (renamePIDRed x y e) (at level 1, left associativity).
 
+(** PID renaming in frame identifiers *)
 Definition renamePIDFrameId (from to : PID) (f : FrameIdent) : FrameIdent :=
 match f with
  | IValues => f
@@ -70,10 +118,12 @@ match f with
  | ICall m f => ICall (renamePIDVal from to m) (renamePIDVal from to f)
  | IPrimOp f => IPrimOp f
  | IApp v => IApp (renamePIDVal from to v)
+ | IBin => f
 end.
 
-Notation "e .⟦ x ↦ y ⟧ᵢ" := (renamePIDFrameId x y e) (at level 2, left associativity).
+Notation "e .⟦ x ↦ y ⟧ᵢ" := (renamePIDFrameId x y e) (at level 1, left associativity).
 
+(** PID renaming in frames *)
 Definition renamePIDFrame (from to : PID) (f : Frame) : Frame :=
 match f with
  | FCons1 hd => FCons1 (renamePID from to hd)
@@ -84,29 +134,59 @@ match f with
  | FApp1 l => FApp1 (map (renamePID from to) l)
  | FCallMod f l => FCallMod (renamePID from to f) (map (renamePID from to) l)
  | FCallFun m l => FCallFun (renamePIDVal from to m) (map (renamePID from to) l)
- | FCase1 l => FCase1 (map (fun '(p, g, e) => (p, renamePID from to g, renamePID from to e)) l)
+ | FCase1 l => FCase1 (map (fun '(p, g, e) => (map (renamePIDPat from to) p, renamePID from to g, renamePID from to e)) l)
  | FCase2 lv ex le =>
    FCase2
      (map (renamePIDVal from to) lv)
      (renamePID from to ex)
-     (map (fun '(p, g, e) => (p, renamePID from to g, renamePID from to e)) le)
+     (map (fun '(p, g, e) => (map (renamePIDPat from to) p, renamePID from to g, renamePID from to e)) le)
  | FLet l e => FLet l (renamePID from to e)
  | FSeq e => FSeq (renamePID from to e)
  | FTry vl1 e2 vl2 e3 => FTry vl1 (renamePID from to e2)
                               vl2 (renamePID from to e3)
+ | FSeg1 size unit type sign endi => FSeg1 (renamePID from to size) unit type sign endi
+ | FSeg2 val unit type sign endi => FSeg2 (renamePIDVal from to val) unit type sign endi
 end.
 
-Notation "e .⟦ x ↦ y ⟧ₖ" := (renamePIDFrame x y e) (at level 2, left associativity).
+Notation "e .⟦ x ↦ y ⟧ₖ" := (renamePIDFrame x y e) (at level 1, left associativity).
 
+(** PID renaming in frame stacks *)
 Definition renamePIDStack (from to : PID) (fs : FrameStack) :=
   map (renamePIDFrame from to) fs.
 
-Notation "e .⟦ x ↦ y ⟧ₛₜ" := (renamePIDStack x y e) (at level 2,left associativity).
+Notation "e .⟦ x ↦ y ⟧ₛₜ" := (renamePIDStack x y e) (at level 1,left associativity).
 
+(** * PID renaming and scoping *)
+
+(** PID renaming does not change the number of variables bound by a pattern. *)
+Lemma PatVars_renamePID : forall p from to, PatVars (renamePIDPat from to p) = PatVars p.
+Proof.
+  intros p from to.
+  induction p using Pat_ind_weakened with
+    (Q := fun l => Forall (fun p => PatVars (renamePIDPat from to p) = PatVars p) l)
+    (R := fun l => Forall (PBoth (fun p => PatVars (renamePIDPat from to p) = PatVars p)) l)
+    (T := fun l => Forall (fun seg => PatVars (renamePIDPat from to (seg_val seg)) = PatVars (seg_val seg)) l);
+  simpl; auto.
+  * induction l; simpl; auto. inversion IHp; subst. rewrite H1. f_equal. auto.
+  * induction l; simpl; auto. inversion IHp; subst. destruct H1 as [H1a H1b]. destruct a. simpl in *. rewrite H1a, H1b. f_equal. auto.
+  * induction l; simpl; auto. inversion IHp; subst. destruct a; simpl in *. rewrite H1. f_equal. auto.
+Qed.
+
+(** PID renaming does not change the number of variables bound by a list of
+    patterns. *)
+Corollary PatListVars_renamePID : forall l from to,
+  PatListVars (map (renamePIDPat from to) l) = PatListVars l.
+Proof.
+  induction l; intros; simpl; auto.
+  unfold PatListVars in *; simpl. rewrite PatVars_renamePID, IHl. reflexivity.
+Qed.
+
+(** PID renaming preserves scoping. *)
 Lemma renamePID_preserves_scope :
   (forall Γ e, EXP Γ ⊢ e -> forall from to, EXP Γ ⊢ renamePID from to e) /\
-  (forall Γ e, VAL Γ ⊢ e -> forall from to, VAL Γ ⊢ renamePIDVal from to e) /\
-  (forall Γ e, NVAL Γ ⊢ e -> forall from to, NVAL Γ ⊢ renamePIDNVal from to e).
+  (forall Γ v, VAL Γ ⊢ v -> forall from to, VAL Γ ⊢ renamePIDVal from to v) /\
+  (forall Γ e, NVAL Γ ⊢ e -> forall from to, NVAL Γ ⊢ renamePIDNVal from to e) /\
+  (forall Γ p, PAT Γ ⊢ p -> forall from to, PAT Γ ⊢ renamePIDPat from to p).
 Proof.
   apply scoped_ind; intros; cbn; try now constructor.
   * break_match_goal; constructor.
@@ -141,12 +221,12 @@ Proof.
       rewrite map_nth with (d := (˝VNil, ˝VNil)).
       rewrite length_map in H1. eapply H in H1.
       rewrite map_nth with (d := (˝VNil, ˝VNil)) in H1.
-      destruct nth. eassumption.
+      destruct nth. cbn in *. eassumption.
     - rewrite map_map.
       rewrite map_nth with (d := (˝VNil, ˝VNil)).
       rewrite length_map in H1. eapply H0 in H1.
       rewrite map_nth with (d := (˝VNil, ˝VNil)) in H1.
-      destruct nth. eassumption.
+      destruct nth. cbn in *. eassumption.
   * constructor. intros.
     rewrite map_nth with (d := ˝VNil).
     rewrite length_map in H0. eapply H in H0.
@@ -168,28 +248,33 @@ Proof.
       eassumption.
   * constructor; intros.
     - auto.
-    - do 2 rewrite map_map.
+    - (* guards *)
+      do 2 rewrite map_map.
+      rewrite length_map in H3.
+      specialize (H0 i H3 from to).
+      do 2 rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+      setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H0.
+      destruct (nth i l ([], ˝VNil, ˝VNil)) as [[ps g] b]. cbn in *.
+      rewrite PatListVars_renamePID. exact H0.
+    - (* bodies *)
+      do 2 rewrite map_map.
+      rewrite length_map in H3.
+      specialize (H1 i H3 from to).
+      do 2 rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+      setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1.
+      destruct (nth i l ([], ˝VNil, ˝VNil)) as [[ps g] b]. cbn in *.
+      rewrite PatListVars_renamePID. exact H1.
+    - (* patterns *)
+      rewrite map_map in H4. rewrite map_map.
+      rewrite length_map in H3.
+      rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H4.
       rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
-      rewrite map_nth with (f := (fun x : list Pat * Exp * Exp =>
-             (fst ∘ fst)
-               (let
-                '(p, g, e3) := x in
-                 (p, renamePID from to g, renamePID from to e3)))) (d := ([], ˝VNil, ˝VNil)).
-      rewrite length_map in H2. eapply H0 in H2.
-      rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H2.
-      setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil)) in H2.
-      destruct nth, p. cbn in *. eassumption.
-    - do 2 rewrite map_map.
-      rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
-      rewrite map_nth with (f := (fun x : list Pat * Exp * Exp =>
-             (fst ∘ fst)
-               (let
-                '(p, g, e3) := x in
-                 (p, renamePID from to g, renamePID from to e3)))) (d := ([], ˝VNil, ˝VNil)).
-      rewrite length_map in H2. eapply H1 in H2.
-      rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H2.
-      setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil)) in H2.
-      destruct nth, p. cbn in *. eassumption.
+      setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H2.
+      destruct (nth i l ([], ˝VNil, ˝VNil)) as [[ps g] b] eqn:E. cbn in *.
+      rewrite length_map in H4.
+      rewrite map_nth with (d := PNil).
+      specialize (H2 i H3). rewrite E in H2. cbn in H2.
+      eapply H2; eauto.
   * constructor; intros.
     - do 2 rewrite map_map.
       rewrite length_map in *. eapply H in H1.
@@ -197,8 +282,43 @@ Proof.
       do 2 rewrite map_nth with (d := (0, ˝VNil)) in H1.
       destruct nth. cbn in *. eassumption.
     - rewrite length_map. apply H0.
+  * (* EBin *)
+    constructor; intros. rewrite map_nth with (d := ˝VNil).
+    rewrite length_map in H0. now apply H.
+  * (* ESeg *)
+    destruct seg as [v s u t sg en]. simpl in *. constructor; simpl; auto.
+  * (* PTuple *)
+    constructor. intros. rewrite length_map in H0.
+    rewrite map_nth with (d := PNil). now apply H.
+  * (* PMap *)
+    constructor; intros.
+    - rewrite map_map.
+      rewrite map_nth with (d := (PNil, PNil)).
+      rewrite length_map in H1. eapply H in H1.
+      rewrite map_nth with (d := (PNil, PNil)) in H1.
+      destruct nth. cbn in *. eassumption.
+    - rewrite map_map.
+      rewrite map_nth with (d := (PNil, PNil)).
+      rewrite length_map in H1. eapply H0 in H1.
+      rewrite map_nth with (d := (PNil, PNil)) in H1.
+      destruct nth. cbn in *. eassumption.
+  * (* PBin *)
+    constructor; intros.
+    - rewrite map_map. rewrite length_map in H1.
+      rewrite map_nth with (d := default_segment).
+      cbn. specialize (H i H1 from to).
+      setoid_rewrite (map_nth seg_val) with (d := default_segment) in H.
+      now cbn in H.
+    - rewrite map_map. rewrite length_map in H1.
+      rewrite map_nth with (d := default_segment).
+      cbn. specialize (H0 i H1 from to).
+      setoid_rewrite map_nth with (d := default_segment) in H0.
+      now cbn in H0.
 Qed.
 
+(** * PID renaming and substitution *)
+
+(** PID renaming in the values of a substitution *)
 Definition renamePID_subst (from to : PID) (σ : Substitution) : Substitution :=
   fun x =>
     match σ x with
@@ -206,15 +326,28 @@ Definition renamePID_subst (from to : PID) (σ : Substitution) : Substitution :=
     | r => r
     end.
 
+(** PID renaming commutes with variable renaming. *)
 Theorem rename_renamePID :
   (forall e ρ from to, rename ρ (renamePID from to e) =
                       renamePID from to (rename ρ e)) /\
   (forall e ρ from to, renameNonVal ρ (renamePIDNVal from to e) =
                       renamePIDNVal from to (renameNonVal ρ e)) /\
   (forall e ρ from to, renameVal ρ (renamePIDVal from to e) =
-                      renamePIDVal from to (renameVal ρ e)).
+                      renamePIDVal from to (renameVal ρ e)) /\
+  (forall p ρ from to, renamePat ρ (renamePIDPat from to p) =
+                      renamePIDPat from to (renamePat ρ p)).
 Proof.
   eapply Exp_ind with
+    (PQ := fun l => Forall (fun p => forall ρ from to, renamePat ρ (renamePIDPat from to p) =
+                      renamePIDPat from to (renamePat ρ p)) l)
+    (PR := fun l => Forall (fun '(p1, p2) => forall ρ from to, renamePat ρ (renamePIDPat from to p1) =
+                      renamePIDPat from to (renamePat ρ p1) /\
+         renamePat ρ (renamePIDPat from to p2) =
+                      renamePIDPat from to (renamePat ρ p2)) l)
+    (PT := fun l => Forall (fun seg => forall ρ from to, renamePat ρ (renamePIDPat from to (seg_val seg)) =
+                      renamePIDPat from to (renamePat ρ (seg_val seg)) /\
+         renameVal ρ (renamePIDVal from to (seg_size seg)) =
+                      renamePIDVal from to (renameVal ρ (seg_size seg))) l)
     (QV := fun l => Forall (fun e => forall ρ from to, renameVal ρ (renamePIDVal from to e) =
                       renamePIDVal from to (renameVal ρ e)) l)
     (Q := fun l => Forall (fun e => forall ρ from to, rename ρ (renamePID from to e) =
@@ -228,6 +361,8 @@ Proof.
          rename ρ (renamePID from to e2) =
                       renamePID from to (rename ρ e2)) l)
     (W := fun l => Forall (fun '(p, g, e) => forall from to ρ,
+       map (renamePat ρ) (map (renamePIDPat from to) p) =
+                      map (renamePIDPat from to) (map (renamePat ρ) p) /\
        rename ρ (renamePID from to g) =
                       renamePID from to (rename ρ g) /\
        rename ρ (renamePID from to e) =
@@ -246,7 +381,7 @@ Proof.
     induction H; constructor; auto.
   * f_equal. do 2 rewrite map_map. apply map_ext_Forall.
     induction H; constructor; auto. destruct x.
-    specialize (H ρ from to) as [H_1 H_2]. now rewrite H_1, H_2.
+    specialize (H ρ from to) as [H_1 H_2]. cbn. now rewrite H_1, H_2.
   * now destruct n.
   * f_equal.
     - do 2 rewrite map_map. apply map_ext_Forall.
@@ -261,7 +396,7 @@ Proof.
     induction H; constructor; auto.
   * f_equal. do 2 rewrite map_map. apply map_ext_Forall.
     induction H; constructor; auto. destruct x.
-    specialize (H from to ρ) as [H_1 H_2]. now rewrite H_1, H_2.
+    specialize (H from to ρ) as [H_1 H_2]. cbn. now rewrite H_1, H_2.
   * f_equal.
     - now rewrite H.
     - now rewrite H0.
@@ -276,8 +411,12 @@ Proof.
   * f_equal.
     - now rewrite H.
     - do 2 rewrite map_map. apply map_ext_Forall.
-      rewrite List.Forall_nth in *. intros. eapply (H0 _ d) in H1. destruct nth, p.
-      now rewrite (proj1 (H1 _ _ _)), (proj2 (H1 _ _ _)).
+      rewrite List.Forall_nth in *. intros. eapply (H0 _ d) in H1.
+      destruct (nth i l d) as [[ps g] b]. cbn.
+      destruct (H1 from to ρ) as [Hp _].
+      destruct (H1 from to (uprenn (PatListVars ps) ρ)) as [_ [Hg Hb]].
+      rewrite PatListVars_renamePID.
+      rewrite Hp, Hg, Hb. reflexivity.
   * now rewrite H, H0.
   * now rewrite H, H0.
   * f_equal.
@@ -286,8 +425,33 @@ Proof.
       rewrite (H1 _ _ _). now rewrite length_map.
     - rewrite H. now rewrite length_map.
   * now rewrite H, H0, H1.
+  * (* EBin *)
+    f_equal. do 2 rewrite map_map. apply map_ext_Forall.
+    induction H; constructor; auto.
+  * (* ESeg *)
+    destruct seg as [v s u t sg en]. cbn in *. rewrite H, H0. reflexivity.
+  * (* PCons *)
+    now rewrite H, H0.
+  * (* PTuple *)
+    f_equal. do 2 rewrite map_map. apply map_ext_Forall.
+    induction H; constructor; auto.
+  * (* PMap *)
+    f_equal. do 2 rewrite map_map. apply map_ext_Forall.
+    induction H; constructor; auto. destruct x.
+    specialize (H ρ from to) as [H_1 H_2]. cbn. now rewrite H_1, H_2.
+  * (* PBin *)
+    f_equal. do 2 rewrite map_map. apply map_ext_Forall.
+    induction H; constructor; auto.
+    destruct x as [v s u t sg en]. specialize (H ρ from to) as [H_1 H_2]. cbn in *.
+    now rewrite H_1, H_2.
+  * (* clauses of ECase *)
+    constructor; [|assumption].
+    intros from to ρ. split; [|split]; [| apply H0 | apply H1].
+    do 2 rewrite map_map. apply map_ext_Forall.
+    induction H; constructor; auto.
 Qed.
 
+(** PID renaming in substitutions commutes with `up_subst`. *)
 Lemma renamePID_subst_up :
   forall σ from to, up_subst (renamePID_subst from to σ) =
                     renamePID_subst from to (up_subst σ).
@@ -295,9 +459,10 @@ Proof.
   unfold renamePID_subst, up_subst. intros.
   extensionality x. destruct x; auto.
   unfold Manipulation.shift. destruct σ; auto.
-  now rewrite (proj2 (proj2 rename_renamePID)).
+  now rewrite (proj1 (proj2 (proj2 rename_renamePID))).
 Qed.
 
+(** PID renaming in substitutions commutes with `upn`. *)
 Corollary renamePID_upn :
   forall n σ from to, upn n (renamePID_subst from to σ) =
                       renamePID_subst from to (upn n σ).
@@ -306,15 +471,29 @@ Proof.
   now rewrite IHn, renamePID_subst_up.
 Qed.
 
+(** PID renaming in a substituted term is substituting the renamed substitution into
+    the renamed term. *)
 Theorem split_renamePID_subst :
      (forall e from to σ, renamePID from to e.[σ] = 
        (renamePID from to e).[renamePID_subst from to σ])
   /\ (forall e from to σ, renamePIDNVal from to e.[σ]ₑ = 
        (renamePIDNVal from to e).[renamePID_subst from to σ]ₑ)
-  /\ (forall e from to σ, renamePIDVal from to e.[σ]ᵥ = 
-       (renamePIDVal from to e).[renamePID_subst from to σ]ᵥ).
+  /\ (forall e from to σ, renamePIDVal from to e.[σ]ᵥ =
+       (renamePIDVal from to e).[renamePID_subst from to σ]ᵥ)
+  /\ (forall p from to σ, renamePIDPat from to p.[σ]ₚ =
+       (renamePIDPat from to p).[renamePID_subst from to σ]ₚ).
 Proof.
   eapply Exp_ind with
+    (PQ := fun l => Forall (fun p => forall from to σ, renamePIDPat from to p.[σ]ₚ =
+       (renamePIDPat from to p).[renamePID_subst from to σ]ₚ) l)
+    (PR := fun l => Forall (fun '(p1, p2) => forall from to σ, renamePIDPat from to p1.[σ]ₚ =
+       (renamePIDPat from to p1).[renamePID_subst from to σ]ₚ /\
+         renamePIDPat from to p2.[σ]ₚ =
+       (renamePIDPat from to p2).[renamePID_subst from to σ]ₚ) l)
+    (PT := fun l => Forall (fun seg => forall from to σ, renamePIDPat from to (seg_val seg).[σ]ₚ =
+       (renamePIDPat from to (seg_val seg)).[renamePID_subst from to σ]ₚ /\
+         renamePIDVal from to (seg_size seg).[σ]ᵥ =
+       (renamePIDVal from to (seg_size seg)).[renamePID_subst from to σ]ᵥ) l)
     (QV := fun l => Forall (fun e => forall from to σ, renamePIDVal from to e.[σ]ᵥ = 
        (renamePIDVal from to e).[renamePID_subst from to σ]ᵥ) l)
     (Q := fun l => Forall (fun e => forall from to σ, renamePID from to e.[σ] = 
@@ -328,6 +507,8 @@ Proof.
          renamePID from to e2.[σ] = 
        (renamePID from to e2).[renamePID_subst from to σ]) l)
     (W := fun l => Forall (fun '(p, g, e) => forall from to σ,
+       map (renamePIDPat from to) (map (substPat σ) p) =
+       map (substPat (renamePID_subst from to σ)) (map (renamePIDPat from to) p) /\
        renamePID from to g.[σ] =
        (renamePID from to g).[(renamePID_subst from to σ)] /\
        renamePID from to e.[σ] = 
@@ -346,7 +527,7 @@ Proof.
     induction H; constructor; auto.
   * f_equal. do 2 rewrite map_map. apply map_ext_Forall.
     induction H; constructor; auto. destruct x.
-    specialize (H from to σ) as [H_1 H_2]. now rewrite H_1, H_2.
+    specialize (H from to σ) as [H_1 H_2]. cbn. now rewrite H_1, H_2.
   * unfold renamePID_subst. now destruct σ.
   * unfold renamePID_subst. destruct n. now destruct σ.
   * f_equal.
@@ -362,7 +543,7 @@ Proof.
     induction H; constructor; auto.
   * f_equal. do 2 rewrite map_map. apply map_ext_Forall.
     induction H; constructor; auto. destruct x.
-    specialize (H from to σ) as [H_1 H_2]. now rewrite H_1, H_2.
+    specialize (H from to σ) as [H_1 H_2]. cbn. now rewrite H_1, H_2.
   * f_equal.
     - now rewrite H.
     - now rewrite H0.
@@ -378,7 +559,9 @@ Proof.
     - now rewrite H.
     - do 2 rewrite map_map. apply map_ext_Forall.
       rewrite List.Forall_nth in *. intros. eapply (H0 _ d) in H1. destruct nth, p.
-      rewrite (proj1 (H1 _ _ _)), (proj2 (H1 _ _ _)). now rewrite renamePID_upn.
+      destruct (H1 from to σ) as [Hp _].
+      destruct (H1 from to (upn (PatListVars l0) σ)) as [_ [Hg Hb]].
+      rewrite PatListVars_renamePID, renamePID_upn, Hp, Hg, Hb. reflexivity.
   * rewrite H, H0. now rewrite renamePID_upn.
   * now rewrite H, H0.
   * f_equal.
@@ -387,8 +570,34 @@ Proof.
       rewrite (H1 _ _ _). now rewrite renamePID_upn, length_map.
     - rewrite H. now rewrite length_map, renamePID_upn.
   * rewrite H, H0, H1. now repeat rewrite renamePID_upn.
+  * (* EBin *)
+    f_equal. do 2 rewrite map_map. apply map_ext_Forall.
+    induction H; constructor; auto.
+  * (* ESeg *)
+    destruct seg as [v s u t sg en]. cbn in *. rewrite H, H0. reflexivity.
+  * (* PCons *)
+    now rewrite H, H0.
+  * (* PTuple *)
+    f_equal. do 2 rewrite map_map. apply map_ext_Forall.
+    induction H; constructor; auto.
+  * (* PMap *)
+    f_equal. do 2 rewrite map_map. apply map_ext_Forall.
+    induction H; constructor; auto. destruct x.
+    specialize (H from to σ) as [H_1 H_2]. cbn. now rewrite H_1, H_2.
+  * (* PBin *)
+    f_equal. do 2 rewrite map_map. apply map_ext_Forall.
+    induction H; constructor; auto.
+    destruct x as [v s u t sg en]. specialize (H from to σ) as [H_1 H_2]. cbn in *.
+    now rewrite H_1, H_2.
+  * (* clauses of ECase *)
+    constructor; [|assumption].
+    intros from to σ. split; [|split]; [| apply H0 | apply H1].
+    do 2 rewrite map_map. apply map_ext_Forall.
+    induction H; constructor; auto.
 Qed.
 
+(** PID renaming in a substituted expression is substituting the renamed
+    substitution into the renamed expression. *)
 Corollary split_renamePID_subst_exp :
   (forall e from to σ, renamePID from to e.[σ] = 
     (renamePID from to e).[renamePID_subst from to σ]).
@@ -396,6 +605,8 @@ Proof.
   apply split_renamePID_subst.
 Qed.
 
+(** PID renaming in a substituted value is substituting the renamed substitution
+    into the renamed value. *)
 Corollary split_renamePID_subst_val :
   (forall e from to σ, renamePIDVal from to e.[σ]ᵥ = 
        (renamePIDVal from to e).[renamePID_subst from to σ]ᵥ).
@@ -403,12 +614,32 @@ Proof.
   apply split_renamePID_subst.
 Qed.
 
+(** PID renaming in a substituted non-value expression is substituting the renamed
+    substitution into the renamed non-value expression. *)
+Corollary split_renamePID_subst_nval :
+  (forall e from to σ, renamePIDNVal from to e.[σ]ₑ = 
+    (renamePIDNVal from to e).[renamePID_subst from to σ]ₑ).
+Proof.
+  apply split_renamePID_subst.
+Qed.
+
+(** PID renaming in a substituted pattern is substituting the renamed substitution
+    into the renamed pattern. *)
+Corollary split_renamePID_subst_pat :
+  (forall p from to σ, renamePIDPat from to p.[σ]ₚ = 
+       (renamePIDPat from to p).[renamePID_subst from to σ]ₚ).
+Proof.
+  apply split_renamePID_subst.
+Qed.
+
+(** PID renaming does not change the identity substitution. *)
 Proposition renamePID_subst_id :
   forall from to, renamePID_subst from to idsubst = idsubst.
 Proof.
   now intros.
 Qed.
 
+(** PID renaming in `list_subst` renames the substituted values. *)
 Proposition renamePID_subst_list_subst :
   forall vs from to σ,
     renamePID_subst from to (list_subst vs σ) =
@@ -419,16 +650,18 @@ Proof.
   extensionality x. destruct x; auto.
 Qed.
 
-Proposition rename_subst_flatten_list :
+(** PID renaming commutes with `flatten_list`. *)
+Proposition renamePID_flatten_list :
   forall el from to, 
     map (renamePID from to) (flatten_list el) =
-    flatten_list (map (fun '(x, y) => (renamePID from to x, renamePID from to y)) el).
+    flatten_list (map (prod_map (renamePID from to) (renamePID from to)) el).
 Proof.
   induction el using list_length_ind; destruct el; intros; simpl; auto.
   destruct p. simpl. do 2 f_equal. rewrite H. reflexivity. slia.
 Qed.
 
-Proposition rename_subst_deflatten_list_val :
+(** PID renaming commutes with `deflatten_list`. *)
+Proposition renamePID_deflatten_list_val :
   forall el from to, 
     map (fun '(x, y) => (renamePIDVal from to x, renamePIDVal from to y)) (deflatten_list el) =
     deflatten_list (map (renamePIDVal from to) el).
@@ -438,109 +671,205 @@ Proof.
   do 2 f_equal. rewrite H. reflexivity. slia.
 Qed.
 
+(** * PID renaming and pattern matching *)
+
+(** Decoded segment values (integers, bitstrings) never contain PIDs. *)
+Lemma decode_bits_pidfree : forall bits type unit sign endi dv,
+  decode_bits bits type unit sign endi = Matches dv ->
+  forall from to, renamePIDVal from to dv = dv.
+Proof.
+  unfold decode_bits. intros. destruct type; try discriminate;
+    try (inv H; reflexivity).
+  case_match; inv H; reflexivity.
+Qed.
+
+(** Matching the decoded value of a segment binds no PIDs, so renaming PIDs
+    in the bindings is the identity. *)
+Lemma bind_decode_pidfree : forall p bits type unit sign endi from to,
+  (forall v, match_pattern p (renamePIDVal from to v) =
+             fmap (map (renamePIDVal from to)) (match_pattern p v)) ->
+  fmap (map (renamePIDVal from to))
+    (bind_match (decode_bits bits type unit sign endi) (match_pattern p)) =
+  bind_match (decode_bits bits type unit sign endi) (match_pattern p).
+Proof.
+  intros p bits type unit sign endi from to Hp.
+  rewrite map_match_bind_id.
+  destruct (decode_bits bits type unit sign endi) eqn:E; try reflexivity.
+  simpl. specialize (Hp v). erewrite decode_bits_pidfree in Hp; [|exact E].
+  symmetry. exact Hp.
+Qed.
+
+(** Matching a bitstring never binds PIDs, so renaming PIDs in the bindings
+    is a no-op. *)
+Lemma match_PBin_pidfree : forall l from to,
+  Forall (fun seg => forall v, match_pattern (seg_val seg) (renamePIDVal from to v) =
+            fmap (map (renamePIDVal from to)) (match_pattern (seg_val seg) v)) l ->
+  forall bits,
+    fmap (map (renamePIDVal from to)) (match_pattern (PBin l) (VBitstring bits)) =
+    match_pattern (PBin l) (VBitstring bits).
+Proof.
+  intros l from to H. induction H; intros bits; simpl.
+  * destruct (bvn_n bits =? 0)%N; reflexivity.
+  * destruct x as [v s u t sg en]. simpl in *.
+    destruct s; try reflexivity.
+    destruct (null l && Lit_beq l0 "all"%string) eqn:Hb.
+    - apply (bind_decode_pidfree v bits t (N.of_nat u) sg en from to H).
+    - destruct l0 as [a|z]; [reflexivity|].
+      destruct ((z <? 0)%Z || (bvn_n bits <? Z.to_N z * N.of_nat u)%N) eqn:Hc; [reflexivity|].
+      rewrite map_match_and_app.
+      rewrite (bind_decode_pidfree v _ t (N.of_nat u) sg en from to H).
+      rewrite IHForall. reflexivity.
+Qed.
+
+(** Matching a renamed value results in the renamed bindings. *)
+Lemma renamePID_match_pattern_eq : forall p v from to,
+  match_pattern p (renamePIDVal from to v) =
+  fmap (map (renamePIDVal from to)) (match_pattern p v).
+Proof.
+  intros p. induction p using Pat_ind_weakened with
+    (Q := Forall (fun p => forall v from to, match_pattern p (renamePIDVal from to v) =
+            fmap (map (renamePIDVal from to)) (match_pattern p v)))
+    (R := Forall (PBoth (fun p => forall v from to, match_pattern p (renamePIDVal from to v) =
+            fmap (map (renamePIDVal from to)) (match_pattern p v))))
+    (T := Forall (fun seg => forall v from to, match_pattern (seg_val seg) (renamePIDVal from to v) =
+            fmap (map (renamePIDVal from to)) (match_pattern (seg_val seg) v))).
+  all: try (intros v from to; destruct v; simpl; auto).
+  all: try (destruct (from =? p); reflexivity).
+  * destruct Lit_beq; reflexivity.
+  * rewrite IHp1, IHp2, map_match_and_app. reflexivity.
+  * revert l0. induction IHp; intros l0; destruct l0; simpl; try reflexivity.
+    rewrite H, IHIHp, map_match_and_app. reflexivity.
+  * revert l0. induction IHp; intros l0.
+    - destruct l0 as [|[v1 v2] l0]; reflexivity.
+    - destruct x as [p p0]; destruct H as [H_1 H_2]; simpl in H_1, H_2.
+      destruct l0 as [|[v1 v2] l0]; simpl; [reflexivity|].
+      rewrite H_1, H_2, IHIHp.
+      rewrite map_match_and_app, map_match_and_app. reflexivity.
+  * symmetry. apply (match_PBin_pidfree l from to).
+    eapply Forall_impl; [exact IHp|]. intros seg Hseg v. apply Hseg.
+  * constructor; auto.
+  * constructor; auto.
+  * constructor; auto.
+  * constructor; auto.
+  * constructor; auto.
+  * constructor; auto.
+Qed.
+
+(** Successful matches are preserved by renaming PIDs in the value. *)
 Proposition renamePID_match_pattern :
-  forall p v vs', match_pattern p v = Some vs' ->
+  forall p v vs', match_pattern p v = Matches vs' ->
     forall from to,
-      match_pattern p (renamePIDVal from to v) = Some (map (renamePIDVal from to) vs').
+      match_pattern p (renamePIDVal from to v) = Matches (map (renamePIDVal from to) vs').
 Proof.
-  induction p using Pat_ind2
-    with (Q := fun l => Forall (fun p => forall v vs', match_pattern p v = Some vs' ->
-    forall from to,
-      match_pattern p (renamePIDVal from to v) = Some (map (renamePIDVal from to) vs')) l)
-      (R := fun l => Forall (PBoth (fun p => forall v vs', match_pattern p v = Some vs' ->
-    forall from to,
-      match_pattern p (renamePIDVal from to v) = Some (map (renamePIDVal from to) vs'))) l); try destruct v; simpl; intros; try inv H; simpl; auto.
-  * break_match_hyp; inv H1; now simpl.
-  * repeat break_match_hyp; try congruence. inv H1.
-    eapply IHp1 in Heqo. eapply IHp2 in Heqo0. now rewrite Heqo, Heqo0, map_app.
-  * generalize dependent vs'. revert l0. induction IHp; intros.
-    - destruct l0; now inv H1.
-    - destruct l0; inv H1. simpl. break_match_hyp. 2: congruence.
-      eapply H in Heqo. rewrite Heqo. break_match_hyp. 2: congruence.
-      apply IHIHp in Heqo0. rewrite Heqo0. inv H2. now rewrite map_app.
-  * generalize dependent vs'. revert l0. induction IHp; intros.
-    - destruct l0; now inv H1.
-    - destruct x; cbn in *. destruct l0; inv H1. destruct p1.
-      break_match_hyp. 2: congruence.
-      break_match_hyp. 2: congruence.
-      break_match_hyp. 2: congruence.
-      inv H2. simpl.
-      destruct H as [H_1 H_2].
-      eapply H_1 in Heqo. rewrite Heqo.
-      eapply H_2 in Heqo0. rewrite Heqo0.
-      apply IHIHp in Heqo1. rewrite Heqo1. now rewrite map_app, map_app.
+  intros. rewrite renamePID_match_pattern_eq, H. reflexivity.
 Qed.
 
+(** Failed matches are preserved by renaming PIDs in the value. *)
 Proposition renamePID_nomatch_pattern :
-  forall p v, match_pattern p v = None ->
+  forall p v, match_pattern p v = NotMatches ->
     forall from to,
-      match_pattern p (renamePIDVal from to v) = None.
+      match_pattern p (renamePIDVal from to v) = NotMatches.
 Proof.
-  induction p using Pat_ind2
-    with (Q := fun l => Forall (fun p => forall v, match_pattern p v = None ->
-    forall from to,
-      match_pattern p (renamePIDVal from to v) = None) l)
-      (R := fun l => Forall (PBoth (fun p => forall v, match_pattern p v = None ->
-    forall from to,
-      match_pattern p (renamePIDVal from to v) = None)) l); try destruct v; simpl; intros; try now (inv H; simpl; auto).
-  all: try now break_match_goal; auto; break_match_hyp; congruence.
-  * repeat break_match_hyp; try congruence; inv H.
-    - eapply renamePID_match_pattern in Heqo. eapply IHp2 in Heqo0.
-      now rewrite Heqo, Heqo0.
-    - eapply IHp1 in Heqo. now rewrite Heqo.
-  * generalize dependent l0. induction IHp; intros.
-    - destruct l0; now inv H.
-    - destruct l0; inv H0. now simpl.
-      simpl. break_match_hyp.
-      + eapply renamePID_match_pattern in Heqo. rewrite Heqo. break_match_hyp. congruence.
-        apply IHIHp in Heqo0. now rewrite Heqo0.
-      + eapply H in Heqo. now rewrite Heqo.
-  * generalize dependent l0. induction IHp; intros.
-    - destruct l0; now inv H.
-    - destruct x; cbn in *. destruct l0; inv H0. now simpl. destruct H as [H_1 H_2].
-      destruct p1. simpl in *.
-      break_match_hyp. break_match_hyp. break_match_hyp. congruence.
-      + eapply renamePID_match_pattern in Heqo. rewrite Heqo.
-        eapply renamePID_match_pattern in Heqo0. rewrite Heqo0.
-        apply IHIHp in Heqo1. now rewrite Heqo1.
-      + eapply renamePID_match_pattern in Heqo. rewrite Heqo.
-        eapply H_2 in Heqo0. now rewrite Heqo0.
-      + eapply H_1 in Heqo. now rewrite Heqo.
-  * constructor; auto.
-  * constructor; auto.
-  * constructor; auto.
-  * constructor; auto.
+  intros. rewrite renamePID_match_pattern_eq, H. reflexivity.
 Qed.
 
+(** Matching a list of renamed values results in the renamed bindings. *)
+Lemma renamePID_match_pattern_list_eq : forall lp vs from to,
+  match_pattern_list lp (map (renamePIDVal from to) vs) =
+  fmap (map (renamePIDVal from to)) (match_pattern_list lp vs).
+Proof.
+  induction lp; destruct vs; intros; simpl; try reflexivity.
+  rewrite renamePID_match_pattern_eq, IHlp, map_match_and_app.
+  reflexivity.
+Qed.
+
+(** Successful list matches are preserved by renaming PIDs in the values. *)
 Corollary renamePID_match_pattern_list :
-  forall lp vs vs', match_pattern_list lp vs = Some vs' ->
+  forall lp vs vs', match_pattern_list lp vs = Matches vs' ->
     forall from to,
-      match_pattern_list lp (map (renamePIDVal from to) vs) = Some (map (renamePIDVal from to) vs').
+      match_pattern_list lp (map (renamePIDVal from to) vs) = Matches (map (renamePIDVal from to) vs').
 Proof.
-  induction lp; destruct vs; simpl; intros; try congruence.
-  * now inv H.
-  * break_match_hyp. 2: congruence. break_match_hyp. 2: congruence.
-    eapply renamePID_match_pattern in Heqo. rewrite Heqo. inv H.
-    eapply IHlp in Heqo0. rewrite Heqo0. now rewrite map_app.
+  intros. rewrite renamePID_match_pattern_list_eq, H. reflexivity.
 Qed.
 
+(** Failed list matches are preserved by renaming PIDs in the values. *)
 Corollary renamePID_nomatch_pattern_list :
-  forall lp vs, match_pattern_list lp vs = None ->
+  forall lp vs, match_pattern_list lp vs = NotMatches ->
     forall from to,
-      match_pattern_list lp (map (renamePIDVal from to) vs) = None.
+      match_pattern_list lp (map (renamePIDVal from to) vs) = NotMatches.
 Proof.
-  induction lp; destruct vs; simpl; intros; try congruence.
-  break_match_hyp. break_match_hyp. congruence.
-  * eapply IHlp in Heqo0. eapply renamePID_match_pattern in Heqo.
-    now rewrite Heqo, Heqo0.
-  * eapply renamePID_nomatch_pattern in Heqo. now rewrite Heqo.
+  intros. rewrite renamePID_match_pattern_list_eq, H. reflexivity.
 Qed.
 
+(** Renaming PIDs inside patterns (only the sizes of binary segments can
+    contain values) does not influence matching: sizes only matter if they are
+    literals, which are not changed by the PID renaming. *)
+Lemma match_PBin_renamePIDPat : forall l from to,
+  Forall (fun seg => forall v, match_pattern (renamePIDPat from to (seg_val seg)) v =
+                               match_pattern (seg_val seg) v) l ->
+  forall bits,
+    match_pattern (renamePIDPat from to (PBin l)) (VBitstring bits) =
+    match_pattern (PBin l) (VBitstring bits).
+Proof.
+  intros l from to H. induction H; intros bits; simpl.
+  * reflexivity.
+  * destruct x as [v s u t sg en]. simpl in *.
+    destruct s; try reflexivity.
+    all: try (simpl; destruct (from =? p); reflexivity).
+    simpl. rewrite null_map.
+    destruct (null l && Lit_beq l0 "all"%string) eqn:Hb.
+    - destruct (decode_bits bits t (N.of_nat u) sg en) as [v0| |]; simpl; try rewrite H; reflexivity.
+    - destruct l0 as [a|z]; [reflexivity|].
+      destruct ((z <? 0)%Z || (bvn_n bits <? Z.to_N z * N.of_nat u)%N); [reflexivity|].
+      rewrite IHForall.
+      destruct (decode_bits (bv_extract (bvn_n bits - Z.to_N z * N.of_nat u) (Z.to_N z * N.of_nat u) (bvn_val bits)) t (N.of_nat u) sg en) as [v0| |];
+        simpl; try rewrite H; reflexivity.
+Qed.
+
+(** PID renaming in patterns does not change the result of matching. *)
+Lemma renamePIDPat_match_pattern : forall p v from to,
+  match_pattern (renamePIDPat from to p) v = match_pattern p v.
+Proof.
+  intros p. induction p using Pat_ind_weakened with
+    (Q := Forall (fun p => forall v from to, match_pattern (renamePIDPat from to p) v = match_pattern p v))
+    (R := Forall (PBoth (fun p => forall v from to, match_pattern (renamePIDPat from to p) v = match_pattern p v)))
+    (T := Forall (fun seg => forall v from to, match_pattern (renamePIDPat from to (seg_val seg)) v = match_pattern (seg_val seg) v)).
+  all: try (intros v from to; destruct v; simpl; auto).
+  * rewrite IHp1, IHp2. reflexivity.
+  * revert l0. induction IHp; intros l0; destruct l0; simpl; try reflexivity.
+    rewrite H, IHIHp. reflexivity.
+  * revert l0. induction IHp; intros l0.
+    - destruct l0 as [|[v1 v2] l0]; reflexivity.
+    - destruct x as [p p0]; destruct H as [H_1 H_2]; simpl in H_1, H_2.
+      destruct l0 as [|[v1 v2] l0]; simpl; [reflexivity|].
+      rewrite H_1, H_2, IHIHp. reflexivity.
+  * apply match_PBin_renamePIDPat. eapply Forall_impl; [exact IHp|]. intros seg Hseg v. apply Hseg.
+  * constructor; auto.
+  * constructor; auto.
+  * constructor; auto.
+  * constructor; auto.
+  * constructor; auto.
+  * constructor; auto.
+Qed.
+
+(** PID renaming in lists of patterns does not change the result of matching. *)
+Lemma renamePIDPat_match_pattern_list : forall lp vs from to,
+  match_pattern_list (map (renamePIDPat from to) lp) vs = match_pattern_list lp vs.
+Proof.
+  induction lp; destruct vs; intros; simpl; try reflexivity.
+  rewrite renamePIDPat_match_pattern, IHlp. reflexivity.
+Qed.
+
+(** * PID renaming and the comparison of values *)
+
+(** Renaming PIDs in a value results in an equal value according to `Val_eqb`,
+    since `Val_eqb` is weakened for PIDs (it considers all PIDs equal), see
+    `Equalities.v`. *)
 Proposition renamePID_Val_eqb :
-  forall v (* v' *) from to, (* v =ᵥ v' = renamePIDVal from to v =ᵥ renamePIDVal from to v' *)
+  forall v from to,
     v =ᵥ renamePIDVal from to v = true.
 Proof.
-  valinduction; (* try destruct v'; *) intros; simpl; auto.
+  valinduction; intros; simpl; auto.
   2: try now destruct Nat.eqb eqn:P.
   * apply Lit_eqb_refl.
   * erewrite IHv1, IHv2. reflexivity.
@@ -551,8 +880,10 @@ Proof.
   * apply Nat.eqb_refl.
   * destruct n. simpl. now do 2 rewrite Nat.eqb_refl.
   * apply Nat.eqb_refl.
+  * apply bvn_eqb_refl.
 Qed.
 
+(** PID renaming does not change the result of `Val_eqb`. *)
 Proposition renamePID_Val_eqb_alt :
   forall v v' from to, v =ᵥ v' = renamePIDVal from to v =ᵥ renamePIDVal from to v'.
 Proof.
@@ -567,6 +898,7 @@ Proof.
     - destruct x; simpl. destruct H, p. simpl in *. now erewrite IHIHv, H, H0.
 Qed.
 
+(** PID renaming does not change the result of `Val_ltb`. *)
 Proposition renamePID_Val_ltb :
   forall v v' from to, v <ᵥ v' = renamePIDVal from to v <ᵥ renamePIDVal from to v'.
 Proof.
@@ -594,7 +926,7 @@ Proof.
         apply Nat.ltb_nlt in H0. rewrite H0. simpl.
         apply H.
   * repeat rewrite length_map. do 3 f_equal. 2: f_equal.
-    (* prove separately, by induction that list_equal and list_less are preserved *)
+    (* prove separately, by induction that list_eqb and list_less are preserved *)
     {
       revert l0. induction IHv; intros; destruct l0; simpl.
       * reflexivity.
@@ -625,6 +957,7 @@ Proof.
     }
 Qed.
 
+(** PID renaming commutes with the normalisation of maps. *)
 Lemma renamePID_make_val_map :
   forall vs from to,
   map (fun '(x, y) => (renamePIDVal from to x, renamePIDVal from to y))
@@ -644,11 +977,26 @@ Proof.
   now rewrite IHvl.
 Qed.
 
-Ltac destruct_eqb_in_if EQ :=
+(** * PID renaming and the simulated BIFs
+
+    The lemmas `renamePID_eval_*` state that the simulated BIFs commute with
+    PID renaming: evaluating them on renamed arguments gives the renamed
+    result. *)
+
+(** Case-splits on the first PID equality test `if a =? b then _ else _` of
+    the goal (as produced by renaming a PID). The `as` variant also names
+    the resulting equation. *)
+Tactic Notation "destruct_pid_equality" :=
   match goal with
-  | [|- context G [if ?from =? ?p then _ else _]] => destruct (from =? p) eqn:EQ
+  | |- context [if ?a =? ?b then _ else _] => destruct (a =? b)
+  end.
+Tactic Notation "destruct_pid_equality" "as" ident(EQ) :=
+  match goal with
+  | |- context [if ?a =? ?b then _ else _] => destruct (a =? b) eqn:EQ
   end.
 
+(** Evaluating an arithmetic BIF on renamed arguments gives the renamed
+    result. *)
 Lemma renamePID_eval_arith :
   forall m f vs r,
     eval_arith m f vs = r ->
@@ -662,13 +1010,15 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   all: try now (destruct vs; simpl; try reflexivity).
   all: try destruct v; simpl; try reflexivity.
-  all: try destruct_eqb_in_if EQ; try reflexivity.
+  all: try destruct_pid_equality as EQ; try reflexivity.
   all: try destruct l; simpl; try rewrite EQ; try reflexivity.
   all: try destruct vs; simpl; try rewrite EQ; try reflexivity.
   all: try destruct (Nat.eqb from p) eqn:EQ2; try reflexivity.
   all: destruct x0; try reflexivity.
 Qed.
 
+(** Evaluating a logical BIF on renamed arguments gives the renamed
+    result. *)
 Lemma renamePID_eval_logical :
   forall m f vs r,
     eval_logical m f vs = r ->
@@ -697,6 +1047,8 @@ Proof.
        simpl in *; try congruence.
 Qed.
 
+(** Evaluating an equality BIF on renamed arguments gives the renamed
+    result. *)
 Lemma renamePID_eval_equality :
   forall m f vs r,
     eval_equality m f vs = r ->
@@ -711,6 +1063,8 @@ Proof.
   all: reflexivity.
 Qed.
 
+(** Evaluating a comparison BIF on renamed arguments gives the renamed
+    result. *)
 Lemma renamePID_eval_cmp :
   forall m f vs r,
     eval_cmp m f vs = r ->
@@ -728,6 +1082,8 @@ Proof.
   all: try reflexivity.
 Qed.
 
+(** Evaluating `hd` or `tl` on a renamed argument gives the renamed
+    result. *)
 Lemma renamePID_eval_hd_tl :
   forall m f vs r,
     eval_hd_tl m f vs = r ->
@@ -740,6 +1096,62 @@ Proof.
   all: destruct v; try reflexivity; simpl; destruct Nat.eqb; try reflexivity.
 Qed.
 
+(** Evaluating a bitstring size BIF on renamed arguments gives the renamed
+    result. *)
+Lemma renamePID_eval_bin_size :
+  forall m f vs r,
+    eval_bin_size m f vs = r ->
+    forall from to,
+      eval_bin_size m f (map (renamePIDVal from to) vs) = renamePIDRed from to r.
+Proof.
+  intros. unfold eval_bin_size in *.
+  rewrite <- H. clear H.
+  case_match; try reflexivity.
+  all: destruct vs; simpl; try reflexivity.
+  all: destruct vs; simpl; try reflexivity.
+  all: destruct v; simpl; try reflexivity.
+  all: try (destruct (from =? p); reflexivity).
+  all: try (repeat case_match; reflexivity).
+Qed.
+
+(** PID renaming commutes with converting meta-level lists to Core Erlang
+    lists. *)
+Lemma renamePID_meta_to_cons : forall l from to,
+  renamePIDVal from to (meta_to_cons l) = meta_to_cons (map (renamePIDVal from to) l).
+Proof.
+  induction l; intros; simpl; auto. now rewrite IHl.
+Qed.
+
+(** Integer literals do not contain PIDs. *)
+Lemma renamePID_map_lit_integer : forall l from to,
+  map (renamePIDVal from to) (map (VLit ∘ Integer) l) = map (VLit ∘ Integer) l.
+Proof.
+  induction l; intros; simpl; auto. now rewrite IHl.
+Qed.
+
+(** Evaluating a bitstring-to-list conversion BIF on renamed arguments gives
+    the renamed result. *)
+Lemma renamePID_eval_bin_to_list :
+  forall m f vs r,
+    eval_bin_to_list m f vs = r ->
+    forall from to,
+      eval_bin_to_list m f (map (renamePIDVal from to) vs) = renamePIDRed from to r.
+Proof.
+  intros. unfold eval_bin_to_list in *.
+  rewrite <- H. clear H.
+  case_match; try reflexivity.
+  all: destruct vs; simpl; try reflexivity.
+  all: destruct vs; simpl; try reflexivity.
+  all: destruct v; simpl; try reflexivity.
+  all: try (destruct (from =? p); reflexivity).
+  * destruct (_ =? 0)%N; simpl; [|reflexivity].
+    now rewrite renamePID_meta_to_cons, renamePID_map_lit_integer.
+  * rewrite renamePID_meta_to_cons, map_app, renamePID_map_lit_integer.
+    destruct (_ =? 0)%N; reflexivity.
+Qed.
+
+(** Evaluating a type checking BIF on renamed arguments gives the renamed
+    result. *)
 Lemma renamePID_eval_check :
   forall m f vs r,
     eval_check m f vs = r ->
@@ -751,11 +1163,28 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   all: destruct v; try reflexivity.
   all: simpl in *; try destruct l; try reflexivity.
-  all: try destruct (Nat.eqb from p); try reflexivity.
-  destruct Lit_beq; simpl in *. reflexivity.
-  destruct string_dec; reflexivity.
+  all: try destruct (Nat.eqb from p) eqn:E1; try reflexivity.
+  1-2: case_match; reflexivity.
+  all: destruct v0; try (destruct l); simpl.
+  all: destruct vs; simpl; try reflexivity.
+  all: repeat (simpl; match goal with
+       | |- context [if ?a =? ?q then _ else _] =>
+           let E := fresh "E" in destruct (a =? q) eqn:E; try rewrite E
+       | |- context [if (?x <? 0)%Z then _ else _] =>
+           let E := fresh "E" in destruct (x <? 0)%Z eqn:E; try rewrite E
+       end).
+  all: simpl; try reflexivity.
+  all: try discriminate.
+  all: try congruence.
+  all: try (destruct l0; simpl).
+  all: repeat (simpl; match goal with
+       | |- context [if (?x <? 0)%Z then _ else _] => destruct (x <? 0)%Z
+       | |- context [if (?x =? ?y)%Z then _ else _] => destruct (x =? y)%Z
+       end).
+  all: simpl; try reflexivity.
 Qed.
 
+(** Evaluating `fun_info` on renamed arguments gives the renamed result. *)
 Lemma renamePID_eval_funinfo :
   forall vs r,
     eval_funinfo vs = r ->
@@ -777,6 +1206,7 @@ Proof.
     now inv H.
 Qed.
 
+(** PID renaming does not change whether a value is a proper list. *)
 Lemma renamePID_is_shallow_proper_list :
   forall v from to, is_shallow_proper_list v = is_shallow_proper_list (renamePIDVal from to v).
 Proof.
@@ -785,6 +1215,22 @@ Proof.
   * by erewrite IHv2.
 Qed.
 
+(** Splitting a renamed list results in the renamed parts. *)
+Lemma renamePID_split_cons : forall n v from to,
+  split_cons n (renamePIDVal from to v) =
+  match split_cons n v with
+  | Some (l1, l2) => Some (renamePIDVal from to l1, renamePIDVal from to l2)
+  | None => None
+  end.
+Proof.
+  induction n; intros; simpl; try reflexivity.
+  destruct v; simpl; try reflexivity.
+  - destruct (_ =? _); reflexivity.
+  - rewrite IHn. destruct split_cons as [[l1 l2]|]; reflexivity.
+Qed.
+
+(** Evaluating a list transformation BIF (`++`, `--`, `split`) on renamed
+    arguments gives the renamed result. *)
 Lemma renamePID_eval_transform_list :
   forall m f vs r,
     eval_transform_list m f vs = r ->
@@ -797,7 +1243,7 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   {
     generalize dependent v0. induction v; simpl; intros; auto.
-    all: try destruct_eqb_in_if Heq; try reflexivity.
+    all: try destruct_pid_equality as Heq; try reflexivity.
     rewrite IHv2. destruct eval_append; simpl; try reflexivity.
     * destruct vs; simpl; try reflexivity.
       destruct vs; try reflexivity.
@@ -838,22 +1284,18 @@ Proof.
   {
     (* eval_split *)
     destruct v; simpl; try reflexivity.
-    2: by case_match.
-    destruct l. 2: case_match.
-    1-2: reflexivity.
-    remember (Z.to_nat _) as n.
-    clear. revert v0. induction n; intros; simpl. reflexivity.
+    2: destruct (_ =? _); reflexivity.
+    destruct l; simpl; try reflexivity.
+    rewrite renamePID_split_cons.
     destruct v0; simpl; try reflexivity.
-    1: destruct Nat.eqb; reflexivity.
-    destruct split_cons eqn:P.
-    * destruct p. specialize (IHn v0_2). rewrite P in IHn.
-      case_match. destruct p.
-      all: by inv IHn.
-    * specialize (IHn v0_2). rewrite P in IHn. case_match. destruct p.
-      all: by inv IHn.
+    all: try (destruct (_ =? _); reflexivity).
+    all: destruct (_ <? 0)%Z; simpl; try reflexivity.
+    all: destruct split_cons as [[l1 l2]|]; reflexivity.
   }
 Qed.
 
+(** Evaluating `element` or `setelement` on renamed arguments gives the
+    renamed result. *)
 Lemma renamePID_eval_elem_tuple :
   forall m f vs r,
     eval_elem_tuple m f vs = r ->
@@ -866,18 +1308,20 @@ Proof.
   all: destruct v; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
   all: try destruct vs; simpl; try reflexivity.
-  all: try destruct_eqb_in_if Heq; try reflexivity.
+  all: try destruct_pid_equality as Heq; try reflexivity.
   all: try destruct vs; simpl; try reflexivity.
   9-10: now rewrite Heq.
   all: try destruct l; simpl; try reflexivity.
   all: try destruct v; simpl; try reflexivity.
-  all: try destruct_eqb_in_if Heq; try reflexivity.
+  all: try destruct_pid_equality as Heq; try reflexivity.
   all: destruct x; try reflexivity.
   all: remember (Nat.pred (Pos.to_nat p)) as n; clear Heqn.
   * rewrite nth_error_map. destruct nth_error; simpl; try reflexivity.
   * rewrite replace_nth_error_map. now destruct replace_nth_error.
 Qed.
 
+(** Evaluating a list-tuple conversion BIF on renamed arguments gives the
+    renamed result. *)
 Lemma renamePID_eval_list_tuple :
   forall m f vs r,
     eval_list_tuple m f vs = r ->
@@ -900,6 +1344,7 @@ Proof.
     break_match_hyp; break_match_hyp; inv IHv2; try reflexivity.
 Qed.
 
+(** PID renaming does not change character lists. *)
 Lemma renamePID_mk_ascii_list :
   forall v from to,
     mk_ascii_list v = mk_ascii_list (renamePIDVal from to v).
@@ -910,6 +1355,18 @@ Proof.
     destruct Nat.eqb; reflexivity.
 Qed.
 
+(** PID renaming does not change byte lists. *)
+Lemma renamePID_mk_byte_list :
+  forall v from to,
+    mk_byte_list v = mk_byte_list (renamePIDVal from to v).
+Proof.
+  intros. induction v; simpl; try reflexivity.
+  * case_match; reflexivity.
+  * rewrite IHv2. destruct v1; simpl; try reflexivity.
+    destruct Nat.eqb; reflexivity.
+Qed.
+
+(** Strings converted to lists do not contain PIDs. *)
 Lemma renamePID_string_to_vcons :
   forall s from to,
     renamePIDVal from to (string_to_vcons s) = string_to_vcons s.
@@ -919,28 +1376,9 @@ Proof.
   * rewrite IHs; reflexivity.
 Qed.
 
+(** Evaluating a conversion BIF of `eval_convert` (e.g., `list_to_atom`) on
+    renamed arguments gives the renamed result and side effect. *)
 Lemma renamePID_convert_atom :
-  forall m f vs r eff,
-    eval_convert m f vs = (r, eff) ->
-    forall from to,
-      eval_convert m f (map (renamePIDVal from to) vs) =
-      (renamePIDRed from to r, eff).
-Proof.
-  intros. unfold eval_convert in *.
-  break_match_goal; inv H; try reflexivity; clear Heqb.
-  all: destruct vs; simpl; try reflexivity.
-  1,3: inv H1; cbn; reflexivity.
-  all: destruct vs; simpl; try reflexivity.
-  2,4: inv H1; cbn; reflexivity.
-  * rewrite <- renamePID_mk_ascii_list.
-    case_match; inv H1; cbn; reflexivity.
-  * destruct v; simpl; inv H1; try reflexivity.
-    - destruct l; simpl; inv H0; try reflexivity.
-      simpl. by rewrite renamePID_string_to_vcons.
-    - simpl. destruct (from =? p) eqn:P; try reflexivity.
-Qed.
-
-Lemma renamePID_convert_2 :
   forall m f vs r eff,
     eval_convert m f vs = (r, eff) ->
     forall from to,
@@ -952,15 +1390,28 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   1,3: inv H1; cbn; reflexivity.
   all: destruct vs; simpl; try reflexivity.
-  2,4: inv H1; cbn; reflexivity.
+  2: inv H1; cbn; reflexivity.
   * rewrite <- renamePID_mk_ascii_list.
     case_match; inv H1; cbn; reflexivity.
   * destruct v; simpl; inv H1; try reflexivity.
     - destruct l; simpl; inv H0; try reflexivity.
       simpl. by rewrite renamePID_string_to_vcons.
     - simpl. destruct (from =? p) eqn:P; try reflexivity.
+  * destruct v; try (destruct l); simpl in H1 |- *.
+    all: destruct v0; try (destruct l); simpl in H1 |- *.
+    all: destruct vs; simpl in H1 |- *; try (inv H1; reflexivity).
+    all: repeat (simpl; match goal with
+         | |- context [if ?a =? ?q then _ else _] => destruct (a =? q) eqn:?
+         | |- context [if negb ?c then _ else _] =>
+             let E := fresh "E" in destruct c eqn:E; try rewrite E in H1
+         end).
+    all: simpl in H1; inv H1; simpl; try reflexivity.
+    all: try rewrite renamePID_string_to_vcons.
+    all: repeat match goal with H : (_ =? _)%nat = _ |- _ => rewrite ?H; clear H end.
+    all: simpl; try reflexivity.
 Qed.
 
+(** Evaluating `length` on a renamed argument gives the renamed result. *)
 Lemma renamePID_eval_length :
   forall vs r,
     eval_length vs = r ->
@@ -979,6 +1430,8 @@ Proof.
   * break_match_hyp; inv H0. reflexivity.
 Qed.
 
+(** Evaluating `tuple_size` on a renamed argument gives the renamed
+    result. *)
 Lemma renamePID_eval_tuple_size :
   forall vs r,
     eval_tuple_size vs = r ->
@@ -995,6 +1448,8 @@ Proof.
   all: now destruct Nat.eqb.
 Qed.
 
+(** Evaluating an IO BIF on renamed arguments gives the renamed result and
+    the renamed side effect. *)
 Lemma renamePID_eval_io :
   forall m f vs r eff',
     eval_io m f vs = (r, eff') ->
@@ -1011,6 +1466,8 @@ Proof.
   all: simpl; rewrite map_app; reflexivity.
 Qed.
 
+(** Concurrent BIFs: in the sequential semantics, they only raise `undef`
+    for wrong arities. *)
 Lemma renamePID_eval_concurrent :
   forall m f vs class reas det,
     eval_concurrent m f vs = Some (class, reas, det) ->
@@ -1020,9 +1477,11 @@ Proof.
   intros. unfold eval_concurrent in *. break_match_goal; inv H; clear Heqb; try reflexivity.
   all: destruct vs; inv H1; simpl; try reflexivity.
   all: destruct vs; inv H0; simpl; try reflexivity.
+  all: destruct vs; inv H1; simpl; try reflexivity.
 Qed.
 
-
+(** Evaluating an exception raising BIF (`error`, `exit`, `throw`) on renamed
+    arguments raises the renamed exception. *)
 Lemma renamePID_eval_error :
   forall m f vs class reas det,
     eval_error m f vs = Some (class, reas, det) ->
@@ -1036,6 +1495,52 @@ Proof.
   all: destruct vs; inv H0; simpl; try reflexivity.
 Qed.
 
+(** PID renaming commutes with `map_put`. *)
+Lemma renamePID_map_put : forall l k v from to,
+  map (λ '(x, y), (x .⟦ from ↦ to ⟧ᵥ, y .⟦ from ↦ to ⟧ᵥ)) (map_put k v l) =
+  map_put k.⟦ from ↦ to ⟧ᵥ v.⟦ from ↦ to ⟧ᵥ
+          (map (λ '(x, y), (x .⟦ from ↦ to ⟧ᵥ, y .⟦ from ↦ to ⟧ᵥ)) l).
+Proof.
+  induction l as [|[k' v'] l IH]; intros; simpl; auto.
+  rewrite <- renamePID_Val_ltb, <- renamePID_Val_eqb_alt.
+  destruct (k <ᵥ k'); simpl; auto.
+  destruct (k =ᵥ k'); simpl; auto.
+  now rewrite IH.
+Qed.
+
+(** PID renaming commutes with `map_get`. *)
+Lemma renamePID_map_get : forall l k from to,
+  map_get k.⟦ from ↦ to ⟧ᵥ (map (λ '(x, y), (x .⟦ from ↦ to ⟧ᵥ, y .⟦ from ↦ to ⟧ᵥ)) l) =
+  option_map (renamePIDVal from to) (map_get k l).
+Proof.
+  induction l as [|[k' v'] l IH]; intros; simpl; auto.
+  rewrite <- renamePID_Val_ltb, <- renamePID_Val_eqb_alt.
+  destruct (k' <ᵥ k); simpl; auto.
+  destruct (k =ᵥ k'); simpl; auto.
+Qed.
+
+(** PID renaming commutes with converting Core Erlang lists to meta-level
+    lists. *)
+Lemma renamePID_mk_list : forall v from to,
+  mk_list (renamePIDVal from to v) = option_map (map (renamePIDVal from to)) (mk_list v).
+Proof.
+  induction v; intros; simpl; try reflexivity.
+  * now destruct Nat.eqb.
+  * rewrite IHv2. destruct (mk_list v2); reflexivity.
+Qed.
+
+(** PID renaming commutes with inserting a list of keys into a map. *)
+Lemma renamePID_fold_map_put : forall l value from to m,
+  map (λ '(x, y), (x .⟦ from ↦ to ⟧ᵥ, y .⟦ from ↦ to ⟧ᵥ))
+      (fold_left (λ m0 k, map_put k value m0) l m) =
+  fold_left (λ m0 k, map_put k value.⟦ from ↦ to ⟧ᵥ m0) (map (renamePIDVal from to) l)
+            (map (λ '(x, y), (x .⟦ from ↦ to ⟧ᵥ, y .⟦ from ↦ to ⟧ᵥ)) m).
+Proof.
+  induction l; intros; simpl; auto.
+  rewrite IHl. now rewrite renamePID_map_put.
+Qed.
+
+(** Evaluating a map BIF on renamed arguments gives the renamed result. *)
 Lemma renamePID_eval_map_bifs :
   forall m f vs r,
     eval_map_bifs m f vs = r ->
@@ -1045,41 +1550,226 @@ Proof.
   intros. unfold eval_map_bifs in *.
   rewrite <- H. clear H.
   case_match; try reflexivity.
-  all: destruct vs; simpl; try reflexivity.
-  all: destruct vs; simpl; try reflexivity.
-  all: destruct vs; simpl; try reflexivity.
-  2-3: destruct vs; simpl; try reflexivity.
-  * destruct v0; try reflexivity.
-    cbn. by destruct Nat.eqb eqn:P.
-    simpl. induction l; simpl; try reflexivity.
-    destruct a; simpl.
-    repeat rewrite <- renamePID_Val_ltb. simpl.
-    repeat rewrite <- renamePID_Val_eqb_alt.
-    destruct (Val_ltb v0) eqn:P.
-    - assumption.
-    - destruct (Val_eqb v) eqn:P2; reflexivity.
-  * destruct v0; try reflexivity.
-    cbn. by destruct Nat.eqb eqn:P.
-    simpl. induction l; simpl; try reflexivity.
-    destruct a; simpl.
-    repeat rewrite <- renamePID_Val_ltb. simpl.
-    repeat rewrite <- renamePID_Val_eqb_alt.
-    destruct (Val_ltb v0) eqn:P.
-    - assumption.
-    - destruct (Val_eqb v) eqn:P2; reflexivity.
-  * destruct v1; try reflexivity.
-    cbn. by destruct Nat.eqb eqn:P.
-    simpl. repeat f_equal.
-    induction l; simpl; try reflexivity.
-    destruct a; simpl.
-    repeat rewrite <- renamePID_Val_ltb. simpl.
-    repeat rewrite <- renamePID_Val_eqb_alt.
-    destruct (Val_ltb v) eqn:P.
-    - repeat f_equal.
-    - destruct (Val_eqb v) eqn:P2; repeat f_equal.
-      cbn. f_equal. apply IHl.
+  1: { destruct vs as [|k [|mp [|d [|d2 ds]]]]; simpl; try reflexivity.
+    - destruct mp; simpl; try reflexivity; try (destruct Nat.eqb; reflexivity).
+      rewrite renamePID_map_get. destruct map_get; reflexivity.
+    - destruct mp; simpl; try reflexivity; try (destruct Nat.eqb; reflexivity).
+      rewrite renamePID_map_get. destruct map_get; reflexivity. }
+  1: { destruct vs as [|k [|v [|mp [|d ds]]]]; simpl; try reflexivity.
+    destruct mp; simpl; try reflexivity; try (destruct Nat.eqb; reflexivity).
+    now rewrite renamePID_map_put. }
+  1: { destruct vs as [|mp [|d ds]]; simpl; try reflexivity.
+    - destruct mp; simpl; try reflexivity; try (destruct Nat.eqb; reflexivity).
+      now rewrite length_map.
+    - destruct mp; simpl; try reflexivity; try (destruct Nat.eqb; reflexivity). }
+  1: { destruct vs as [|ks [|v [|d ds]]]; simpl; try reflexivity.
+    rewrite renamePID_mk_list. destruct (mk_list ks); simpl; try reflexivity.
+    rewrite renamePID_fold_map_put. reflexivity. }
 Qed.
 
+(** PID renaming does not change the bits of an iolist. *)
+Lemma renamePID_iolist_bits : forall v from to,
+  iolist_bits (renamePIDVal from to v) = iolist_bits v.
+Proof.
+  induction v; intros; simpl; try reflexivity.
+  * now destruct Nat.eqb.
+  * pose proof (IHv1 from to) as H1. rewrite IHv2.
+    destruct v1; simpl in H1 |- *; try rewrite ?H1; try reflexivity.
+    destruct Nat.eqb; reflexivity.
+Qed.
+
+(** PID renaming commutes with `find_key` (used by `lists:keyfind` and
+    `lists:keymember`). *)
+Lemma renamePID_find_key : forall items key n from to,
+  find_key key.⟦ from ↦ to ⟧ᵥ n (map (renamePIDVal from to) items) =
+  option_map (renamePIDVal from to) (find_key key n items).
+Proof.
+  induction items; intros; simpl; auto.
+  unfold find_key in *. simpl.
+  destruct a; simpl; try (apply IHitems; fail).
+  * destruct Nat.eqb; apply IHitems.
+  * rewrite nth_error_map.
+    destruct (nth_error l (Z.to_nat n - 1)) eqn:E; simpl.
+    - rewrite <- renamePID_Val_eqb_alt.
+      destruct (key =ᵥ v); simpl; auto.
+    - apply IHitems.
+Qed.
+
+(** PID renaming does not change membership tests based on `Val_eqb`. *)
+Lemma renamePID_existsb : forall items x from to,
+  existsb (Val_eqb x.⟦ from ↦ to ⟧ᵥ) (map (renamePIDVal from to) items) =
+  existsb (Val_eqb x) items.
+Proof.
+  induction items; intros; simpl; auto.
+  rewrite <- renamePID_Val_eqb_alt, IHitems. reflexivity.
+Qed.
+
+(** PID renaming commutes with prepending a list to a Core Erlang list in
+    reverse order. *)
+Lemma renamePID_fold_cons : forall items tail from to,
+  renamePIDVal from to (fold_left (λ acc x, VCons x acc) items tail) =
+  fold_left (λ acc x, VCons x acc) (map (renamePIDVal from to) items) tail.⟦ from ↦ to ⟧ᵥ.
+Proof.
+  induction items; intros; simpl; auto.
+Qed.
+
+(** Evaluating a simulated function of the `lists` module on renamed
+    arguments gives the renamed result. *)
+Lemma renamePID_eval_lists_bifs :
+  forall m f vs r,
+    eval_lists_bifs m f vs = r ->
+    forall from to,
+      eval_lists_bifs m f (map (renamePIDVal from to) vs) = renamePIDRed from to r.
+Proof.
+  intros. unfold eval_lists_bifs in *.
+  rewrite <- H. clear H.
+  case_match; try reflexivity.
+  1: { destruct vs as [|x [|l [|d ds]]]; simpl; try reflexivity.
+    rewrite renamePID_mk_list. destruct (mk_list l); simpl; try reflexivity.
+    rewrite renamePID_existsb. destruct existsb; reflexivity. }
+  1: { destruct vs as [|key [|pos [|l [|d ds]]]]; simpl; try reflexivity.
+    rewrite renamePID_mk_list.
+    destruct pos as [|[s|x]|p|?|?|?|?|?|?|?]; simpl; try reflexivity.
+    - destruct (mk_list l); simpl; try reflexivity.
+      destruct (1 <=? x)%Z; simpl; try reflexivity.
+      rewrite renamePID_find_key. destruct find_key; reflexivity.
+    - destruct Nat.eqb; reflexivity. }
+  1: { destruct vs as [|key [|pos [|l [|d ds]]]]; simpl; try reflexivity.
+    rewrite renamePID_mk_list.
+    destruct pos as [|[s|x]|p|?|?|?|?|?|?|?]; simpl; try reflexivity.
+    - destruct (mk_list l); simpl; try reflexivity.
+      destruct (1 <=? x)%Z; simpl; try reflexivity.
+      rewrite renamePID_find_key. destruct find_key; reflexivity.
+    - destruct Nat.eqb; reflexivity. }
+  1: { destruct vs as [|l [|tail [|d ds]]]; simpl; try reflexivity.
+    - rewrite renamePID_mk_list. destruct (mk_list l); simpl; try reflexivity.
+      rewrite renamePID_meta_to_cons, map_rev. reflexivity.
+    - rewrite renamePID_mk_list. destruct (mk_list l); simpl; try reflexivity.
+      rewrite renamePID_fold_cons. reflexivity. }
+Qed.
+
+(** Evaluating a tuple BIF of `eval_tuple_bifs` (e.g., `delete_element`) on
+    renamed arguments gives the renamed result. *)
+Lemma renamePID_eval_tuple_bifs :
+  forall m f vs r,
+    eval_tuple_bifs m f vs = r ->
+    forall from to,
+      eval_tuple_bifs m f (map (renamePIDVal from to) vs) = renamePIDRed from to r.
+Proof.
+  intros. unfold eval_tuple_bifs in *.
+  rewrite <- H. clear H.
+  case_match; try reflexivity.
+  all: destruct vs as [|v1 [|v2 [|v3 [|v4 vs]]]]; simpl; try reflexivity.
+  all: destruct v1; simpl; try reflexivity.
+  all: try (destruct v2; simpl; try reflexivity).
+  all: repeat (simpl; match goal with
+        | |- context [if ?a =? ?q then _ else _] => destruct (a =? q) eqn:?
+        end).
+  all: try reflexivity.
+  all: try (destruct l; simpl; try reflexivity).
+  all: rewrite ?length_map.
+  all: repeat (simpl; match goal with
+        | |- context [if ?c then _ else _] => destruct c eqn:?
+        end).
+  all: try reflexivity.
+  all: try discriminate.
+  all: simpl; try rewrite map_app, firstn_map, skipn_map; try reflexivity.
+  all: try rewrite map_repeat.
+  all: simpl; try rewrite Heqb; try reflexivity.
+Qed.
+
+(** Evaluating `split_binary` on renamed arguments gives the renamed
+    result. *)
+Lemma renamePID_eval_split_binary :
+  forall m f vs r,
+    eval_split_binary m f vs = r ->
+    forall from to,
+      eval_split_binary m f (map (renamePIDVal from to) vs) = renamePIDRed from to r.
+Proof.
+  intros. unfold eval_split_binary in *.
+  rewrite <- H. clear H.
+  case_match; try reflexivity.
+  destruct vs as [|v1 [|v2 [|v3 vs]]]; simpl; try reflexivity.
+  all: destruct v1; simpl; try reflexivity.
+  all: try (destruct v2; simpl; try reflexivity).
+  all: repeat (simpl; match goal with
+        | |- context [if ?a =? ?q then _ else _] => destruct (a =? q) eqn:?
+        end).
+  all: try reflexivity.
+  all: try (destruct l; simpl; try reflexivity).
+  all: try reflexivity.
+  all: destruct (bvn_aligned bits && (0 <=? x)%Z && (x * 8 <=? Z.of_N (bvn_n bits))%Z); reflexivity.
+Qed.
+
+(** Evaluating a conversion BIF of `eval_conversion` (e.g.,
+    `list_to_integer`) on renamed arguments gives the renamed result and side
+    effect. *)
+Lemma renamePID_eval_conversion :
+  forall m f vs from to,
+    eval_conversion m f (map (renamePIDVal from to) vs) =
+    (renamePIDRed from to (fst (eval_conversion m f vs)),
+     fmap (fun e => (fst e, map (renamePIDVal from to) (snd e))) (snd (eval_conversion m f vs))).
+Proof.
+  intros. unfold eval_conversion.
+  destruct convert_string_to_code; simpl; try reflexivity.
+  (* list_to_integer *)
+  1: { destruct vs as [|v1 [|v2 [|v3 vs]]]; simpl; try reflexivity.
+    all: try rewrite <- (renamePID_mk_byte_list v1 from to).
+    all: try (destruct v2 as [|[s|base]|p|?|?|?|?|?|?|?]; simpl; try destruct_pid_equality).
+    all: try (destruct (mk_byte_list v1) as [cs|]; simpl; try reflexivity).
+    all: try (match goal with |- context [parse_integer ?b ?cs] =>
+                destruct (parse_integer b cs) end).
+    all: try reflexivity. }
+  (* binary_to_integer *)
+  1: { destruct vs as [|v1 [|v2 [|v3 vs]]]; simpl; try reflexivity.
+    all: destruct v1 as [|[?|?]|p|?|?|?|?|?|?|b]; simpl; try reflexivity;
+         try (destruct_pid_equality; reflexivity).
+    all: try (destruct v2 as [|[s|base]|p|?|?|?|?|?|?|?]; simpl; try destruct_pid_equality).
+    all: try (match goal with |- context [if bvn_aligned ?b then _ else _] =>
+                destruct (bvn_aligned b) end).
+    all: try (match goal with |- context [parse_integer ?b ?cs] =>
+                destruct (parse_integer b cs) end).
+    all: try reflexivity. }
+  (* atom_to_list *)
+  1: { destruct vs as [|v1 [|v2 vs]]; simpl; try reflexivity.
+    all: destruct v1 as [|[a|?]|p|?|?|?|?|?|?|?]; simpl; try reflexivity;
+      try (destruct_pid_equality; reflexivity).
+    all: try (rewrite renamePID_string_to_vcons; reflexivity).
+    all: try reflexivity. }
+  (* binary_to_atom *)
+  1: { destruct vs as [|v1 [|v2 [|v3 vs]]]; simpl; try reflexivity.
+    all: destruct v1 as [|[?|?]|p|?|?|?|?|?|?|b]; simpl; try reflexivity;
+         try (destruct_pid_equality; reflexivity).
+    all: destruct v2 as [|[s|?]|p|?|?|?|?|?|?|?]; simpl; try reflexivity;
+         try (destruct_pid_equality; reflexivity).
+    all: try (match goal with |- context [if ?c then _ else _] => destruct c end).
+    all: try reflexivity. }
+  (* list_to_binary *)
+  1: { destruct vs as [|v1 [|v2 vs]]; simpl; try reflexivity.
+    all: rewrite ?renamePID_iolist_bits.
+    all: destruct v1; simpl; try reflexivity;
+      try (destruct_pid_equality; reflexivity).
+    all: try (match goal with |- context [match iolist_bits ?v with _ => _ end] =>
+                destruct (iolist_bits v) end).
+    all: try reflexivity.
+    all: destruct v1_1 as [|[?|z]|p|?|?|?|?|?|?|?]; simpl; try reflexivity.
+    all: repeat (simpl; match goal with
+           | |- context [if ?a =? ?q then _ else _] => destruct (a =? q) eqn:?
+           | |- context [if ?c then _ else _] => destruct c eqn:?
+           | |- context [match iolist_bits ?v with _ => _ end] => destruct (iolist_bits v)
+           | |- context [option_map _ (iolist_bits ?v)] => destruct (iolist_bits v)
+           end).
+    all: try discriminate.
+    all: try reflexivity. }
+  (* iolist_to_binary *)
+  1: { destruct vs as [|v1 [|v2 vs]]; simpl; try reflexivity.
+    rewrite renamePID_iolist_bits. destruct iolist_bits; reflexivity. }
+  (* iolist_size *)
+  1: { destruct vs as [|v1 [|v2 vs]]; simpl; try reflexivity.
+    rewrite renamePID_iolist_bits. destruct iolist_bits; reflexivity. }
+Qed.
+
+(** All simulated BIFs commute with PID renaming. *)
 Proposition renamePID_eval :
   forall m f vs r eff',
     eval m f vs = Some (r, eff') ->
@@ -1091,7 +1781,6 @@ Proof.
   break_match_hyp; try rewrite Heqb in *; inv H.
   all:
     try (erewrite renamePID_eval_arith; reflexivity);
-    try (erewrite renamePID_eval_list_atom; reflexivity);
     try (erewrite renamePID_eval_logical; reflexivity);
     try (erewrite renamePID_eval_equality; reflexivity);
     try (erewrite renamePID_eval_cmp; reflexivity);
@@ -1102,17 +1791,24 @@ Proof.
     try (erewrite renamePID_eval_transform_list; reflexivity);
     try (erewrite renamePID_eval_list_tuple; reflexivity);
     try (erewrite renamePID_eval_tuple_size; reflexivity);
-    try (erewrite renamePID_eval_check; reflexivity).
+    try (erewrite renamePID_eval_check; reflexivity);
+    try (erewrite renamePID_eval_bin_size; reflexivity);
+    try (erewrite renamePID_eval_bin_to_list; reflexivity);
+    try (erewrite renamePID_eval_lists_bifs; reflexivity);
+    try (erewrite renamePID_eval_tuple_bifs; reflexivity);
+    try (erewrite renamePID_eval_split_binary; reflexivity).
   1-2: erewrite renamePID_eval_io; try eassumption; reflexivity.
-  1-2: erewrite renamePID_convert_2; try eassumption; reflexivity.
+  1-2: erewrite renamePID_convert_atom; try eassumption; reflexivity.
+  1-7: rewrite renamePID_eval_conversion, H1; reflexivity.
   1-3: break_match_hyp; try congruence; destruct e, p;
        eapply renamePID_eval_error in Heqo; rewrite Heqo; inv H1; reflexivity.
   1-7: break_match_hyp; try congruence; destruct e, p;
        eapply renamePID_eval_concurrent in Heqo; rewrite Heqo; inv H1; reflexivity.
   reflexivity.
-  1-2: erewrite renamePID_eval_map_bifs; try eassumption; reflexivity.
+  1-4: erewrite renamePID_eval_map_bifs; try eassumption; reflexivity.
 Qed.
 
+(** The simulated primitive operations commute with PID renaming. *)
 Proposition renamePID_primop_eval :
   forall f vs r eff',
     primop_eval f vs = Some (r, eff') ->
@@ -1125,11 +1821,33 @@ Proof.
   all: unfold eval_primop_error in *; rewrite EQ in *; destruct vs; cbn in *.
   all: try congruence.
   all: destruct vs; cbn in *; try congruence.
-  1: now inv H.
+  (* match_fail: function_clause is converted *)
+  1: { destruct v; cbn in *; try (inv H; reflexivity).
+       1: inv H; cbn; destruct_pid_equality; reflexivity.
+       destruct l as [|v l]; cbn in *; try (inv H; reflexivity).
+       destruct v; cbn in *; try (inv H; reflexivity);
+         try (inv H; cbn; destruct_pid_equality; reflexivity).
+       destruct l0; cbn in *; try (inv H; reflexivity).
+       destruct (s =? "function_clause")%string; inv H; reflexivity. }
   all: destruct vs; cbn in *; try congruence.
+  (* match_fail with more arguments: no result *)
+  1-2: repeat case_match; congruence.
   1: now inv H.
 Qed.
 
+(** * PID renaming and the reduction steps *)
+
+(** PID renaming does not change bitstrings constructed from segment values. *)
+Lemma renamePID_construct_bitstring : forall vs from to,
+  construct_bitstring (map (renamePIDVal from to) vs) = construct_bitstring vs.
+Proof.
+  induction vs; intros; simpl; auto.
+  destruct a; simpl; try reflexivity.
+  * destruct (from =? p); reflexivity.
+  * now rewrite IHvs.
+Qed.
+
+(** `create_result` commutes with PID renaming. *)
 Corollary renamePID_create_result :
   forall vs ident r eff',
     create_result ident vs = Some (r, eff') ->
@@ -1141,11 +1859,17 @@ Proof.
   * now inv H.
   * now inv H.
   * inv H. cbn.
-    now rewrite <- rename_subst_deflatten_list_val, renamePID_make_val_map.
-  * destruct m, f; simpl in *; inv H; auto.
-    all: try destruct l; try destruct l0; try inv H1; auto.
-    2-14: destruct (from =? p) eqn:P; cbn; now try rewrite P.
-    eapply renamePID_eval in H0. simpl in H0. exact H0.
+    now rewrite <- renamePID_deflatten_list_val, renamePID_make_val_map.
+  * rewrite renamePID_construct_bitstring.
+    destruct (construct_bitstring vs); inv H; reflexivity.
+  * destruct m, f; simpl in *.
+    all: try (destruct (from =? p) eqn:P).
+    all: try (destruct (from =? p0) eqn:P0).
+    all: try (destruct l); try (destruct l0).
+    (* calls with non-atom module or function names: badarg *)
+    all: try (inv H; cbn; try rewrite P; try rewrite P0;
+              rewrite renamePID_meta_to_cons; reflexivity).
+    eapply renamePID_eval in H. simpl in H. exact H.
   * eapply renamePID_primop_eval in H. exact H.
   * rewrite length_map.
     destruct v; simpl. all: try now inv H.
@@ -1155,8 +1879,49 @@ Proof.
       unfold convert_to_closlist. repeat f_equal.
       rewrite map_map, map_app. f_equal. rewrite map_map.
       f_equal. extensionality x. destruct x, p. cbn. f_equal.
+      (* arity mismatch: badarity carries the arguments *)
+      inv H. cbn. now rewrite renamePID_meta_to_cons.
 Qed.
 
+(** PID renaming does not change the size of a segment value. *)
+Lemma renamePID_get_bin_size : forall v unit default from to,
+  get_bin_size (renamePIDVal from to v) unit default = get_bin_size v unit default.
+Proof.
+  intros. destruct v; cbn; try destruct_pid_equality; reflexivity.
+Qed.
+
+(** Converting segments to bitstrings commutes with PID renaming. *)
+Lemma renamePID_segment_to_bitstring : forall v vsize unit type endian r from to,
+  segment_to_bitstring v vsize unit type endian = Some r ->
+  segment_to_bitstring (renamePIDVal from to v) (renamePIDVal from to vsize) unit type endian =
+  Some (renamePIDRed from to r).
+Proof.
+  intros v vsize unit type endian r from to H.
+  unfold segment_to_bitstring in *.
+  destruct type; try discriminate.
+  (* IntType *)
+  * destruct vsize; simpl in *; try (inv H; reflexivity);
+      try (inv H; simpl; destruct_pid_equality; reflexivity).
+    destruct l as [a|z]; [inv H; reflexivity|].
+    destruct (z <? 0)%Z; [inv H; reflexivity|].
+    destruct v; simpl in *; repeat case_match; try congruence; inv H; simpl;
+      repeat match goal with |- context [Nat.eqb ?a ?b] => destruct (Nat.eqb a b) end;
+      first [reflexivity | congruence].
+  (* BinaryType *)
+  * destruct v; simpl in *; try (inv H; reflexivity);
+      try (inv H; simpl; destruct_pid_equality; reflexivity).
+    rewrite renamePID_get_bin_size.
+    repeat case_match; inv H; reflexivity.
+  (* BitstringType *)
+  * destruct (Nat.eqb unit 1); [|inv H; reflexivity].
+    destruct v; simpl in *; try (inv H; reflexivity);
+      try (inv H; simpl; destruct_pid_equality; reflexivity).
+    rewrite renamePID_get_bin_size.
+    repeat case_match; inv H; reflexivity.
+Qed.
+
+(** The reduction steps of the frame stack semantics are preserved by PID
+    renaming. *)
 Theorem renamePID_is_preserved :
   forall fs r fs' r', ⟨fs, r⟩ --> ⟨fs', r'⟩ ->
     forall from to,
@@ -1173,7 +1938,7 @@ Proof.
     - replace (map (renamePIDVal from to) vl ++ [renamePIDVal from to v]) with
               (map (renamePIDVal from to) (vl ++ [v])) by now rewrite map_app.
       eapply eq_sym, renamePID_create_result in H0. symmetry. eassumption.
-  * rewrite rename_subst_flatten_list. constructor.
+  * rewrite renamePID_flatten_list. constructor.
   * rewrite split_renamePID_subst_exp,
             renamePID_subst_list_subst,
             renamePID_subst_id.
@@ -1181,8 +1946,17 @@ Proof.
   * repeat rewrite split_renamePID_subst_exp,
                    renamePID_subst_list_subst,
                    renamePID_subst_id.
-    constructor. now apply renamePID_match_pattern_list.
-  * econstructor. now apply renamePID_nomatch_pattern_list.
+    constructor. rewrite renamePIDPat_match_pattern_list.
+    now apply renamePID_match_pattern_list.
+  * econstructor. rewrite renamePIDPat_match_pattern_list.
+    now apply renamePID_nomatch_pattern_list.
+  * (* non-true guard *)
+    constructor. destruct v; cbn; try congruence.
+    destruct (_ =? _); congruence.
+  * (* heating a segment *)
+    destruct seg as [v s u t sg en]. simpl. constructor.
+  * (* cooling a segment *)
+    constructor. now apply renamePID_segment_to_bitstring.
   * rewrite split_renamePID_subst_exp,
             renamePID_subst_list_subst,
             renamePID_subst_id.
@@ -1202,10 +1976,10 @@ Proof.
     destruct F; auto.
 Qed.
 
-Definition flat_union {A B} {H : EqDecision B} {H0 : Countable B}
-  (f : A -> gset B) (l : list A) : gset B :=
-    foldr (fun x acc => f x ∪ acc) ∅ l.
+(** * PIDs used in expressions, values, patterns and frame stacks *)
 
+(** The PIDs used in expressions, values, non-value expressions and
+    patterns *)
 Fixpoint usedPIDsExp (e : Exp) : gset PID :=
 match e with
  | VVal e => usedPIDsVal e
@@ -1213,34 +1987,50 @@ match e with
 end
 with usedPIDsVal (v : Val) : gset PID :=
 match v with
- | VNil => ∅
- | VLit l => ∅
- | VPid p => {[p]}
- | VCons hd tl => usedPIDsVal hd ∪ usedPIDsVal tl
- | VTuple l => flat_union usedPIDsVal l
- | VMap l => flat_union (fun x => usedPIDsVal x.1 ∪ usedPIDsVal x.2) l
- | VVar n => ∅
- | VFunId n => ∅
+ | VNil                  => ∅
+ | VLit l                => ∅
+ | VPid p                => {[p]}
+ | VCons hd tl           => usedPIDsVal hd ∪ usedPIDsVal tl
+ | VTuple l              => flat_union usedPIDsVal l
+ | VMap l                => flat_union (fun x => usedPIDsVal x.1 ∪ usedPIDsVal x.2) l
+ | VVar n                => ∅
+ | VFunId n              => ∅
  | VClos ext id params e => usedPIDsExp e ∪ flat_union (fun x => usedPIDsExp x.2) ext
+ | VBitstring bits       => ∅
 end
 
 with usedPIDsNVal (n : NonVal) : gset PID :=
 match n with
- | EFun vl e => usedPIDsExp e
- | EValues el => flat_union usedPIDsExp el
- | ECons hd tl => usedPIDsExp hd ∪ usedPIDsExp tl
- | ETuple l => flat_union usedPIDsExp l
- | EMap l => flat_union (fun x => usedPIDsExp x.1 ∪ usedPIDsExp x.2) l
- | ECall m f l => usedPIDsExp m ∪ usedPIDsExp f ∪ flat_union usedPIDsExp l
- | EPrimOp f l => flat_union usedPIDsExp l
- | EApp exp l => usedPIDsExp exp ∪ flat_union usedPIDsExp l
- | ECase e l => usedPIDsExp e ∪ flat_union (fun x => usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) l
+ | EFun vl e    => usedPIDsExp e
+ | EValues el   => flat_union usedPIDsExp el
+ | ECons hd tl  => usedPIDsExp hd ∪ usedPIDsExp tl
+ | ETuple l     => flat_union usedPIDsExp l
+ | EMap l       => flat_union (fun x => usedPIDsExp x.1 ∪ usedPIDsExp x.2) l
+ | ECall m f l  => usedPIDsExp m ∪ usedPIDsExp f ∪ flat_union usedPIDsExp l
+ | EPrimOp f l  => flat_union usedPIDsExp l
+ | EApp exp l   => usedPIDsExp exp ∪ flat_union usedPIDsExp l
+ | ECase e l    => usedPIDsExp e ∪ flat_union (fun x =>
+     flat_union usedPIDsPat x.1.1 ∪ usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) l
  | ELet l e1 e2 => usedPIDsExp e1 ∪ usedPIDsExp e2
- | ESeq e1 e2 => usedPIDsExp e1 ∪ usedPIDsExp e2
- | ELetRec l e => usedPIDsExp e ∪ flat_union (fun x => usedPIDsExp x.2) l
+ | ESeq e1 e2   => usedPIDsExp e1 ∪ usedPIDsExp e2
+ | ELetRec l e  => usedPIDsExp e ∪ flat_union (fun x => usedPIDsExp x.2) l
  | ETry e1 vl1 e2 vl2 e3 => usedPIDsExp e1 ∪ usedPIDsExp e2 ∪ usedPIDsExp e3
-end.
+ | EBin l       => flat_union usedPIDsExp l
+ | ESeg seg     => usedPIDsExp (seg_val seg) ∪ usedPIDsExp (seg_size seg)
+end
+with usedPIDsPat (p : Pat) : gset PID :=
+match p with
+ | PVar => ∅
+ | PLit l        => ∅
+ | PCons hd tl   => usedPIDsPat hd ∪ usedPIDsPat tl
+ | PTuple l      => flat_union usedPIDsPat l
+ | PMap l        => flat_union (fun x => usedPIDsPat x.1 ∪ usedPIDsPat x.2) l
+ | PNil          => ∅
+ | PBin segments => flat_union (fun x => usedPIDsPat (seg_val x) ∪ usedPIDsVal (seg_size x)) segments
+end
+.
 
+(** The PIDs used in redexes *)
 Definition usedPIDsRed (r : Redex) : gset PID :=
 match r with
  | RExp e => usedPIDsExp e
@@ -1249,6 +2039,7 @@ match r with
  | RBox => ∅
 end.
 
+(** The PIDs used in frame identifiers *)
 Definition usedPIDsFrameId (i : FrameIdent) : gset PID :=
 match i with
  | IValues => ∅
@@ -1257,8 +2048,10 @@ match i with
  | ICall m f => usedPIDsVal m ∪ usedPIDsVal f
  | IPrimOp f => ∅
  | IApp v => usedPIDsVal v
+ | IBin => ∅
 end.
 
+(** The PIDs used in frames *)
 Definition usedPIDsFrame (f : Frame) : gset PID :=
 match f with
  | FCons1 hd => usedPIDsExp hd
@@ -1269,53 +2062,39 @@ match f with
  | FApp1 l => flat_union usedPIDsExp l
  | FCallMod f l => usedPIDsExp f ∪ flat_union usedPIDsExp l
  | FCallFun m l => usedPIDsVal m ∪ flat_union usedPIDsExp l
- | FCase1 l => flat_union (fun x => usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) l
+ | FCase1 l => flat_union (fun x => flat_union usedPIDsPat x.1.1 ∪ usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) l
  | FCase2 lv ex le =>
    usedPIDsExp ex ∪
    flat_union usedPIDsVal lv ∪
-   flat_union (fun x => usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) le
+   flat_union (fun x => flat_union usedPIDsPat x.1.1 ∪ usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) le
  | FLet l e => usedPIDsExp e
  | FSeq e => usedPIDsExp e
  | FTry vl1 e2 vl2 e3 => usedPIDsExp e2 ∪ usedPIDsExp e3
+ | FSeg1 size _ _ _ _ => usedPIDsExp size
+ | FSeg2 val _ _ _ _  => usedPIDsVal val
 end.
 
+(** The PIDs used in frame stacks *)
 Definition usedPIDsStack (fs : FrameStack) : gset PID :=
   flat_union usedPIDsFrame fs.
 
-Lemma flat_union_map :
-  forall {A B} {H : EqDecision B} {H0 : Countable B} (f : A -> gset B) l,
-    flat_union f l = union_list (map f l).
-Proof.
-  induction l; simpl. reflexivity.
-  * by rewrite IHl.
-Qed.
+(** * Renaming unused PIDs *)
 
-Lemma elem_of_flat_union :
-  forall {A B} {H : EqDecision B} {H0 : Countable B} (f : A -> gset B) l,
-   forall x, x ∈ flat_union f l <->
-     exists y, y ∈ l /\ x ∈ f y.
-Proof.
-  induction l; intros; simpl in *.
-  * split; set_solver.
-  * split; set_solver.
-Qed.
-
-Corollary not_elem_of_flat_union :
-  forall {A B} {H : EqDecision B} {H0 : Countable B} (f : A -> gset B) l,
-   forall x, x ∉ flat_union f l <->
-     forall y, y ∈ l -> x ∉ f y.
-Proof.
-  intros. split; intros; intro.
-  * apply H1. apply elem_of_flat_union. set_solver.
-  * apply elem_of_flat_union in H2. destruct_hyps. set_solver.
-Qed.
-
+(** Renaming a PID which is not used in a term is the identity. *)
 Local Theorem isNotUsed_renamePID_ind :
   (forall e from to, from ∉ (usedPIDsExp e) -> renamePID from to e = e) /\
   (forall e from to, from ∉ (usedPIDsNVal e) -> renamePIDNVal from to e = e) /\
-  (forall e from to, from ∉ (usedPIDsVal e) -> renamePIDVal from to e = e).
+  (forall e from to, from ∉ (usedPIDsVal e) -> renamePIDVal from to e = e) /\
+  (forall p from to, from ∉ (usedPIDsPat p) -> renamePIDPat from to p = p).
 Proof.
   apply Exp_ind with
+    (PQ := fun l => Forall (fun p => forall from to, from ∉ (usedPIDsPat p) -> renamePIDPat from to p = p) l)
+    (PR := fun l => Forall (fun '(p1, p2) => forall from to,
+        (from ∉ (usedPIDsPat p1) -> renamePIDPat from to p1 = p1) /\
+        (from ∉ (usedPIDsPat p2) -> renamePIDPat from to p2 = p2)) l)
+    (PT := fun l => Forall (fun seg => forall from to,
+        (from ∉ (usedPIDsPat (seg_val seg)) -> renamePIDPat from to (seg_val seg) = seg_val seg) /\
+        (from ∉ (usedPIDsVal (seg_size seg)) -> renamePIDVal from to (seg_size seg) = seg_size seg)) l)
     (QV := fun l => Forall (fun e => forall from to, from ∉ (usedPIDsVal e) -> renamePIDVal from to e = e) l)
     (Q := fun l => Forall (fun e => forall from to, from ∉ (usedPIDsExp e) -> renamePID from to e = e) l)
     (RV := fun l => Forall (fun '(e1, e2) => forall from to,
@@ -1325,6 +2104,7 @@ Proof.
         (from ∉ (usedPIDsExp e1) -> renamePID from to e1 = e1) /\
         (from ∉ (usedPIDsExp e2) -> renamePID from to e2 = e2)) l)
     (W := fun l => Forall (fun '(p, g, e) => forall from to,
+       (from ∉ (flat_union usedPIDsPat p) -> map (renamePIDPat from to) p = p) /\
        (from ∉ (usedPIDsExp g) -> renamePID from to g = g) /\
        (from ∉ (usedPIDsExp e) -> renamePID from to e = e)) l)
     (Z := fun l => Forall (fun '(n, e) => forall from to, from ∉ (usedPIDsExp e) -> renamePID from to e = e) l)
@@ -1375,7 +2155,7 @@ Proof.
     simpl in H0.
     rewrite not_elem_of_flat_union in H0.
     apply list_elem_of_In in H1. apply H0 in H1.
-    rewrite (proj1 (P _ _)), (proj2 (P _ _)). reflexivity.
+    cbn. rewrite (proj1 (P _ _)), (proj2 (P _ _)). reflexivity.
     all: set_solver.
   * f_equal.
     - rewrite H; set_solver.
@@ -1407,7 +2187,9 @@ Proof.
       simpl in H1. apply not_elem_of_union in H1 as [_ H1].
       rewrite not_elem_of_flat_union in H1.
       apply list_elem_of_In in H2. apply H1 in H2.
-      rewrite (proj1 (P _ _)), (proj2 (P _ _)). reflexivity.
+      simpl in H2. destruct_not_in.
+      rewrite (proj1 (P _ _)), (proj1 (proj2 (P _ _))), (proj2 (proj2 (P _ _))).
+      reflexivity.
       all: set_solver.
   * rewrite H, H0; set_solver.
   * rewrite H, H0; set_solver.
@@ -1420,26 +2202,96 @@ Proof.
       rewrite P. reflexivity. set_solver.
     - rewrite H; set_solver.
   * rewrite H, H0, H1; set_solver.
+  * (* EBin *)
+    f_equal. rewrite <- (map_id l) at 2.
+    apply map_ext_in.
+    rewrite List.Forall_forall in H. intros. eapply H in H1 as P. now erewrite P.
+    simpl in H0.
+    rewrite not_elem_of_flat_union in H0.
+    apply list_elem_of_In in H1. by apply H0 in H1.
+  * (* ESeg *)
+    destruct seg as [v s u t sg en]. simpl in *.
+    rewrite H, H0; set_solver.
+  * (* PCons *)
+    rewrite H, H0; set_solver.
+  * (* PTuple *)
+    f_equal. rewrite <- (map_id l) at 2.
+    apply map_ext_in.
+    rewrite List.Forall_forall in H. intros. eapply H in H1 as P. now erewrite P.
+    simpl in H0.
+    rewrite not_elem_of_flat_union in H0.
+    apply list_elem_of_In in H1. by apply H0 in H1.
+  * (* PMap *)
+    f_equal. rewrite <- (map_id l) at 2. apply map_ext_in.
+    rewrite List.Forall_forall in H. intros. eapply H in H1 as P. destruct a.
+    simpl in H0.
+    rewrite not_elem_of_flat_union in H0.
+    apply list_elem_of_In in H1. apply H0 in H1.
+    cbn. rewrite (proj1 (P _ _)), (proj2 (P _ _)). reflexivity.
+    all: set_solver.
+  * (* PBin *)
+    f_equal. rewrite <- (map_id l) at 2. apply map_ext_in.
+    rewrite List.Forall_forall in H. intros. eapply H in H1 as P. destruct a as [v s u t sg en].
+    simpl in H0.
+    rewrite not_elem_of_flat_union in H0.
+    apply list_elem_of_In in H1. apply H0 in H1.
+    simpl in H1. cbn in P. cbn. rewrite (proj1 P), (proj2 P). reflexivity.
+    all: set_solver.
+  * (* clauses of ECase *)
+    constructor; [|assumption].
+    intros from to. split; [|split]; [| apply H0 | apply H1].
+    intros Hn. rewrite <- (map_id l) at 2. apply map_ext_in.
+    rewrite List.Forall_forall in H. intros a Ha.
+    apply (H a Ha from to).
+    rewrite not_elem_of_flat_union in Hn.
+    apply list_elem_of_In in Ha. by apply Hn in Ha.
 Qed.
 
+(** Renaming a PID that does not occur in an expression leaves the
+    expression unchanged. *)
 Corollary isNotUsed_renamePID_exp :
   (forall e from to, from ∉ (usedPIDsExp e) -> renamePID from to e = e).
 Proof.
   apply isNotUsed_renamePID_ind.
 Qed.
 
+(** Renaming a PID that does not occur in a non-value expression leaves it
+    unchanged. *)
 Corollary isNotUsed_renamePID_nval :
   (forall e from to, from ∉ (usedPIDsNVal e) -> renamePIDNVal from to e = e).
 Proof.
   apply isNotUsed_renamePID_ind.
 Qed.
 
+(** Renaming a PID that does not occur in a value leaves the value
+    unchanged. *)
 Corollary isNotUsed_renamePID_val :
   (forall e from to, from ∉ (usedPIDsVal e) -> renamePIDVal from to e = e).
 Proof.
   apply isNotUsed_renamePID_ind.
 Qed.
 
+(** Renaming a PID that does not occur in a pattern leaves the pattern
+    unchanged. *)
+Corollary isNotUsed_renamePID_pat :
+  (forall p from to, from ∉ (usedPIDsPat p) -> renamePIDPat from to p = p).
+Proof.
+  apply isNotUsed_renamePID_ind.
+Qed.
+
+(** Renaming a PID that does not occur in a list of patterns leaves the list
+    unchanged. *)
+Corollary isNotUsed_renamePID_pats :
+  (forall l from to, from ∉ (flat_union usedPIDsPat l) -> map (renamePIDPat from to) l = l).
+Proof.
+  intros. rewrite <- (map_id l) at 2. apply map_ext_in. intros.
+  rewrite not_elem_of_flat_union in H.
+  apply list_elem_of_In in H0. apply H in H0.
+  by rewrite isNotUsed_renamePID_pat.
+Qed.
+
+(** Renaming a PID that does not occur in a redex leaves the redex
+    unchanged. *)
 Corollary isNotUsed_renamePID_red :
   (forall e from to, from ∉ (usedPIDsRed e) -> renamePIDRed from to e = e).
 Proof.
@@ -1455,12 +2307,16 @@ Proof.
     all: set_solver.
 Qed.
 
+(** Renaming a PID that does not occur in a frame identifier leaves the
+    identifier unchanged. *)
 Corollary isNotUsed_renamePID_frameId :
   forall ident from to, from ∉ (usedPIDsFrameId ident) -> renamePIDFrameId from to ident = ident.
 Proof.
   destruct ident; auto; intros; simpl in *; repeat rewrite isNotUsed_renamePID_val; try reflexivity; set_solver.
 Qed.
 
+(** Renaming a PID that does not occur in a frame leaves the frame
+    unchanged. *)
 Corollary isNotUsed_renamePID_frame :
   forall f from to, from ∉ (usedPIDsFrame f) -> renamePIDFrame from to f = f.
 Proof.
@@ -1507,8 +2363,8 @@ Proof.
     rewrite <- (map_id l) at 2. apply map_ext_in. intros. destruct a, p.
     rewrite not_elem_of_flat_union in H.
     apply list_elem_of_In in H0. apply H in H0.
-    rewrite isNotUsed_renamePID_exp, isNotUsed_renamePID_exp. reflexivity.
-    all: set_solver.
+    rewrite isNotUsed_renamePID_pats, isNotUsed_renamePID_exp, isNotUsed_renamePID_exp. reflexivity.
+    all: simpl in *; set_solver.
   * f_equal.
     - rewrite <- (map_id lv) at 2. apply map_ext_in. intros.
       apply not_elem_of_union in H as [H _].
@@ -1521,13 +2377,17 @@ Proof.
       apply not_elem_of_union in H as [_ H]. destruct a, p.
       rewrite not_elem_of_flat_union in H.
       apply list_elem_of_In in H0. apply H in H0.
-      rewrite isNotUsed_renamePID_exp, isNotUsed_renamePID_exp. reflexivity.
-      all: set_solver.
+      rewrite isNotUsed_renamePID_pats, isNotUsed_renamePID_exp, isNotUsed_renamePID_exp. reflexivity.
+      all: simpl in *; set_solver.
   * now rewrite isNotUsed_renamePID_exp.
   * now rewrite isNotUsed_renamePID_exp.
   * rewrite isNotUsed_renamePID_exp, isNotUsed_renamePID_exp; set_solver.
+  * now rewrite isNotUsed_renamePID_exp.
+  * now rewrite isNotUsed_renamePID_val.
 Qed.
 
+(** Renaming a PID that does not occur in a frame stack leaves the stack
+    unchanged. *)
 Corollary isNotUsed_renamePID_stack :
   forall fs from to, from ∉ (usedPIDsStack fs) -> renamePIDStack from to fs = fs.
 Proof.
@@ -1539,12 +2399,26 @@ Proof.
   by rewrite isNotUsed_renamePID_frame.
 Qed.
 
-Local Theorem double_PIDrenaming_ind :
+(** * Reverting PID renamings *)
+
+(** Renaming to a PID which is not used in a term can be reverted by
+    renaming back. *)
+Local Theorem double_renamePID_ind :
   (forall e from to, to ∉ (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e) /\
   (forall e from to, to ∉ (usedPIDsNVal e) -> e.⟦from ↦ to⟧ₙ.⟦to ↦ from⟧ₙ = e) /\
-  (forall e from to, to ∉ (usedPIDsVal e) -> e.⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = e).
+  (forall e from to, to ∉ (usedPIDsVal e) -> e.⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = e) /\
+  (forall p from to, to ∉ (usedPIDsPat p) -> renamePIDPat to from (renamePIDPat from to p) = p).
 Proof.
   apply Exp_ind with
+    (PQ := fun l => Forall (fun p => forall from to, to ∉ (usedPIDsPat p) ->
+        renamePIDPat to from (renamePIDPat from to p) = p) l)
+    (PR := fun l => Forall (fun '(p1, p2) => forall from to,
+        (to ∉ (usedPIDsPat p1) -> renamePIDPat to from (renamePIDPat from to p1) = p1) /\
+        (to ∉ (usedPIDsPat p2) -> renamePIDPat to from (renamePIDPat from to p2) = p2)) l)
+    (PT := fun l => Forall (fun seg => forall from to,
+        (to ∉ (usedPIDsPat (seg_val seg)) -> renamePIDPat to from (renamePIDPat from to (seg_val seg)) = seg_val seg) /\
+        (to ∉ (usedPIDsVal (seg_size seg)) ->
+           (seg_size seg).⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = seg_size seg)) l)
     (QV := fun l => Forall (fun e => forall from to, to ∉ (usedPIDsVal e) -> e.⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = e) l)
     (Q := fun l => Forall (fun e => forall from to, to ∉ (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e) l)
     (RV := fun l => Forall (fun '(e1, e2) => forall from to,
@@ -1554,12 +2428,14 @@ Proof.
         (to ∉ (usedPIDsExp e1) -> e1.⟦from ↦ to⟧.⟦to ↦ from⟧ = e1) /\
         (to ∉ (usedPIDsExp e2) -> e2.⟦from ↦ to⟧.⟦to ↦ from⟧ = e2)) l)
     (W := fun l => Forall (fun '(p, g, e) => forall from to,
+       (to ∉ (flat_union usedPIDsPat p) ->
+          map (renamePIDPat to from) (map (renamePIDPat from to) p) = p) /\
        (to ∉ (usedPIDsExp g) -> g.⟦from ↦ to⟧.⟦to ↦ from⟧ = g) /\
        (to ∉ (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e)) l)
     (Z := fun l => Forall (fun '(n, e) => forall from to, to ∉ (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e) l)
    (VV := fun l => Forall
       (fun '(id, vl, e) => forall from to, to ∉ (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e) l); intros; simpl; try reflexivity; try now rewrite H.
-  18-31: try now (constructor; auto).
+  all: try now (constructor; auto).
   * break_match_goal; simpl. 2: break_match_goal; eqb_to_eq.
     - rewrite Nat.eqb_refl. eqb_to_eq. now subst.
     - subst. cbn in H. set_solver.
@@ -1595,7 +2471,7 @@ Proof.
   * rewrite map_map. f_equal. rewrite <- map_id. apply map_ext_in.
     intros. simpl in H0. rewrite List.Forall_forall in H. destruct a.
     specialize (H (e, e0) H1 from to) as [H_1 H_2].
-    rewrite H_1, H_2. reflexivity.
+    cbn. rewrite H_1, H_2. reflexivity.
     all: apply list_elem_of_In in H1; rewrite not_elem_of_flat_union in H0;
          apply H0 in H1; set_solver.
   * rewrite map_map. simpl in H2.
@@ -1622,8 +2498,8 @@ Proof.
     f_equal. 1: now rewrite H.
     rewrite <- map_id. apply map_ext_in.
     intros. rewrite List.Forall_forall in H0. specialize (H0 _ H1). destruct a, p.
-    rewrite (proj1 (H0 _ _)); auto. rewrite (proj2 (H0 _ _)); auto.
-    all: apply list_elem_of_In in H1; apply H1_2 in H1; set_solver.
+    cbn. rewrite (proj1 (H0 _ _)), (proj1 (proj2 (H0 _ _))), (proj2 (proj2 (H0 _ _))); try reflexivity.
+    all: apply list_elem_of_In in H1; apply H1_2 in H1; simpl in H1; set_solver.
   * simpl in H1. apply not_elem_of_union in H1 as [? ?].
     now rewrite H, H0.
   * simpl in H1. apply not_elem_of_union in H1 as [? ?].
@@ -1638,134 +2514,220 @@ Proof.
     apply list_elem_of_In in H1. set_solver.
   * simpl in H2. apply not_elem_of_union in H2 as [H3 ?]. apply not_elem_of_union in H3 as [? ?].
     now rewrite H, H0, H1.
+  * (* EBin *)
+    rewrite map_map. f_equal. rewrite <- map_id. apply map_ext_in.
+    intros. simpl in H0. rewrite List.Forall_forall in H. rewrite H; auto.
+    rewrite not_elem_of_flat_union in H0. apply list_elem_of_In in H1. set_solver.
+  * (* ESeg *)
+    destruct seg as [v s u t sg en]. simpl in *.
+    apply not_elem_of_union in H1 as [? ?]. now rewrite H, H0.
+  * (* PCons *)
+    simpl in H1. apply not_elem_of_union in H1 as [? ?].
+    now rewrite H, H0.
+  * (* PTuple *)
+    rewrite map_map. f_equal. rewrite <- map_id. apply map_ext_in.
+    intros. simpl in H0. rewrite List.Forall_forall in H. rewrite H; auto.
+    rewrite not_elem_of_flat_union in H0. apply list_elem_of_In in H1. set_solver.
+  * (* PMap *)
+    rewrite map_map. f_equal. rewrite <- map_id. apply map_ext_in.
+    intros. simpl in H0. rewrite List.Forall_forall in H. destruct a.
+    specialize (H _ H1 from to) as [H_1 H_2].
+    cbn. rewrite H_1, H_2. reflexivity.
+    all: apply list_elem_of_In in H1; rewrite not_elem_of_flat_union in H0;
+         apply H0 in H1; set_solver.
+  * (* PBin *)
+    rewrite map_map. f_equal. rewrite <- map_id. apply map_ext_in.
+    intros. simpl in H0. rewrite List.Forall_forall in H. destruct a as [v s u t sg en].
+    specialize (H _ H1 from to) as [H_1 H_2]. cbn in *.
+    rewrite H_1, H_2. reflexivity.
+    all: apply list_elem_of_In in H1; rewrite not_elem_of_flat_union in H0;
+         apply H0 in H1; simpl in H1; set_solver.
+  * (* clauses of ECase *)
+    constructor; [|assumption].
+    intros from to. split; [|split]; [| intros Hn; apply H0; exact Hn | intros Hn; apply H1; exact Hn].
+    intros Hn. rewrite map_map. rewrite <- (map_id l) at 2. apply map_ext_in.
+    intros a Ha. rewrite List.Forall_forall in H. apply (H a Ha from to).
+    rewrite not_elem_of_flat_union in Hn.
+    apply list_elem_of_In in Ha. by apply Hn in Ha.
 Qed.
 
-
-Corollary double_PIDrenaming_exp :
+(** Renaming the PID `from` to `to` and then back restores an expression in which
+    `to` does not occur. *)
+Corollary double_renamePID_exp :
   forall e from to, to ∉ (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e.
 Proof.
-  apply double_PIDrenaming_ind.
+  apply double_renamePID_ind.
 Qed.
 
-Corollary double_PIDrenaming_nval :
+(** Renaming the PID `from` to `to` and then back restores a non-value expression in
+    which `to` does not occur. *)
+Corollary double_renamePID_nval :
   forall e from to, to ∉ (usedPIDsNVal e) -> e.⟦from ↦ to⟧ₙ.⟦to ↦ from⟧ₙ = e.
 Proof.
-  apply double_PIDrenaming_ind.
+  apply double_renamePID_ind.
 Qed.
 
-Corollary double_PIDrenaming_val :
+(** Renaming the PID `from` to `to` and then back restores a value in which `to`
+    does not occur. *)
+Corollary double_renamePID_val :
   forall e from to, to ∉ (usedPIDsVal e) -> e.⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = e.
 Proof.
-  apply double_PIDrenaming_ind.
+  apply double_renamePID_ind.
 Qed.
 
-Corollary double_PIDrenaming_red :
+(** Renaming the PID `from` to `to` and then back restores a pattern in which `to`
+    does not occur. *)
+Corollary double_renamePID_pat :
+  forall p from to, to ∉ (usedPIDsPat p) ->
+    renamePIDPat to from (renamePIDPat from to p) = p.
+Proof.
+  apply double_renamePID_ind.
+Qed.
+
+(** Renaming the PID `from` to `to` and then back restores a list of patterns in
+    which `to` does not occur. *)
+Corollary double_renamePID_pats :
+  forall l from to, to ∉ (flat_union usedPIDsPat l) ->
+    map (renamePIDPat to from) (map (renamePIDPat from to) l) = l.
+Proof.
+  intros. rewrite map_map. rewrite <- (map_id l) at 2. apply map_ext_in. intros.
+  rewrite not_elem_of_flat_union in H.
+  apply list_elem_of_In in H0. apply H in H0.
+  by rewrite double_renamePID_pat.
+Qed.
+
+(** Renaming the PID `from` to `to` and then back restores a redex in which `to`
+    does not occur. *)
+Corollary double_renamePID_red :
   forall e from to, to ∉ (usedPIDsRed e) -> e.⟦from ↦ to⟧ᵣ.⟦to ↦ from⟧ᵣ = e.
 Proof.
   destruct e; simpl; intros; auto.
-  * now rewrite double_PIDrenaming_exp.
-  * rewrite <- (map_id vs) at 2. f_equal. (* change to vseq equality *)
+  * now rewrite double_renamePID_exp.
+  * rewrite <- (map_id vs) at 2. f_equal.
     rewrite map_map. apply map_ext_in. intros.
     apply list_elem_of_In in H0.
     rewrite not_elem_of_flat_union in H. apply H in H0.
-    rewrite double_PIDrenaming_val; set_solver.
+    rewrite double_renamePID_val; set_solver.
   * destruct e, p. destruct_not_in.
-    simpl. rewrite double_PIDrenaming_val, double_PIDrenaming_val; set_solver.
+    simpl. rewrite double_renamePID_val, double_renamePID_val; set_solver.
 Qed.
 
-Corollary double_PIDrenaming_frameId :
+(** Renaming the PID `from` to `to` and then back restores a frame identifier in
+    which `to` does not occur. *)
+Corollary double_renamePID_frameId :
   forall ident from to, to ∉ (usedPIDsFrameId ident) -> ident.⟦from ↦ to⟧ᵢ.⟦to ↦ from⟧ᵢ = ident.
 Proof.
-  destruct ident; auto; intros; simpl in *; repeat rewrite double_PIDrenaming_val; set_solver.
+  destruct ident; auto; intros; simpl in *; repeat rewrite double_renamePID_val; set_solver.
 Qed.
 
-Corollary double_PIDrenaming_frame :
+(** Renaming the PID `from` to `to` and then back restores a frame in which `to`
+    does not occur. *)
+Corollary double_renamePID_frame :
   forall f from to, to ∉ (usedPIDsFrame f) -> f.⟦from ↦ to⟧ₖ.⟦to ↦ from⟧ₖ = f.
 Proof.
   destruct f; intros; simpl in *; destruct_not_in.
-  * now rewrite double_PIDrenaming_exp.
-  * now rewrite double_PIDrenaming_val.
-  * rewrite double_PIDrenaming_frameId by set_solver.
+  * now rewrite double_renamePID_exp.
+  * now rewrite double_renamePID_val.
+  * rewrite double_renamePID_frameId by set_solver.
     f_equal.
     - rewrite <- (map_id vl) at 2. rewrite map_map. apply map_ext_in. intros.
       apply not_elem_of_union in H as [H _].
       apply not_elem_of_union in H as [_ H].
       rewrite not_elem_of_flat_union in H.
       apply list_elem_of_In in H0.
-      rewrite double_PIDrenaming_val; set_solver.
+      rewrite double_renamePID_val; set_solver.
     - rewrite <- (map_id el) at 2. rewrite map_map. apply map_ext_in. intros.
       apply not_elem_of_union in H as [_ H].
       rewrite not_elem_of_flat_union in H.
       apply list_elem_of_In in H0.
-      rewrite double_PIDrenaming_exp; set_solver.
+      rewrite double_renamePID_exp; set_solver.
   * f_equal. rewrite <- (map_id l) at 2. rewrite map_map. apply map_ext_in. intros.
     rewrite not_elem_of_flat_union in H.
     apply list_elem_of_In in H0.
-    rewrite double_PIDrenaming_exp; set_solver.
+    rewrite double_renamePID_exp; set_solver.
   * f_equal.
-    - rewrite double_PIDrenaming_exp; set_solver.
+    - rewrite double_renamePID_exp; set_solver.
     - rewrite <- (map_id l) at 2. rewrite map_map. apply map_ext_in. intros.
       apply not_elem_of_union in H as [_ H].
       rewrite not_elem_of_flat_union in H.
       apply list_elem_of_In in H0.
-      rewrite double_PIDrenaming_exp; set_solver.
+      rewrite double_renamePID_exp; set_solver.
   * f_equal.
-    - rewrite double_PIDrenaming_val; set_solver.
+    - rewrite double_renamePID_val; set_solver.
     - rewrite <- (map_id l) at 2. rewrite map_map. apply map_ext_in. intros.
       apply not_elem_of_union in H as [_ H].
       rewrite not_elem_of_flat_union in H.
       apply list_elem_of_In in H0.
-      rewrite double_PIDrenaming_exp; set_solver.
+      rewrite double_renamePID_exp; set_solver.
   * f_equal.
     rewrite <- (map_id l) at 2. rewrite map_map. apply map_ext_in. intros.
     rewrite not_elem_of_flat_union in H.
     destruct a, p. simpl in *.
     apply list_elem_of_In in H0. apply H in H0.
-    rewrite double_PIDrenaming_exp, double_PIDrenaming_exp; set_solver.
+    rewrite double_renamePID_pats, double_renamePID_exp, double_renamePID_exp; try reflexivity.
+    all: simpl in *; set_solver.
   * f_equal.
     - rewrite <- (map_id lv) at 2. rewrite map_map. apply map_ext_in. intros.
       apply not_elem_of_union in H as [H _].
       apply not_elem_of_union in H as [_ H].
       rewrite not_elem_of_flat_union in H.
       apply list_elem_of_In in H0. apply H in H0.
-      rewrite double_PIDrenaming_val; set_solver.
-    - rewrite double_PIDrenaming_exp; set_solver.
+      rewrite double_renamePID_val; set_solver.
+    - rewrite double_renamePID_exp; set_solver.
     - rewrite <- (map_id le) at 2. rewrite map_map. apply map_ext_in. intros.
       apply not_elem_of_union in H as [_ H].
       rewrite not_elem_of_flat_union in H.
       apply list_elem_of_In in H0. apply H in H0.
       destruct a, p.
-      rewrite double_PIDrenaming_exp, double_PIDrenaming_exp; set_solver.
-  * now rewrite double_PIDrenaming_exp.
-  * now rewrite double_PIDrenaming_exp.
-  * rewrite double_PIDrenaming_exp, double_PIDrenaming_exp; set_solver.
+      rewrite double_renamePID_pats, double_renamePID_exp, double_renamePID_exp; try reflexivity.
+      all: simpl in *; set_solver.
+  * now rewrite double_renamePID_exp.
+  * now rewrite double_renamePID_exp.
+  * rewrite double_renamePID_exp, double_renamePID_exp; set_solver.
+  * now rewrite double_renamePID_exp.
+  * now rewrite double_renamePID_val.
 Qed.
 
-Corollary double_PIDrenaming_stack :
+(** Renaming the PID `from` to `to` and then back restores a frame stack in which
+    `to` does not occur. *)
+Corollary double_renamePID_stack :
   forall fs from to, to ∉ (usedPIDsStack fs) -> fs.⟦from ↦ to⟧ₛₜ.⟦to ↦ from⟧ₛₜ = fs.
 Proof.
   intros. unfold renamePIDStack, usedPIDsStack in *.
   rewrite <- (map_id fs) at 2. rewrite map_map. apply map_ext_in. intros.
   rewrite not_elem_of_flat_union in H.
   apply list_elem_of_In in H0.
-  rewrite double_PIDrenaming_frame; set_solver.
+  rewrite double_renamePID_frame; set_solver.
 Qed.
 
+(** The converse of `renamePID_preserves_scope`: if the renamed term is
+    well-scoped, so is the original. *)
 Lemma renamePID_implies_scope :
   (forall e Γ from to, EXP Γ ⊢ renamePID from to e -> EXP Γ ⊢ e) /\
   (forall e Γ from to, NVAL Γ ⊢ renamePIDNVal from to e -> NVAL Γ ⊢ e) /\
-  (forall e Γ from to, VAL Γ ⊢ renamePIDVal from to e -> VAL Γ ⊢ e).
+  (forall e Γ from to, VAL Γ ⊢ renamePIDVal from to e -> VAL Γ ⊢ e) /\
+  (forall p Γ from to, PAT Γ ⊢ renamePIDPat from to p -> PAT Γ ⊢ p).
 Proof.
   apply Exp_ind with
+    (PQ := fun l => Forall (fun p => forall Γ from to, PAT Γ ⊢ renamePIDPat from to p -> PAT Γ ⊢ p) l)
+    (PR := fun l => Forall (fun '(p1, p2) => forall Γ from to,
+        (PAT Γ ⊢ renamePIDPat from to p1 -> PAT Γ ⊢ p1) /\
+        (PAT Γ ⊢ renamePIDPat from to p2 -> PAT Γ ⊢ p2)) l)
+    (PT := fun l => Forall (fun seg => forall Γ from to,
+        (PAT Γ ⊢ renamePIDPat from to (seg_val seg) -> PAT Γ ⊢ seg_val seg) /\
+        (VAL Γ ⊢ renamePIDVal from to (seg_size seg) -> VAL Γ ⊢ seg_size seg)) l)
     (Q := fun l => Forall (fun e => forall Γ from to, EXP Γ ⊢ renamePID from to e -> EXP Γ ⊢ e) l)
     (QV := fun l => Forall (fun e => forall Γ from to, VAL Γ ⊢ renamePIDVal from to e -> VAL Γ ⊢ e) l)
     (R := fun l => Forall (fun '(e1, e2) => forall Γ from to, (EXP Γ ⊢ renamePID from to e1 -> EXP Γ ⊢ e1) /\ (EXP Γ ⊢ renamePID from to e2 -> EXP Γ ⊢ e2)) l)
     (RV := fun l => Forall (fun '(e1, e2) => forall Γ from to, (VAL Γ ⊢ renamePIDVal from to e1 -> VAL Γ ⊢ e1) /\ (VAL Γ ⊢ renamePIDVal from to e2 -> VAL Γ ⊢ e2)) l)
     (VV := fun l => Forall (fun '(_, _, e) => forall Γ from to, EXP Γ ⊢ renamePID from to e -> EXP Γ ⊢ e) l)
-    (W := fun l => Forall (fun '(_,g,e) => forall Γ from to, (EXP Γ ⊢ renamePID from to g -> EXP Γ ⊢ g) /\ (EXP Γ ⊢ renamePID from to e -> EXP Γ ⊢ e)) l)
+    (W := fun l => Forall (fun '(p,g,e) =>
+        Forall (fun pat => forall Γ from to, PAT Γ ⊢ renamePIDPat from to pat -> PAT Γ ⊢ pat) p /\
+        forall Γ from to, (EXP Γ ⊢ renamePID from to g -> EXP Γ ⊢ g) /\ (EXP Γ ⊢ renamePID from to e -> EXP Γ ⊢ e)) l)
     (Z := fun l => Forall (fun '(_, e) => forall Γ from to, EXP Γ ⊢ renamePID from to e -> EXP Γ ⊢ e) l).
-  all: intros. 25-38: constructor; auto.
-  25-27: intros; split; firstorder.
+  all: intros.
+  all: try now (constructor; auto).
+  all: try now (constructor; [intros; split; firstorder|auto]).
   all: simpl in *; destruct_scopes; try (by (constructor; firstorder)).
   * rewrite Forall_nth in H. constructor. intros.
     eapply H; auto.
@@ -1818,29 +2780,38 @@ Proof.
     - rewrite Forall_nth in H0. intros.
       eapply H0; auto.
       rewrite <- map_nth. eapply H6. by rewrite length_map.
-  * rewrite (Forall_nth) in H0. Unshelve. 2: exact ([], ˝VNil, ˝VNil).
-    constructor; intros.
+  * (* ECase *)
+    rewrite (Forall_nth) in H0. Unshelve. 2: exact ([], ˝VNil, ˝VNil).
+    constructor.
     - by eapply H.
-    - apply H0 in H1 as P. rewrite length_map in *.
-      apply H6 in H1. rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
-      rewrite map_map, map_map in H1.
-      rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1.
-      rewrite (map_nth (λ x : list Pat * Exp * Exp,
-                    (fst ∘ fst)
-                      (let '(p, g, e) := x in (p, g .⟦ from ↦ to ⟧, e .⟦ from ↦ to ⟧))) l) with (d := ([], ˝VNil, ˝VNil)) in H1.
-      rewrite (map_nth (fst ∘ fst) l) with (d := ([], ˝VNil, ˝VNil)).
-      destruct (nth i l _).
-      simpl in *. destruct p. eapply (proj1 (P _ _ _)). apply H1.
-    - apply H0 in H1 as P. rewrite length_map in *.
-      apply H7 in H1. rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
-      rewrite map_map, map_map in H1.
-      rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1.
-      rewrite (map_nth (λ x : list Pat * Exp * Exp,
-                    (fst ∘ fst)
-                      (let '(p, g, e) := x in (p, g .⟦ from ↦ to ⟧, e .⟦ from ↦ to ⟧))) l) with (d := ([], ˝VNil, ˝VNil)) in H1.
-      rewrite (map_nth (fst ∘ fst) l) with (d := ([], ˝VNil, ˝VNil)).
-      destruct (nth i l _).
-      simpl in *. destruct p. eapply (proj2 (P _ _ _)). apply H1.
+    - intros i Hi.
+      specialize (H5 i ltac:(rewrite length_map; exact Hi)) as H5i. specialize (H0 i Hi) as H0i.
+      do 2 rewrite map_map in H5i. do 2 rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H5i.
+      setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil)).
+      setoid_rewrite (map_nth (snd ∘ fst)) with (d := ([], ˝VNil, ˝VNil)).
+      destruct (nth i l ([], ˝VNil, ˝VNil)) as [[ps g] b]. cbn in *.
+      rewrite PatListVars_renamePID in H5i.
+      destruct H0i as [_ Hg]. eapply (proj1 (Hg _ _ _)). exact H5i.
+    - intros i Hi.
+      specialize (H7 i ltac:(rewrite length_map; exact Hi)) as H7i. specialize (H0 i Hi) as H0i.
+      do 2 rewrite map_map in H7i. do 2 rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H7i.
+      setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil)).
+      setoid_rewrite (map_nth snd) with (d := ([], ˝VNil, ˝VNil)).
+      destruct (nth i l ([], ˝VNil, ˝VNil)) as [[ps g] b]. cbn in *.
+      rewrite PatListVars_renamePID in H7i.
+      destruct H0i as [_ Hg]. eapply (proj2 (Hg _ _ _)). exact H7i.
+    - intros i Hi j Hj.
+      pose proof (H0 i Hi) as H0i.
+      specialize (H8 i ltac:(rewrite length_map; exact Hi) j) as H8ij.
+      rewrite map_map in H8ij. rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H8ij.
+      setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil)) in Hj.
+      setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil)).
+      destruct (nth i l ([], ˝VNil, ˝VNil)) as [[ps g] b]. cbn in *.
+      destruct H0i as [Hp _].
+      rewrite length_map in H8ij. specialize (H8ij Hj).
+      rewrite map_nth with (d := PNil) in H8ij.
+      rewrite Forall_nth in Hp.
+      eapply (Hp j Hj). exact H8ij.
   * constructor.
     - rewrite Forall_nth in H0. Unshelve. 2: exact (0, ˝VNil). intros.
       rewrite length_map in *.
@@ -1851,33 +2822,64 @@ Proof.
       do 2 rewrite map_nth with (d := (0, ˝VNil)) in H1. destruct nth.
       eapply P. apply H1.
     - eapply H. by rewrite length_map in H6.
+  * (* EBin *)
+    rewrite Forall_nth in H. constructor. intros.
+    eapply H; auto.
+    rewrite <- map_nth.
+    apply H3; by rewrite length_map.
+  * (* ESeg *)
+    destruct seg as [v s u t sg en]. simpl in *. destruct_scopes.
+    constructor; simpl; [eapply H | eapply H0]; eassumption.
+  * (* PTuple *)
+    rewrite Forall_nth in H. constructor. intros.
+    eapply H; auto.
+    rewrite <- map_nth.
+    apply H3; by rewrite length_map.
+  * (* PMap *)
+    rewrite (Forall_nth) in H. Unshelve. 2: exact (PNil, PNil).
+    constructor; intros.
+    - apply H in H0 as H0'. rewrite length_map in *.
+      apply H2 in H0. rewrite map_nth with (d := (PNil, PNil)).
+      rewrite map_map, map_nth with (d := (PNil, PNil)) in H0. destruct (nth i l _).
+      simpl in *. eapply (proj1 (H0' _ _ _)). apply H0.
+    - apply H in H0 as H0'. rewrite length_map in *.
+      apply H4 in H0. rewrite map_nth with (d := (PNil, PNil)).
+      rewrite map_map, map_nth with (d := (PNil, PNil)) in H0. destruct (nth i l _).
+      simpl in *. eapply (proj2 (H0' _ _ _)). apply H0.
+  * (* PBin *)
+    rewrite (Forall_nth) in H. Unshelve. 2: exact default_segment.
+    constructor; intros.
+    - pose proof (H i H0) as H0'. rewrite length_map in *.
+      specialize (H2 i H0). rewrite map_map in H2. rewrite map_nth with (d := default_segment) in H2.
+      rewrite map_nth with (d := default_segment). cbn in H2 |- *.
+      eapply (proj1 (H0' _ _ _)). exact H2.
+    - pose proof (H i H0) as H0'. rewrite length_map in *.
+      specialize (H4 i H0). rewrite map_map in H4. rewrite map_nth with (d := default_segment) in H4.
+      rewrite map_nth with (d := default_segment). cbn in H4 |- *.
+      eapply (proj2 (H0' _ _ _)). exact H4.
 Qed.
 
-Corollary flat_union_app :
-  forall {A B} {H : EqDecision B} {H0 : Countable B}
-         (f : A -> gset B) (l1 l2 : list A),
-    flat_union f (l1 ++ l2) = flat_union f l1 ∪ flat_union f l2.
-Proof.
-  intros. rewrite flat_union_map, map_app.
-  do 2 rewrite flat_union_map.
-  by rewrite union_list_app_L.
-Qed.
+(** * Identity PID renamings *)
 
-
+(** Renaming a PID to itself is the identity. *)
 Lemma renamePID_id :
   (forall e p, renamePID p p e = e) /\
   (forall e p, renamePIDNVal p p e = e) /\
-  (forall e p, renamePIDVal p p e = e).
+  (forall e p, renamePIDVal p p e = e) /\
+  (forall pt p, renamePIDPat p p pt = pt).
 Proof.
   apply Exp_ind with
+    (PQ := fun l => Forall (fun pt => forall p, renamePIDPat p p pt = pt) l)
+    (PR := fun l => Forall (fun '(p1, p2) => forall p, (renamePIDPat p p p1 = p1) /\ (renamePIDPat p p p2 = p2)) l)
+    (PT := fun l => Forall (fun seg => forall p, (renamePIDPat p p (seg_val seg) = seg_val seg) /\ (renamePIDVal p p (seg_size seg) = seg_size seg)) l)
     (Q := fun l => Forall (fun e => forall p, renamePID p p e = e) l)
     (QV := fun l => Forall (fun e => forall p, renamePIDVal p p e = e) l)
     (R := fun l => Forall (fun '(e1, e2) => forall p, (renamePID p p e1 = e1) /\ (renamePID p p e2 = e2)) l)
     (RV := fun l => Forall (fun '(e1, e2) => forall p, (renamePIDVal p p e1 = e1) /\ (renamePIDVal p p e2 = e2)) l)
     (VV := fun l => Forall (fun '(_, _, e) => forall p, renamePID p p e = e) l)
-    (W := fun l => Forall (fun '(_,g,e) => forall p, (renamePID p p g = g) /\ (renamePID p p e = e)) l)
+    (W := fun l => Forall (fun '(pl,g,e) => forall p, (map (renamePIDPat p p) pl = pl) /\ (renamePID p p g = g) /\ (renamePID p p e = e)) l)
     (Z := fun l => Forall (fun '(_, e) => forall p, renamePID p p e = e) l).
-  25-38: constructor; auto.
+  all: try now (constructor; auto).
   all: intros; simpl; try reflexivity.
   all: try rewrite H; try rewrite H0; try rewrite H1; auto.
   * case_match; eqb_to_eq; auto.
@@ -1886,7 +2888,7 @@ Proof.
     eapply H in H0. eassumption.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
     rewrite Forall_forall in H. apply list_elem_of_In in H0.
-    eapply H in H0. destruct a; destruct_hyps.
+    eapply H in H0. destruct a; destruct_hyps. cbn.
     f_equal; apply H0.
   * f_equal. rewrite <- (map_id ext) at 2. apply map_ext_in; intros.
     rewrite Forall_forall in H. apply list_elem_of_In in H1.
@@ -1899,7 +2901,7 @@ Proof.
     eapply H in H0. eassumption.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
     rewrite Forall_forall in H. apply list_elem_of_In in H0.
-    eapply H in H0. destruct a; destruct_hyps.
+    eapply H in H0. destruct a; destruct_hyps. cbn.
     f_equal; apply H0.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
     rewrite Forall_forall in H1. apply list_elem_of_In in H2.
@@ -1916,20 +2918,65 @@ Proof.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
     rewrite Forall_forall in H0. apply list_elem_of_In in H1.
     eapply H0 in H1. destruct a. f_equal; apply H1.
+  * (* EBin *)
+    f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
+    rewrite Forall_forall in H. apply list_elem_of_In in H0.
+    eapply H in H0. eassumption.
+  * (* ESeg *)
+    destruct seg as [v s u t sg en]. simpl in *.
+    now rewrite H, H0.
+  * (* PTuple *)
+    f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
+    rewrite Forall_forall in H. apply list_elem_of_In in H0.
+    eapply H in H0. eassumption.
+  * (* PMap *)
+    f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
+    rewrite Forall_forall in H. apply list_elem_of_In in H0.
+    eapply H in H0. destruct a; destruct_hyps. cbn.
+    f_equal; apply H0.
+  * (* PBin *)
+    f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
+    rewrite Forall_forall in H. apply list_elem_of_In in H0.
+    pose proof (H _ H0 p) as [H1 H2].
+    destruct a as [v s u t sg en]. cbn in *.
+    now rewrite H1, H2.
+  * (* clauses of ECase *)
+    constructor; [|assumption].
+    intros p. split; [|split]; [| apply H0 | apply H1].
+    rewrite <- (map_id l) at 2. apply map_ext_in; intros.
+    rewrite Forall_forall in H. apply list_elem_of_In in H3.
+    eapply H in H3. eassumption.
 Qed.
 
+(** Renaming a PID to itself leaves a value unchanged. *)
 Lemma renamePID_id_val :
   (forall e p, renamePIDVal p p e = e).
 Proof.
-  by apply renamePID_id.
+  exact (proj1 (proj2 (proj2 renamePID_id))).
 Qed.
 
+(** Renaming a PID to itself leaves an expression unchanged. *)
 Lemma renamePID_id_exp :
   (forall e p, renamePID p p e = e).
 Proof.
-  by apply renamePID_id.
+  exact (proj1 renamePID_id).
 Qed.
 
+(** Renaming a PID to itself leaves a pattern unchanged. *)
+Lemma renamePID_id_pat :
+  (forall pt p, renamePIDPat p p pt = pt).
+Proof.
+  exact (proj2 (proj2 (proj2 renamePID_id))).
+Qed.
+
+(** Renaming a PID to itself leaves a list of patterns unchanged. *)
+Lemma renamePID_id_pats :
+  forall l p, map (renamePIDPat p p) l = l.
+Proof.
+  intros. rewrite <- (map_id l) at 2. apply map_ext. intros. apply renamePID_id_pat.
+Qed.
+
+(** Renaming a PID to itself leaves a redex unchanged. *)
 Corollary renamePID_id_red :
   forall r p, renamePIDRed p p r = r.
 Proof.
@@ -1938,22 +2985,24 @@ Proof.
   * rewrite <- (map_id vs) at 2. f_equal. apply map_ext_in.
     intros. apply renamePID_id.
   * destruct e, p0.
-    by do 2 rewrite (proj2 (proj2 renamePID_id)).
+    by do 2 rewrite renamePID_id_val.
 Qed.
 
+(** Renaming a PID to itself leaves a frame identifier unchanged. *)
 Lemma renamePID_id_frameId :
   forall i p, renamePIDFrameId p p i = i.
 Proof.
   destruct i; simpl; intros; try reflexivity.
-  * by do 2 rewrite (proj2 (proj2 renamePID_id)).
-  * by rewrite (proj2 (proj2 renamePID_id)).
+  * by do 2 rewrite renamePID_id_val.
+  * by rewrite renamePID_id_val.
 Qed.
 
+(** Renaming a PID to itself leaves a frame unchanged. *)
 Lemma renamePID_id_frame :
   forall f p, renamePIDFrame p p f = f.
 Proof.
   destruct f; intros; simpl;
-    try repeat rewrite (proj1 renamePID_id); try rewrite (proj2 (proj2 renamePID_id));
+    try repeat rewrite (proj1 renamePID_id); try rewrite renamePID_id_val;
     try by reflexivity.
   * rewrite renamePID_id_frameId. f_equal.
     - rewrite <- (map_id vl) at 2. apply map_ext. intros. apply renamePID_id.
@@ -1962,13 +3011,14 @@ Proof.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext. intros. apply renamePID_id.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext. intros. apply renamePID_id.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext. intros.
-    destruct a, p0. by do 2 rewrite (proj1 renamePID_id).
+    destruct a, p0. cbn. rewrite renamePID_id_pats. by do 2 rewrite (proj1 renamePID_id).
   * f_equal.
     - rewrite <- (map_id lv) at 2. apply map_ext. intros. apply renamePID_id.
     - rewrite <- (map_id le) at 2. apply map_ext. intros.
-      destruct a, p0. by do 2 rewrite (proj1 renamePID_id).
+      destruct a, p0. cbn. rewrite renamePID_id_pats. by do 2 rewrite (proj1 renamePID_id).
 Qed.
 
+(** Renaming a PID to itself leaves a frame stack unchanged. *)
 Lemma renamePID_id_stack :
   forall fs p, renamePIDStack p p fs = fs.
 Proof.
@@ -1976,19 +3026,16 @@ Proof.
   intros. by apply renamePID_id_frame.
 Qed.
 
-From stdpp Require Import fin_maps.
+(** * The used PIDs of renamed terms
 
-Corollary elem_of_map_iff :
-  ∀ (A B : Type) (f : A → B) (l : list A) (y : B),
-    y ∈ (map f l) ↔ (∃ x : A, f x = y ∧ x ∈ l).
-Proof.
-  intros. rewrite list_elem_of_In. split; intros.
-  * apply in_map_iff in H. destruct_hyps. do 2 eexists. eassumption.
-    by apply list_elem_of_In.
-  * destruct_hyps. apply list_elem_of_In in H0.
-    apply in_map_iff. set_solver.
-Qed.
+    Renaming the PID `p` to `p'` removes `p` from the used PIDs, and adds `p'` if `p`
+    was used. The `*_flat_union_helper` lemmas lift this property from the
+    elements of lists to `flat_union`s, given it as an induction hypothesis
+    for the elements. *)
 
+(** If PID renaming changes the used PIDs of each value of a list as stated by
+    `usedPIDs_rename_ind`, then it changes the used PIDs of the whole list
+    (e.g., of a tuple) in the same way. *)
 Local Lemma usedPIDsVal_flat_union_helper :
   forall l p p',
   (Forall (fun x => forall p p', usedPIDsVal (renamePIDVal p p' x) = if decide (p ∈ usedPIDsVal x)
@@ -2006,6 +3053,9 @@ Proof.
   apply Forall_forall. intros. apply H. set_solver.
 Qed.
 
+(** If PID renaming changes the used PIDs of each expression of a list as stated
+    by `usedPIDs_rename_ind`, then it changes the used PIDs of the whole list
+    (e.g., of call parameters) in the same way. *)
 Local Lemma usedPIDsExp_flat_union_helper :
   forall l p p',
   (Forall (fun x => forall p p', usedPIDsExp (renamePID p p' x) = if decide (p ∈ usedPIDsExp x)
@@ -2023,6 +3073,9 @@ Proof.
   apply Forall_forall. intros. apply H. set_solver.
 Qed.
 
+(** If PID renaming changes the used PIDs of both components of each pair of
+    values in a list as stated by `usedPIDs_rename_ind`, then it changes the
+    used PIDs of the whole list (i.e., of a map value) in the same way. *)
 Local Lemma usedPIDsVal_flat_union_helper_prod :
   forall l p p',
   (Forall (fun '(x1, x2) => forall p p', (usedPIDsVal (renamePIDVal p p' x1) = if decide (p ∈ usedPIDsVal x1)
@@ -2045,6 +3098,10 @@ Proof.
   apply Forall_forall. intros. apply H. set_solver.
 Qed.
 
+(** If PID renaming changes the used PIDs of both components of each pair of
+    expressions in a list as stated by `usedPIDs_rename_ind`, then it changes
+    the used PIDs of the whole list (i.e., of a map expression) in the same
+    way. *)
 Local Lemma usedPIDsExp_flat_union_helper_prod :
 forall l p p',
   (Forall (fun '(x1, x2) => forall p p', (usedPIDsExp (renamePID p p' x1) = if decide (p ∈ usedPIDsExp x1)
@@ -2054,7 +3111,7 @@ forall l p p',
                                         then {[p']} ∪ usedPIDsExp x2 ∖ {[p]}
                                         else usedPIDsExp x2 ∖ {[p]})) l) ->
   flat_union (λ x, usedPIDsExp x.1 ∪ usedPIDsExp x.2)
-  (map (λ '(x, y), (x .⟦ p ↦ p' ⟧, y .⟦ p ↦ p' ⟧)) l) =
+  (map (prod_map (renamePID p p') (renamePID p p')) l) =
   if (decide (p ∈ flat_union (fun x => usedPIDsExp x.1 ∪ usedPIDsExp x.2) l))
   then {[p']} ∪ flat_union (fun x => usedPIDsExp x.1 ∪ usedPIDsExp x.2) l ∖ {[p]}
   else flat_union (fun x => usedPIDsExp x.1 ∪ usedPIDsExp x.2) l ∖ {[p]}.
@@ -2067,6 +3124,9 @@ Proof.
   apply Forall_forall. intros. apply H. set_solver.
 Qed.
 
+(** If PID renaming changes the used PIDs of each function body of a closure
+    extension as stated by `usedPIDs_rename_ind`, then it changes the used
+    PIDs of the whole extension in the same way. *)
 Local Lemma usedPIDsClos_flat_union_helper :
   forall l p p',
   (Forall (fun '(_, _, x) => forall p p', usedPIDsExp (renamePID p p' x) = if decide (p ∈ usedPIDsExp x)
@@ -2087,12 +3147,95 @@ Proof.
   apply Forall_forall. intros. apply H. set_solver.
 Qed.
 
+(** If PID renaming changes the used PIDs of each pattern of a list as stated by
+    `usedPIDs_rename_ind`, then it changes the used PIDs of the whole list
+    (e.g., of a tuple pattern) in the same way. *)
+Local Lemma usedPIDsPat_flat_union_helper :
+  forall l p p',
+  (Forall (fun x => forall p p', usedPIDsPat (renamePIDPat p p' x) = if decide (p ∈ usedPIDsPat x)
+                                        then {[p']} ∪ usedPIDsPat x ∖ {[p]}
+                                        else usedPIDsPat x ∖ {[p]}) l) ->
+  flat_union usedPIDsPat (map (renamePIDPat p p') l) =
+  if (decide (p ∈ flat_union usedPIDsPat l))
+  then {[p']} ∪ flat_union usedPIDsPat l ∖ {[p]}
+  else flat_union usedPIDsPat l ∖ {[p]}.
+Proof.
+  induction l; intros; simpl. set_solver.
+  rewrite Forall_forall in H.
+  rewrite IHl, H. clear. repeat destruct decide; set_solver.
+  set_solver.
+  apply Forall_forall. intros. apply H. set_solver.
+Qed.
+
+(** If PID renaming changes the used PIDs of both components of each pair of
+    patterns in a list as stated by `usedPIDs_rename_ind`, then it changes the
+    used PIDs of the whole list (i.e., of a map pattern) in the same way. *)
+Local Lemma usedPIDsPat_flat_union_helper_prod :
+  forall l p p',
+  (Forall (fun '(x1, x2) => forall p p', (usedPIDsPat (renamePIDPat p p' x1) = if decide (p ∈ usedPIDsPat x1)
+                                        then {[p']} ∪ usedPIDsPat x1 ∖ {[p]}
+                                        else usedPIDsPat x1 ∖ {[p]}) /\
+                                        (usedPIDsPat (renamePIDPat p p' x2) = if decide (p ∈ usedPIDsPat x2)
+                                        then {[p']} ∪ usedPIDsPat x2 ∖ {[p]}
+                                        else usedPIDsPat x2 ∖ {[p]})) l) ->
+  flat_union (λ x, usedPIDsPat x.1 ∪ usedPIDsPat x.2)
+  (map (prod_map (renamePIDPat p p') (renamePIDPat p p')) l) =
+  if (decide (p ∈ flat_union (fun x => usedPIDsPat x.1 ∪ usedPIDsPat x.2) l))
+  then {[p']} ∪ flat_union (fun x => usedPIDsPat x.1 ∪ usedPIDsPat x.2) l ∖ {[p]}
+  else flat_union (fun x => usedPIDsPat x.1 ∪ usedPIDsPat x.2) l ∖ {[p]}.
+Proof.
+  induction l; intros; simpl. set_solver.
+  rewrite Forall_forall in H.
+  rewrite IHl. destruct a. specialize (H (p0, p1) ltac:(set_solver)).
+  simpl in *. rewrite (proj1 (H _ _)), (proj2 (H _ _)).
+  clear. repeat destruct decide; set_solver.
+  apply Forall_forall. intros. apply H. set_solver.
+Qed.
+
+(** If PID renaming changes the used PIDs of the value pattern and the size of
+    each segment of a binary pattern as stated by `usedPIDs_rename_ind`, then
+    it changes the used PIDs of the whole binary pattern in the same way. *)
+Local Lemma usedPIDsPatSeg_flat_union_helper :
+  forall l p p',
+  (Forall (fun seg => forall p p',
+      (usedPIDsPat (renamePIDPat p p' (seg_val seg)) = if decide (p ∈ usedPIDsPat (seg_val seg))
+                                        then {[p']} ∪ usedPIDsPat (seg_val seg) ∖ {[p]}
+                                        else usedPIDsPat (seg_val seg) ∖ {[p]}) /\
+      (usedPIDsVal (renamePIDVal p p' (seg_size seg)) = if decide (p ∈ usedPIDsVal (seg_size seg))
+                                        then {[p']} ∪ usedPIDsVal (seg_size seg) ∖ {[p]}
+                                        else usedPIDsVal (seg_size seg) ∖ {[p]})) l) ->
+  flat_union (fun x => usedPIDsPat (seg_val x) ∪ usedPIDsVal (seg_size x))
+    (map (fun seg => {| seg_val :=renamePIDPat p p' (seg_val seg);
+                        seg_size := renamePIDVal p p' (seg_size seg);
+                        seg_unit := seg_unit seg;
+                        seg_type := seg_type seg;
+                        seg_sign := seg_sign seg;
+                        seg_endian := seg_endian seg |}) l) =
+  if (decide (p ∈ flat_union (fun x => usedPIDsPat (seg_val x) ∪ usedPIDsVal (seg_size x)) l))
+  then {[p']} ∪ flat_union (fun x => usedPIDsPat (seg_val x) ∪ usedPIDsVal (seg_size x)) l ∖ {[p]}
+  else flat_union (fun x => usedPIDsPat (seg_val x) ∪ usedPIDsVal (seg_size x)) l ∖ {[p]}.
+Proof.
+  induction l; intros; simpl. set_solver.
+  rewrite Forall_forall in H.
+  rewrite IHl. specialize (H a ltac:(set_solver)).
+  simpl in *. rewrite (proj1 (H _ _)), (proj2 (H _ _)).
+  clear. repeat destruct decide; set_solver.
+  apply Forall_forall. intros. apply H. set_solver.
+Qed.
+
+(** If PID renaming changes the used PIDs of the patterns, the guard and the body
+    of each `case` clause as stated by `usedPIDs_rename_ind`, then it changes
+    the used PIDs of the whole list of clauses in the same way. *)
 Local Lemma usedPIDsCase_flat_union_helper :
   forall l p p',
   (Forall
-       (λ '(_, g, e),
+       (λ '(pl, g, e),
           ∀ p p' : PID,
-            usedPIDsExp g .⟦ p ↦ p' ⟧ =
+            flat_union usedPIDsPat (map (renamePIDPat p p') pl) =
+            (if decide (p ∈ flat_union usedPIDsPat pl)
+             then {[p']} ∪ flat_union usedPIDsPat pl ∖ {[p]}
+             else flat_union usedPIDsPat pl ∖ {[p]})
+            ∧ usedPIDsExp g .⟦ p ↦ p' ⟧ =
             (if decide (p ∈ usedPIDsExp g)
              then {[p']} ∪ usedPIDsExp g ∖ {[p]}
              else usedPIDsExp g ∖ {[p]})
@@ -2100,22 +3243,29 @@ Local Lemma usedPIDsCase_flat_union_helper :
               (if decide (p ∈ usedPIDsExp e)
                then {[p']} ∪ usedPIDsExp e ∖ {[p]}
                else usedPIDsExp e ∖ {[p]})) l) ->
-  flat_union (λ x : list Pat * Exp * Exp, usedPIDsExp x.1.2 ∪ usedPIDsExp x.2)
-    (map (λ '(p0, g, e0), (p0, g .⟦ p ↦ p' ⟧, e0 .⟦ p ↦ p' ⟧)) l) =
-  if (decide (p ∈ flat_union (λ x : list Pat * Exp * Exp, usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) l))
-  then {[p']} ∪ flat_union (λ x : list Pat * Exp * Exp, usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) l ∖ {[p]}
-  else flat_union (λ x : list Pat * Exp * Exp, usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) l ∖ {[p]}.
+  flat_union (λ x : list Pat * Exp * Exp,
+                flat_union usedPIDsPat x.1.1 ∪ usedPIDsExp x.1.2 ∪ usedPIDsExp x.2)
+    (map (λ '(p0, g, e0), (map (renamePIDPat p p') p0, g .⟦ p ↦ p' ⟧, e0 .⟦ p ↦ p' ⟧)) l) =
+  if (decide (p ∈ flat_union (λ x : list Pat * Exp * Exp,
+                flat_union usedPIDsPat x.1.1 ∪ usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) l))
+  then {[p']} ∪ flat_union (λ x : list Pat * Exp * Exp,
+                flat_union usedPIDsPat x.1.1 ∪ usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) l ∖ {[p]}
+  else flat_union (λ x : list Pat * Exp * Exp,
+                flat_union usedPIDsPat x.1.1 ∪ usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) l ∖ {[p]}.
 Proof.
   induction l; intros; simpl. set_solver.
   destruct a, p0; simpl.
   rewrite Forall_forall in H.
   rewrite IHl.
   specialize (H (l0, e0, e) ltac:(set_solver) p p') as X.
-  simpl in X. destruct X as [X1 X2]. rewrite X1, X2.
+  simpl in X. destruct X as [X1 [X2 X3]]. rewrite X1, X2, X3.
   clear. repeat destruct decide; set_solver.
   apply Forall_forall. intros. apply H. set_solver.
 Qed.
 
+(** If PID renaming changes the used PIDs of each function body of a `letrec` as
+    stated by `usedPIDs_rename_ind`, then it changes the used PIDs of all the
+    definitions in the same way. *)
 Local Lemma usedPIDsLetRec_flat_union_helper :
   forall l p p',
   (Forall
@@ -2140,6 +3290,7 @@ Proof.
   apply Forall_forall. intros. apply H. set_solver.
 Qed.
 
+(** The used PIDs of renamed terms *)
 Lemma usedPIDs_rename_ind :
   (forall e p p',
     usedPIDsExp (renamePID p p' e) = if decide (p ∈ usedPIDsExp e)
@@ -2154,9 +3305,30 @@ Lemma usedPIDs_rename_ind :
   (forall v p p',
     usedPIDsVal (renamePIDVal p p' v) = if decide (p ∈ usedPIDsVal v)
                                         then {[p']} ∪ usedPIDsVal v ∖ {[p]}
-                                        else usedPIDsVal v ∖ {[p]}).
+                                        else usedPIDsVal v ∖ {[p]})
+  /\
+  (forall pt p p',
+    usedPIDsPat (renamePIDPat p p' pt) = if decide (p ∈ usedPIDsPat pt)
+                                        then {[p']} ∪ usedPIDsPat pt ∖ {[p]}
+                                        else usedPIDsPat pt ∖ {[p]}).
 Proof.
   apply Exp_ind with
+    (PQ := fun l => Forall (fun pt => forall p p',
+    usedPIDsPat (renamePIDPat p p' pt) = if decide (p ∈ usedPIDsPat pt)
+                                        then {[p']} ∪ usedPIDsPat pt ∖ {[p]}
+                                        else usedPIDsPat pt ∖ {[p]}) l)
+    (PR := fun l => Forall (fun '(p1, p2) => forall p p', (usedPIDsPat (renamePIDPat p p' p1) = if decide (p ∈ usedPIDsPat p1)
+                                        then {[p']} ∪ usedPIDsPat p1 ∖ {[p]}
+                                        else usedPIDsPat p1 ∖ {[p]}) /\ (usedPIDsPat (renamePIDPat p p' p2) = if decide (p ∈ usedPIDsPat p2)
+                                        then {[p']} ∪ usedPIDsPat p2 ∖ {[p]}
+                                        else usedPIDsPat p2 ∖ {[p]})) l)
+    (PT := fun l => Forall (fun seg => forall p p',
+      (usedPIDsPat (renamePIDPat p p' (seg_val seg)) = if decide (p ∈ usedPIDsPat (seg_val seg))
+                                        then {[p']} ∪ usedPIDsPat (seg_val seg) ∖ {[p]}
+                                        else usedPIDsPat (seg_val seg) ∖ {[p]}) /\
+      (usedPIDsVal (renamePIDVal p p' (seg_size seg)) = if decide (p ∈ usedPIDsVal (seg_size seg))
+                                        then {[p']} ∪ usedPIDsVal (seg_size seg) ∖ {[p]}
+                                        else usedPIDsVal (seg_size seg) ∖ {[p]})) l)
     (Q := fun l => Forall (fun e => forall p p',
     usedPIDsExp (renamePID p p' e) = if decide (p ∈ usedPIDsExp e)
                                         then {[p']} ∪ usedPIDsExp e ∖ {[p]}
@@ -2179,7 +3351,11 @@ Proof.
     usedPIDsExp (renamePID p p' e) = if decide (p ∈ usedPIDsExp e)
                                         then {[p']} ∪ usedPIDsExp e ∖ {[p]}
                                         else usedPIDsExp e ∖ {[p]}) l)
-    (W := fun l => Forall (fun '(_,g,e) => forall p p', (usedPIDsExp (renamePID p p' g) = if decide (p ∈ usedPIDsExp g)
+    (W := fun l => Forall (fun '(pl,g,e) => forall p p',
+      (flat_union usedPIDsPat (map (renamePIDPat p p') pl) = if decide (p ∈ flat_union usedPIDsPat pl)
+                                        then {[p']} ∪ flat_union usedPIDsPat pl ∖ {[p]}
+                                        else flat_union usedPIDsPat pl ∖ {[p]}) /\
+      (usedPIDsExp (renamePID p p' g) = if decide (p ∈ usedPIDsExp g)
                                         then {[p']} ∪ usedPIDsExp g ∖ {[p]}
                                         else usedPIDsExp g ∖ {[p]}) /\ (usedPIDsExp (renamePID p p' e) = if decide (p ∈ usedPIDsExp e)
                                         then {[p']} ∪ usedPIDsExp e ∖ {[p]}
@@ -2188,16 +3364,20 @@ Proof.
     usedPIDsExp (renamePID p p' e) = if decide (p ∈ usedPIDsExp e)
                                         then {[p']} ∪ usedPIDsExp e ∖ {[p]}
                                         else usedPIDsExp e ∖ {[p]}) l).
-  25-38: constructor; auto.
+  all: try now (constructor; auto).
   all: simpl; intros.
-  3-4,9-10: set_solver.
   all: try rewrite H; try rewrite H0; try rewrite H1; try reflexivity.
+  * set_solver.
+  * set_solver.
   * case_match; eqb_to_eq; subst; simpl; destruct decide; try set_solver.
   * repeat destruct decide; set_solver.
   * rewrite usedPIDsVal_flat_union_helper. 2: assumption. set_solver.
   * rewrite usedPIDsVal_flat_union_helper_prod. 2: assumption. set_solver.
+  * set_solver.
+  * set_solver.
   * rewrite usedPIDsClos_flat_union_helper. 2: assumption.
     repeat destruct decide; set_solver.
+  * set_solver.
   * rewrite usedPIDsExp_flat_union_helper. 2: assumption. set_solver.
   * clear H H0. repeat destruct decide.
     all: set_solver.
@@ -2218,8 +3398,31 @@ Proof.
     repeat destruct decide; set_solver.
   * clear H H0 H1. repeat destruct decide.
     all: set_solver.
+  * (* EBin *)
+    rewrite usedPIDsExp_flat_union_helper. 2: assumption. set_solver.
+  * (* ESeg *)
+    destruct seg as [v s u t sg en]. simpl in *.
+    rewrite H, H0. repeat destruct decide; set_solver.
+  * set_solver.
+  * set_solver.
+  * set_solver.
+  * (* PCons *)
+    clear H H0. repeat destruct decide.
+    all: set_solver.
+  * (* PTuple *)
+    rewrite usedPIDsPat_flat_union_helper. 2: assumption. set_solver.
+  * (* PMap *)
+    rewrite usedPIDsPat_flat_union_helper_prod. 2: assumption. set_solver.
+  * (* PBin *)
+    rewrite usedPIDsPatSeg_flat_union_helper. 2: assumption. set_solver.
+  * (* clauses of ECase *)
+    constructor; [|assumption].
+    intros p p'. split; [|split]; [| apply H0 | apply H1].
+    apply usedPIDsPat_flat_union_helper. exact H.
 Qed.
 
+(** Renaming the PID `p` to `p'` in a value removes `p` from its used PIDs, and adds
+    `p'` if `p` was used. *)
 Corollary usedPIDsVal_rename :
   (forall v p p',
     usedPIDsVal (renamePIDVal p p' v) = if decide (p ∈ usedPIDsVal v)
@@ -2229,6 +3432,8 @@ Proof.
   apply usedPIDs_rename_ind.
 Qed.
 
+(** Renaming the PID `p` to `p'` in an expression removes `p` from its used PIDs, and
+    adds `p'` if `p` was used. *)
 Corollary usedPIDsExp_rename :
   (forall e p p',
     usedPIDsExp (renamePID p p' e) = if decide (p ∈ usedPIDsExp e)
@@ -2238,6 +3443,43 @@ Proof.
   apply usedPIDs_rename_ind.
 Qed.
 
+(** Renaming the PID `p` to `p'` in a non-value expression removes `p` from its used
+    PIDs, and adds `p'` if `p` was used. *)
+Corollary usedPIDsNVal_rename :
+  (forall n p p',
+    usedPIDsNVal (renamePIDNVal p p' n) = if decide (p ∈ usedPIDsNVal n)
+                                        then {[p']} ∪ usedPIDsNVal n ∖ {[p]}
+                                        else usedPIDsNVal n ∖ {[p]}).
+Proof.
+  apply usedPIDs_rename_ind.
+Qed.
+
+(** Renaming the PID `p` to `p'` in a pattern removes `p` from its used PIDs, and
+    adds `p'` if `p` was used. *)
+Corollary usedPIDsPat_rename :
+  (forall pt p p',
+    usedPIDsPat (renamePIDPat p p' pt) = if decide (p ∈ usedPIDsPat pt)
+                                        then {[p']} ∪ usedPIDsPat pt ∖ {[p]}
+                                        else usedPIDsPat pt ∖ {[p]}).
+Proof.
+  apply usedPIDs_rename_ind.
+Qed.
+
+(** Renaming the PID `p` to `p'` in a list of patterns removes `p` from its used
+    PIDs, and adds `p'` if `p` was used. *)
+Lemma usedPIDsPat_flat_union :
+  forall l p p',
+  flat_union usedPIDsPat (map (renamePIDPat p p') l) =
+  if (decide (p ∈ flat_union usedPIDsPat l))
+  then {[p']} ∪ flat_union usedPIDsPat l ∖ {[p]}
+  else flat_union usedPIDsPat l ∖ {[p]}.
+Proof.
+  induction l; intros; simpl. set_solver.
+  rewrite IHl, usedPIDsPat_rename. repeat destruct decide; set_solver.
+Qed.
+
+(** Renaming the PID `p` to `p'` in a list of values removes `p` from its used PIDs,
+    and adds `p'` if `p` was used. *)
 Lemma usedPIDsVal_flat_union :
   forall l p p',
   flat_union usedPIDsVal (map (renamePIDVal p p') l) =
@@ -2249,6 +3491,8 @@ Proof.
   rewrite IHl, usedPIDsVal_rename. repeat destruct decide; set_solver.
 Qed.
 
+(** Renaming the PID `p` to `p'` in a redex removes `p` from its used PIDs, and adds
+    `p'` if `p` was used. *)
 Corollary usedPIDsRed_rename :
   (forall r p p',
     usedPIDsRed (renamePIDRed p p' r) = if decide (p ∈ usedPIDsRed r)
@@ -2263,6 +3507,8 @@ Proof.
   * set_solver.
 Qed.
 
+(** Renaming the PID `p` to `p'` in a frame identifier removes `p` from its used
+    PIDs, and adds `p'` if `p` was used. *)
 Corollary usedPIDsFrameId_rename :
   (forall i p p',
     usedPIDsFrameId (renamePIDFrameId p p' i) = if decide (p ∈ usedPIDsFrameId i)
@@ -2270,11 +3516,13 @@ Corollary usedPIDsFrameId_rename :
                                         else usedPIDsFrameId i ∖ {[p]}).
 Proof.
   destruct i; intros; simpl.
-  1-3, 5: set_solver.
+  all: try now set_solver.
   * do 2 rewrite usedPIDsVal_rename; repeat destruct decide; set_solver.
   * rewrite usedPIDsVal_rename; repeat destruct decide; set_solver.
 Qed.
 
+(** Renaming the PID `p` to `p'` in a frame removes `p` from its used PIDs, and adds
+    `p'` if `p` was used. *)
 Corollary usedPIDsFrame_rename :
   (forall f p p',
     usedPIDsFrame (renamePIDFrame p p' f) = if decide (p ∈ usedPIDsFrame f)
@@ -2305,19 +3553,25 @@ Proof.
     1: apply usedPIDsExp_rename.
   * rewrite usedPIDsCase_flat_union_helper. set_solver.
     1: induction l; constructor; auto. destruct a, p0; intros.
-    1: split; apply usedPIDsExp_rename.
+    1: split; [apply usedPIDsPat_flat_union | split; apply usedPIDsExp_rename].
   * rewrite usedPIDsExp_rename, usedPIDsCase_flat_union_helper, usedPIDsVal_flat_union_helper.
     clear. repeat destruct decide; set_solver.
     1: induction lv; constructor; auto.
     1: apply usedPIDsVal_rename.
     1: induction le; constructor; auto. destruct a, p0; intros.
-    1: split; apply usedPIDsExp_rename.
+    1: split; [apply usedPIDsPat_flat_union | split; apply usedPIDsExp_rename].
   * by rewrite usedPIDsExp_rename.
   * by rewrite usedPIDsExp_rename.
   * do 2 rewrite usedPIDsExp_rename.
     repeat destruct decide; set_solver.
+  * (* FSeg1 *)
+    by rewrite usedPIDsExp_rename.
+  * (* FSeg2 *)
+    by rewrite usedPIDsVal_rename.
 Qed.
 
+(** Renaming the PID `p` to `p'` in a list of frames removes `p` from its used PIDs,
+    and adds `p'` if `p` was used. *)
 Lemma usedPIDsFrame_flat_union :
   forall l p p',
   flat_union usedPIDsFrame (map (renamePIDFrame p p') l) =
@@ -2329,6 +3583,8 @@ Proof.
   rewrite IHl, usedPIDsFrame_rename. repeat destruct decide; set_solver.
 Qed.
 
+(** Renaming the PID `p` to `p'` in a frame stack removes `p` from its used PIDs,
+    and adds `p'` if `p` was used. *)
 Corollary usedPIDsStack_rename :
   (forall fs p p',
     usedPIDsStack (renamePIDStack p p' fs) = if decide (p ∈ usedPIDsStack fs)
@@ -2338,6 +3594,9 @@ Proof.
   intros. unfold renamePIDStack. by rewrite usedPIDsFrame_flat_union.
 Qed.
 
+(** * Commuting PID renamings *)
+
+(** Independent PID renamings commute. *)
 Lemma renamePID_swap_ind :
   (forall e from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
                renamePID from1 to1 (renamePID from2 to2 e) =
@@ -2347,9 +3606,25 @@ Lemma renamePID_swap_ind :
                renamePIDNVal from2 to2 (renamePIDNVal from1 to1 e)) /\
   (forall e from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
                renamePIDVal from1 to1 (renamePIDVal from2 to2 e) =
-               renamePIDVal from2 to2 (renamePIDVal from1 to1 e)).
+               renamePIDVal from2 to2 (renamePIDVal from1 to1 e)) /\
+  (forall pt from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
+               renamePIDPat from1 to1 (renamePIDPat from2 to2 pt) =
+               renamePIDPat from2 to2 (renamePIDPat from1 to1 pt)).
 Proof.
   apply Exp_ind with
+    (PQ := fun l => Forall (fun pt => forall from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
+               renamePIDPat from1 to1 (renamePIDPat from2 to2 pt) =
+               renamePIDPat from2 to2 (renamePIDPat from1 to1 pt)) l)
+    (PR := fun l => Forall (fun '(p1, p2) => forall from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
+               (renamePIDPat from1 to1 (renamePIDPat from2 to2 p1) =
+                renamePIDPat from2 to2 (renamePIDPat from1 to1 p1)) /\
+               (renamePIDPat from1 to1 (renamePIDPat from2 to2 p2) =
+                renamePIDPat from2 to2 (renamePIDPat from1 to1 p2))) l)
+    (PT := fun l => Forall (fun seg => forall from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
+               (renamePIDPat from1 to1 (renamePIDPat from2 to2 (seg_val seg)) =
+                renamePIDPat from2 to2 (renamePIDPat from1 to1 (seg_val seg))) /\
+               (renamePIDVal from1 to1 (renamePIDVal from2 to2 (seg_size seg)) =
+                renamePIDVal from2 to2 (renamePIDVal from1 to1 (seg_size seg)))) l)
     (Q := fun l => Forall (fun e => forall from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
                renamePID from1 to1 (renamePID from2 to2 e) =
                renamePID from2 to2 (renamePID from1 to1 e)) l)
@@ -2365,13 +3640,16 @@ Proof.
     (VV := fun l => Forall (fun '(_, _, e) => forall from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
                renamePID from1 to1 (renamePID from2 to2 e) =
                renamePID from2 to2 (renamePID from1 to1 e)) l)
-    (W := fun l => Forall (fun '(_,g,e) => forall from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 -> (renamePID from1 to1 (renamePID from2 to2 g) =
+    (W := fun l => Forall (fun '(pl,g,e) => forall from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
+               (map (renamePIDPat from1 to1) (map (renamePIDPat from2 to2) pl) =
+                map (renamePIDPat from2 to2) (map (renamePIDPat from1 to1) pl)) /\
+               (renamePID from1 to1 (renamePID from2 to2 g) =
                renamePID from2 to2 (renamePID from1 to1 g)) /\ (renamePID from1 to1 (renamePID from2 to2 e) =
                renamePID from2 to2 (renamePID from1 to1 e))) l)
     (Z := fun l => Forall (fun '(_, e) => forall from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
                renamePID from1 to1 (renamePID from2 to2 e) =
                renamePID from2 to2 (renamePID from1 to1 e)) l).
-  25-38: constructor; auto.
+  all: try now (constructor; auto).
   all: intros; simpl; try rewrite H; try rewrite H0; try rewrite H1; try reflexivity; try assumption.
   * repeat case_match; eqb_to_eq; subst; try lia.
     all: simpl; repeat case_match; eqb_to_eq; subst; try reflexivity; lia.
@@ -2397,7 +3675,7 @@ Proof.
     eapply H in H3. exact H3. all: assumption.
   * do 2 rewrite map_map. f_equal. apply map_ext_in_iff.
     intros. rewrite Forall_forall in H. apply list_elem_of_In in H3.
-    eapply H in H3. destruct a.
+    eapply H in H3. destruct a. cbn.
     erewrite (proj1 (H3 _ _ _ _ _ _ _)). erewrite (proj2 (H3 _ _ _ _ _ _ _)).
     reflexivity. Unshelve. all: lia.
   * rewrite H, H0; try assumption.
@@ -2416,16 +3694,49 @@ Proof.
     do 2 rewrite map_map. apply map_ext_in_iff.
     intros. rewrite Forall_forall in H0. apply list_elem_of_In in H4.
     eapply H0 in H4. destruct a, p.
-    erewrite (proj1 (H4 _ _ _ _ _ _ _)). erewrite (proj2 (H4 _ _ _ _ _ _ _)).
-    reflexivity. Unshelve. all: lia.
+    pose proof (H4 from1 from2 to1 to2 ltac:(lia) ltac:(lia) ltac:(lia)) as [Hp [Hg He]].
+    cbn. rewrite Hp, Hg, He. reflexivity. all: lia.
   * rewrite H; try assumption.
     f_equal.
     do 2 rewrite map_map. apply map_ext_in_iff.
     intros. rewrite Forall_forall in H0. apply list_elem_of_In in H4.
     eapply H0 in H4. destruct a.
     rewrite H4. reflexivity. all: lia.
+  * (* EBin *)
+    do 2 rewrite map_map. f_equal. apply map_ext_in_iff.
+    intros. rewrite Forall_forall in H. apply list_elem_of_In in H3.
+    eapply H in H3. exact H3. all: assumption.
+  * (* ESeg *)
+    destruct seg as [v s u t sg en]. simpl in *.
+    rewrite (H from1 from2 to1 to2), (H0 from1 from2 to1 to2) by lia.
+    reflexivity.
+  * (* PTuple *)
+    do 2 rewrite map_map. f_equal. apply map_ext_in_iff.
+    intros. rewrite Forall_forall in H. apply list_elem_of_In in H3.
+    eapply H in H3. exact H3. all: assumption.
+  * (* PMap *)
+    do 2 rewrite map_map. f_equal. apply map_ext_in_iff.
+    intros. rewrite Forall_forall in H. apply list_elem_of_In in H3.
+    eapply H in H3. destruct a. cbn.
+    erewrite (proj1 (H3 _ _ _ _ _ _ _)). erewrite (proj2 (H3 _ _ _ _ _ _ _)).
+    reflexivity. Unshelve. all: lia.
+  * (* PBin *)
+    do 2 rewrite map_map. f_equal. apply map_ext_in_iff.
+    intros. rewrite Forall_forall in H. apply list_elem_of_In in H3.
+    pose proof (H _ H3 from1 from2 to1 to2 ltac:(lia) ltac:(lia) ltac:(lia)) as [Hp Hs].
+    destruct a as [v s u t sg en]. cbn in *.
+    rewrite Hp, Hs. reflexivity.
+  * (* clauses of ECase *)
+    constructor; [|assumption].
+    intros from1 from2 to1 to2 N1 N2 N3.
+    split; [|split]; [| apply H0; assumption | apply H1; assumption].
+    do 2 rewrite map_map. apply map_ext_in_iff.
+    intros a Ha. rewrite Forall_forall in H. apply list_elem_of_In in Ha.
+    eapply H in Ha. exact Ha. all: assumption.
 Qed.
 
+(** Two independent PID renamings (`from1 ≠ from2`, `from1 ≠ to2`,
+    `from2 ≠ to1`) can be applied to an expression in either order. *)
 Corollary renamePID_swap_exp :
   forall e from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
                renamePID from1 to1 (renamePID from2 to2 e) =
@@ -2434,6 +3745,8 @@ Proof.
   apply renamePID_swap_ind.
 Qed.
 
+(** Two independent PID renamings (`from1 ≠ from2`, `from1 ≠ to2`,
+    `from2 ≠ to1`) can be applied to a value in either order. *)
 Corollary renamePID_swap_val :
   forall v from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
                renamePIDVal from1 to1 (renamePIDVal from2 to2 v) =
@@ -2442,6 +3755,29 @@ Proof.
   apply renamePID_swap_ind.
 Qed.
 
+(** Two independent PID renamings (`from1 ≠ from2`, `from1 ≠ to2`,
+    `from2 ≠ to1`) can be applied to a pattern in either order. *)
+Corollary renamePID_swap_pat :
+  forall pt from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
+               renamePIDPat from1 to1 (renamePIDPat from2 to2 pt) =
+               renamePIDPat from2 to2 (renamePIDPat from1 to1 pt).
+Proof.
+  apply renamePID_swap_ind.
+Qed.
+
+(** Two independent PID renamings (`from1 ≠ from2`, `from1 ≠ to2`,
+    `from2 ≠ to1`) can be applied to a list of patterns in either order. *)
+Corollary renamePID_swap_pats :
+  forall l from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
+               map (renamePIDPat from1 to1) (map (renamePIDPat from2 to2) l) =
+               map (renamePIDPat from2 to2) (map (renamePIDPat from1 to1) l).
+Proof.
+  intros. do 2 rewrite map_map. apply map_ext_in_iff.
+  intros. by rewrite renamePID_swap_pat.
+Qed.
+
+(** Two independent PID renamings (`from1 ≠ from2`, `from1 ≠ to2`,
+    `from2 ≠ to1`) can be applied to a redex in either order. *)
 Corollary renamePID_swap_red :
   forall r from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
                renamePIDRed from1 to1 (renamePIDRed from2 to2 r) =
@@ -2456,6 +3792,8 @@ Proof.
   * reflexivity.
 Qed.
 
+(** Two independent PID renamings (`from1 ≠ from2`, `from1 ≠ to2`,
+    `from2 ≠ to1`) can be applied to a frame identifier in either order. *)
 Corollary renamePID_swap_frameId :
   forall i from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
                renamePIDFrameId from1 to1 (renamePIDFrameId from2 to2 i) =
@@ -2466,6 +3804,8 @@ Proof.
   * by rewrite renamePID_swap_val.
 Qed.
 
+(** Two independent PID renamings (`from1 ≠ from2`, `from1 ≠ to2`,
+    `from2 ≠ to1`) can be applied to a frame in either order. *)
 Corollary renamePID_swap_frame :
   forall f from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
                renamePIDFrame from1 to1 (renamePIDFrame from2 to2 f) =
@@ -2490,19 +3830,25 @@ Proof.
     intros. by rewrite renamePID_swap_exp.
   * f_equal.
     do 2 rewrite map_map. apply map_ext_in_iff.
-    intros. destruct a, p.
-    by rewrite (renamePID_swap_exp e0), (renamePID_swap_exp e).
+    intros. destruct a, p. cbn.
+    by rewrite (renamePID_swap_pats l0), (renamePID_swap_exp e0), (renamePID_swap_exp e).
   * rewrite renamePID_swap_exp; try lia. f_equal.
     - do 2 rewrite map_map. apply map_ext_in_iff.
       intros. by rewrite renamePID_swap_val.
     - do 2 rewrite map_map. apply map_ext_in_iff.
-      intros. destruct a, p.
-      by rewrite (renamePID_swap_exp e0), (renamePID_swap_exp e).
+      intros. destruct a, p. cbn.
+      by rewrite renamePID_swap_pats, (renamePID_swap_exp e0), (renamePID_swap_exp e).
   * by rewrite renamePID_swap_exp.
   * by rewrite renamePID_swap_exp.
   * by rewrite (renamePID_swap_exp e2), (renamePID_swap_exp e3).
+  * (* FSeg1 *)
+    by rewrite renamePID_swap_exp.
+  * (* FSeg2 *)
+    by rewrite renamePID_swap_val.
 Qed.
 
+(** Two independent PID renamings (`from1 ≠ from2`, `from1 ≠ to2`,
+    `from2 ≠ to1`) can be applied to a frame stack in either order. *)
 Corollary renamePID_swap_stack :
   forall fs from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
                renamePIDStack from1 to1 (renamePIDStack from2 to2 fs) =
@@ -2511,4 +3857,1056 @@ Proof.
   intros. unfold renamePIDStack.
   do 2 rewrite map_map. apply map_ext_in_iff.
   intros. by rewrite renamePID_swap_frame.
+Qed.
+
+(** * Used PIDs under substitution, pattern matching and BIF evaluation
+
+    The lemmas `*_usedPIDs` state that these operations do not introduce
+    new PIDs: the PIDs of their results occur in their arguments. *)
+
+(** Variable renaming does not change the used PIDs. *)
+Lemma rename_usedPIDs :
+  (forall e ρ, usedPIDsExp e = usedPIDsExp (rename ρ e)) /\
+  (forall e ρ, usedPIDsNVal e = usedPIDsNVal (renameNonVal ρ e)) /\
+  (forall e ρ, usedPIDsVal e = usedPIDsVal (renameVal ρ e)) /\
+  (forall p ρ, usedPIDsPat p = usedPIDsPat (renamePat ρ p)).
+Proof.
+  apply Exp_ind with
+    (PQ := fun l => Forall (fun p => forall ρ, usedPIDsPat p = usedPIDsPat (renamePat ρ p)) l)
+    (PR := fun l => Forall (fun '(p1, p2) => forall ρ,
+        (usedPIDsPat p1 = usedPIDsPat (renamePat ρ p1)) /\
+        (usedPIDsPat p2 = usedPIDsPat (renamePat ρ p2))) l)
+    (PT := fun l => Forall (fun seg => forall ρ,
+        (usedPIDsPat (seg_val seg) = usedPIDsPat (renamePat ρ (seg_val seg))) /\
+        (usedPIDsVal (seg_size seg) = usedPIDsVal (renameVal ρ (seg_size seg)))) l)
+    (QV := fun l => Forall (fun e => forall ρ, usedPIDsVal e = usedPIDsVal (renameVal ρ e)) l)
+    (Q := fun l => Forall (fun e => forall ρ, usedPIDsExp e = usedPIDsExp (rename ρ e)) l)
+    (RV := fun l => Forall (fun '(e1, e2) => forall ρ,
+        (usedPIDsVal e1 = usedPIDsVal (renameVal ρ e1)) /\
+        (usedPIDsVal e2 = usedPIDsVal (renameVal ρ e2))) l)
+    (R := fun l => Forall (fun '(e1, e2) => forall ρ,
+        (usedPIDsExp e1 = usedPIDsExp (rename ρ e1)) /\
+        (usedPIDsExp e2 = usedPIDsExp (rename ρ e2))) l)
+    (W := fun l => Forall (fun '(p, g, e) => forall ρ,
+       (flat_union usedPIDsPat p = flat_union usedPIDsPat (map (renamePat ρ) p)) /\
+       (usedPIDsExp g = usedPIDsExp (rename ρ g)) /\
+       (usedPIDsExp e = usedPIDsExp (rename ρ e))) l)
+    (Z := fun l => Forall (fun '(n, e) => forall ρ, usedPIDsExp e = usedPIDsExp (rename ρ e)) l)
+   (VV := fun l => Forall
+      (fun '(id, vl, e) => forall ρ,  usedPIDsExp e = usedPIDsExp (rename ρ e)) l).
+  all: try now (constructor; auto).
+  all: intros; simpl; try rewrite <- H; try rewrite <- H0; try rewrite H1; try reflexivity.
+  * do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H0.
+    rewrite Forall_forall in H. eapply H in H0. exact H0.
+  * do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H0.
+    rewrite Forall_forall in H. eapply H in H0.
+    destruct a. set_solver.
+  * by destruct n.
+  * do 2 rewrite flat_union_map. rewrite map_map. do 2 f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H1.
+    rewrite Forall_forall in H. eapply H in H1.
+    destruct a, p. set_solver.
+  * do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H0.
+    rewrite Forall_forall in H. eapply H in H0. exact H0.
+  * do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H0.
+    rewrite Forall_forall in H. eapply H in H0. exact H0.
+  * do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H0.
+    rewrite Forall_forall in H. eapply H in H0.
+    destruct a. set_solver.
+  * f_equal.
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H2.
+    rewrite Forall_forall in H1. eapply H1 in H2.
+    set_solver.
+  * do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H0.
+    rewrite Forall_forall in H. eapply H in H0. exact H0.
+  * f_equal.
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H1.
+    rewrite Forall_forall in H0. eapply H0 in H1. exact H1.
+  * f_equal.
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H1.
+    rewrite Forall_forall in H0. eapply H0 in H1.
+    destruct a, p. set_solver.
+  * f_equal.
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H1.
+    rewrite Forall_forall in H0. eapply H0 in H1. destruct a. set_solver.
+  * by rewrite <- H1.
+  * (* EBin *)
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H0.
+    rewrite Forall_forall in H. eapply H in H0. exact H0.
+  * (* ESeg *)
+    destruct seg as [v s u t sg en]. simpl in *.
+    rewrite <- H, <- H0. reflexivity.
+  * (* PTuple *)
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H0.
+    rewrite Forall_forall in H. eapply H in H0. exact H0.
+  * (* PMap *)
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H0.
+    rewrite Forall_forall in H. eapply H in H0.
+    destruct a. set_solver.
+  * (* PBin *)
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply list_elem_of_In in H0.
+    rewrite Forall_forall in H.
+    pose proof (H _ H0 ρ) as [Hp Hs].
+    destruct a as [v s u t sg en]. cbn in *. rewrite <- Hp, <- Hs. reflexivity.
+  * (* clauses of ECase *)
+    constructor; [|assumption].
+    intros ρ. split; [|split]; [| apply H0 | apply H1].
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros a Ha. apply list_elem_of_In in Ha.
+    rewrite Forall_forall in H. eapply H in Ha. exact Ha.
+Qed.
+
+(** The PIDs used in a substituted term are used either in the term, or in
+    a value of the substitution. *)
+Lemma subst_usedPIDs :
+  (forall e ι ξ, ι ∈ (usedPIDsExp e.[ξ]) -> ι ∈ (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))
+  /\
+  (forall e ι ξ, ι ∈ (usedPIDsNVal e.[ξ]ₑ ) -> ι ∈ (usedPIDsNVal e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))
+  /\
+  (forall e ι ξ, ι ∈ (usedPIDsVal e.[ξ]ᵥ ) -> ι ∈ (usedPIDsVal e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))
+  /\
+  (forall p ι ξ, ι ∈ (usedPIDsPat p.[ξ]ₚ ) -> ι ∈ (usedPIDsPat p) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)).
+Proof.
+  apply Exp_ind with
+    (PQ := fun l => Forall (fun p => forall ι ξ, ι ∈ (usedPIDsPat p.[ξ]ₚ ) -> ι ∈ (usedPIDsPat p) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) l)
+    (PR := fun l => Forall (fun '(p1, p2) => forall ι ξ,
+        (ι ∈ (usedPIDsPat p1.[ξ]ₚ ) -> ι ∈ (usedPIDsPat p1) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) /\
+        (ι ∈ (usedPIDsPat p2.[ξ]ₚ ) -> ι ∈ (usedPIDsPat p2) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))) l)
+    (PT := fun l => Forall (fun seg => forall ι ξ,
+        (ι ∈ (usedPIDsPat (seg_val seg).[ξ]ₚ ) -> ι ∈ (usedPIDsPat (seg_val seg)) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) /\
+        (ι ∈ (usedPIDsVal (seg_size seg).[ξ]ᵥ ) -> ι ∈ (usedPIDsVal (seg_size seg)) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))) l)
+    (QV := fun l => Forall (fun e => forall ι ξ, ι ∈ (usedPIDsVal e.[ξ]ᵥ ) -> ι ∈ (usedPIDsVal e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) l)
+    (Q := fun l => Forall (fun e => forall ι ξ, ι ∈ (usedPIDsExp e.[ξ]) -> ι ∈ (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) l)
+    (RV := fun l => Forall (fun '(e1, e2) => forall ι ξ,
+        (ι ∈ (usedPIDsVal e1.[ξ]ᵥ ) -> ι ∈ (usedPIDsVal e1) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) /\
+        (ι ∈ (usedPIDsVal e2.[ξ]ᵥ ) -> ι ∈ (usedPIDsVal e2) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))) l)
+    (R := fun l => Forall (fun '(e1, e2) => forall ι ξ,
+        (ι ∈ (usedPIDsExp e1.[ξ]) -> ι ∈ (usedPIDsExp e1) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) /\
+        (ι ∈ (usedPIDsExp e2.[ξ]) -> ι ∈ (usedPIDsExp e2) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))) l)
+    (W := fun l => Forall (fun '(p, g, e) => forall ι ξ,
+       (ι ∈ (flat_union usedPIDsPat (map (substPat ξ) p)) -> ι ∈ (flat_union usedPIDsPat p) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) /\
+       (ι ∈ (usedPIDsExp g.[ξ]) -> ι ∈ (usedPIDsExp g) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) /\
+       (ι ∈ (usedPIDsExp e.[ξ]) -> ι ∈ (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))) l)
+    (Z := fun l => Forall (fun '(n, e) => forall ι ξ, ι ∈ (usedPIDsExp e.[ξ]) -> ι ∈ (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) l)
+   (VV := fun l => Forall
+      (fun '(id, vl, e) => forall ι ξ,  ι ∈ (usedPIDsExp e.[ξ]) -> ι ∈ (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) l).
+  all: intros; simpl in *.
+  all: try now (constructor; auto).
+  * by apply H in H0.
+  * by apply H in H0.
+  * apply elem_of_union in H1 as [|]; [apply H in H1 | apply H0 in H1].
+    - destruct_or!. left. set_solver. set_solver.
+    - destruct_or!. left. set_solver. set_solver.
+  * apply elem_of_flat_union in H0 as [x [P1 P2]].
+    apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H. eapply H in P3 as P3'. 2: eassumption.
+    clear -P2 P3 P3'. destruct_or!; auto.
+    left. apply elem_of_flat_union. exists y. auto.
+  * apply elem_of_flat_union in H0 as [x [P1 P2]].
+    apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H. eapply H in P3 as P3'. destruct y.
+    apply elem_of_union in P2 as [H0 | H0]; apply P3' in H0 as H0'; destruct_or!; auto.
+    - left. simpl in *. apply elem_of_flat_union. exists (v, v0); split; auto.
+      set_solver.
+    - left. simpl in *. apply elem_of_flat_union. exists (v, v0); split; auto.
+      set_solver.
+  * right; case_match; try inv H. set_solver.
+  * destruct n. right; case_match; try inv H. set_solver.
+  * apply elem_of_union in H1 as [|].
+    - apply H0 in H1. destruct H1. left. set_solver.
+      right. destruct_hyps. eapply upn_inl_eq_1 in H1.
+      do 2 eexists; split; try eassumption.
+      by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
+    - rewrite Forall_forall in H. apply elem_of_flat_union in H1 as [x [P1 P2]].
+      apply elem_of_map_iff in P1 as [y [P1 P3]]. eapply H in P3 as P3'. destruct y, p.
+      inv P1. apply P3' in P2. destruct P2 as [|].
+      + left. apply elem_of_union. right.
+        apply elem_of_flat_union. exists (n, n0, e0); auto.
+      + right. destruct H1 as [n' [v' [H2_1 H2_2]]].
+        eapply upn_inl_eq_1 with (n:=length ext + n0) in H2_1.
+        do 2 eexists; split; try eassumption.
+        by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
+  * apply H in H0. destruct H0; auto.
+    right. destruct H0 as [n' [v' [H0_1 H0_2]]].
+    apply upn_inl_eq_1 in H0_1.
+    do 2 eexists; split; try eassumption.
+    by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
+  * apply elem_of_flat_union in H0 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H. eapply H in P3 as P3'. 2: eassumption.
+    clear -P2 P3 P3'. destruct_or!; auto.
+    left. apply elem_of_flat_union. exists y. auto.
+  * apply elem_of_union in H1 as [|]; [apply H in H1 | apply H0 in H1].
+    - destruct_or!. left. apply elem_of_union. by left.
+      by right.
+    - destruct_or!. left. apply elem_of_union. by right.
+      by right.
+  * apply elem_of_flat_union in H0 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H. eapply H in P3 as P3'. 2: eassumption.
+    clear -P2 P3 P3'. destruct_or!; auto.
+    left. apply elem_of_flat_union. exists y. auto.
+  * apply elem_of_flat_union in H0 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H. eapply H in P3 as P3'. destruct y.
+    apply elem_of_union in P2 as [H0 | H0]; apply P3' in H0 as H0'; destruct_or!; auto.
+    - left. simpl in *. apply elem_of_flat_union. exists (e, e0); split; auto.
+      set_solver.
+    - left. simpl in *. apply elem_of_flat_union. exists (e, e0); split; auto.
+      set_solver.
+  * apply elem_of_union in H2 as [|]. apply elem_of_union in H2 as [|].
+    1: { apply H in H2 as [|]; auto. left. set_solver. }
+    1: { apply H0 in H2 as [|]; auto. left. set_solver. }
+    apply elem_of_flat_union in H2 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H1. eapply H1 in P3 as P3'. 2: eassumption.
+    clear -P2 P3 P3'. destruct_or!; auto.
+    left. apply elem_of_union. right. apply elem_of_flat_union. exists y. auto.
+  * apply elem_of_flat_union in H0 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H. eapply H in P3 as P3'. 2: eassumption.
+    clear -P2 P3 P3'. destruct_or!; auto.
+    left. apply elem_of_flat_union. exists y. auto.
+  * apply elem_of_union in H1 as [|].
+    1: { apply H in H1 as [|]; auto. left. set_solver. }
+    apply elem_of_flat_union in H1 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H0. eapply H0 in P3 as P3'. 2: eassumption.
+    clear -P2 P3 P3'. destruct_or!; auto.
+    left. apply elem_of_union. right. apply elem_of_flat_union. exists y. auto.
+  * apply elem_of_union in H1 as [|].
+    1: { apply H in H1 as [|]; auto. left. set_solver. }
+    apply elem_of_flat_union in H1 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. destruct y, p. simpl in *.
+    rewrite Forall_forall in H0. eapply H0 in P3 as P3'.
+    apply elem_of_union in P2 as [P2|P2]; [apply elem_of_union in P2 as [P2|P2]|].
+    - apply (proj1 (P3' _ _)) in P2 as [P2|P2].
+      + left. apply elem_of_union. right. apply elem_of_flat_union.
+        exists (l0, e1, e0). split; [exact P3|]. simpl. set_solver.
+      + right. exact P2.
+    - apply (proj1 (proj2 (P3' _ _))) in P2 as [P2|P2].
+      + left. apply elem_of_union. right. apply elem_of_flat_union.
+        exists (l0, e1, e0). split; [exact P3|]. simpl. set_solver.
+      + right. destruct P2 as [n' [v' [H0_1 H0_2]]].
+        apply upn_inl_eq_1 in H0_1.
+        do 2 eexists; split; try eassumption.
+        by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
+    - apply (proj2 (proj2 (P3' _ _))) in P2 as [P2|P2].
+      + left. apply elem_of_union. right. apply elem_of_flat_union.
+        exists (l0, e1, e0). split; [exact P3|]. simpl. set_solver.
+      + right. destruct P2 as [n' [v' [H0_1 H0_2]]].
+        apply upn_inl_eq_1 in H0_1.
+        do 2 eexists; split; try eassumption.
+        by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
+  * apply elem_of_union in H1 as [|]; [apply H in H1 | apply H0 in H1].
+    - destruct_or!. left. set_solver. set_solver.
+    - destruct_or!. left. set_solver.
+      right. destruct H1 as [n' [v' [H0_1 H0_2]]].
+      apply upn_inl_eq_1 in H0_1.
+      do 2 eexists; split; try eassumption.
+      by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
+  * apply elem_of_union in H1 as [|]; [apply H in H1 | apply H0 in H1].
+    - destruct_or!. left. set_solver. set_solver.
+    - destruct_or!. left. set_solver. set_solver.
+  * apply elem_of_union in H1 as [|].
+    - apply H in H1. destruct_or!.
+      left. set_solver.
+      right. destruct H1 as [n' [v' [H0_1 H0_2]]].
+      apply upn_inl_eq_1 in H0_1.
+      do 2 eexists; split; try eassumption.
+      by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
+    - rewrite Forall_forall in H0. apply elem_of_flat_union in H1 as [x [P1 P2]].
+      apply elem_of_map_iff in P1 as [y [P1 P3]]. destruct y. subst.
+      apply H0 in P3 as P3'. apply P3' in P2. destruct_or!.
+      left. apply elem_of_union. right. apply elem_of_flat_union. exists (n, e0). split; assumption.
+      right.  destruct P2 as [n' [v' [H0_1 H0_2]]].
+      apply upn_inl_eq_1 in H0_1.
+      do 2 eexists; split; try eassumption.
+      by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
+  * apply elem_of_union in H2 as [H2|H2]; [apply elem_of_union in H2 as [H2|H2]; [apply H in H2 | apply H0 in H2] | apply H1 in H2].
+    - destruct_or!. left. set_solver. set_solver.
+    - destruct_or!. set_solver.
+      right. destruct H2 as [n' [v' [H0_1 H0_2]]].
+      apply upn_inl_eq_1 in H0_1.
+      do 2 eexists; split; try eassumption.
+      by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
+    - destruct_or!. set_solver.
+      right. destruct H2 as [n' [v' [H0_1 H0_2]]].
+      apply upn_inl_eq_1 in H0_1.
+      do 2 eexists; split; try eassumption.
+      by rewrite <- (proj1 (proj2 (proj2 rename_usedPIDs))).
+  * (* EBin *)
+    apply elem_of_flat_union in H0 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H. eapply H in P3 as P3'. 2: eassumption.
+    clear -P2 P3 P3'. destruct_or!; auto.
+    left. apply elem_of_flat_union. exists y. auto.
+  * (* ESeg *)
+    destruct seg as [v s u t sg en]. simpl in *.
+    apply elem_of_union in H1 as [H1|H1]; [apply H in H1 | apply H0 in H1];
+      destruct_or!; auto; left; set_solver.
+  * (* PCons *)
+    apply elem_of_union in H1 as [|]; [apply H in H1 | apply H0 in H1].
+    - destruct_or!. left. set_solver. set_solver.
+    - destruct_or!. left. set_solver. set_solver.
+  * (* PTuple *)
+    apply elem_of_flat_union in H0 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H. eapply H in P3 as P3'. 2: eassumption.
+    clear -P2 P3 P3'. destruct_or!; auto.
+    left. apply elem_of_flat_union. exists y. auto.
+  * (* PMap *)
+    apply elem_of_flat_union in H0 as [x [P1 P2]].
+    apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H. eapply H in P3 as P3'. destruct y.
+    apply elem_of_union in P2 as [H0 | H0]; apply P3' in H0 as H0'; destruct_or!; auto.
+    - left. simpl in *. apply elem_of_flat_union. exists (p, p0); split; auto.
+      set_solver.
+    - left. simpl in *. apply elem_of_flat_union. exists (p, p0); split; auto.
+      set_solver.
+  * (* PBin *)
+    apply elem_of_flat_union in H0 as [x [P1 P2]].
+    apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H. pose proof (H _ P3) as P3'.
+    destruct y as [v s u t sg en]. simpl in *.
+    apply elem_of_union in P2 as [H0 | H0]; [apply (proj1 (P3' _ _)) in H0 | apply (proj2 (P3' _ _)) in H0];
+      destruct_or!; auto; left; apply elem_of_flat_union;
+      exists {| seg_val := v; seg_size := s; seg_unit := u; seg_type := t; seg_sign := sg; seg_endian := en |}; split; auto; simpl; set_solver.
+  * (* clauses of ECase *)
+    constructor; [|assumption].
+    intros ι ξ. split; [|split]; [| apply H0 | apply H1].
+    intros Hι.
+    apply elem_of_flat_union in Hι as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
+    subst. rewrite Forall_forall in H. eapply H in P3 as P3'. 2: eassumption.
+    clear -P2 P3 P3'. destruct_or!; auto.
+    left. apply elem_of_flat_union. exists y. auto.
+Qed.
+
+(** The values of `list_subst vs idsubst` are elements of `vs`. *)
+Corollary list_subst_idsubst_inl :
+  forall vs v x,
+    list_subst vs idsubst x = inl v ->
+    v ∈ vs.
+Proof.
+  intros. pose proof (list_subst_get_possibilities x vs idsubst).
+  firstorder.
+  * rewrite H in H0. inv H0. by apply nth_elem_of.
+  * rewrite H in H0. inv H0.
+Qed.
+
+(** The PIDs of the bindings of a successful match occur in the matched
+    value. *)
+Lemma match_pattern_usedPIDs :
+  forall p v vs' ι,
+    match_pattern p v = Matches vs' ->
+    ι ∈ (flat_union usedPIDsVal vs') ->
+    ι ∈ (usedPIDsVal v).
+Proof.
+  induction p using Pat_ind_weakened with
+    (Q := fun l => Forall (fun p => forall v vs' ι, match_pattern p v = Matches vs' ->
+    ι ∈ (flat_union usedPIDsVal vs') ->
+    ι ∈ (usedPIDsVal v)) l)
+    (R := fun l => Forall (fun '(p1, p2) => (forall v vs' ι, match_pattern p1 v = Matches vs' ->
+    ι ∈ (flat_union usedPIDsVal vs') ->
+    ι ∈ (usedPIDsVal v)) /\
+    (forall v vs' ι, match_pattern p2 v = Matches vs' ->
+    ι ∈ (flat_union usedPIDsVal vs') ->
+    ι ∈ (usedPIDsVal v)) ) l)
+    (T := fun l => Forall (fun seg => forall v vs' ι, match_pattern (seg_val seg) v = Matches vs' ->
+    ι ∈ (flat_union usedPIDsVal vs') ->
+    ι ∈ (usedPIDsVal v)) l).
+  all: intros; try now (constructor; auto).
+  1-3: try destruct v; inv H.
+  all: simpl in *; try by set_solver.
+  * case_match. 2: congruence. inv H2. set_solver.
+  * case_match; try congruence.
+    subst. unfold match_and in H.
+    do 2 (case_match; try congruence). inv H.
+    rewrite flat_union_app in H0.
+    apply elem_of_union in H0 as [H0|H0].
+    - eapply IHp1 in H0. 2: eassumption. simpl. set_solver.
+    - eapply IHp2 in H0. 2: eassumption. simpl. set_solver.
+  * destruct v; try now inv H. simpl in *. generalize dependent l0.
+    generalize dependent vs'.
+    induction l; intros; destruct l0; inv H. 1: inv H0.
+    inv IHp. unfold match_and in H2.
+    do 2 (case_match; try congruence). inv H2.
+    rewrite flat_union_app in H0.
+    apply elem_of_union in H0 as [H0|H0].
+    - eapply H3 in H; [|exact H0]. simpl. set_solver.
+    - simpl. apply elem_of_union. right. exact (IHl H4 _ H0 _ H1).
+  * destruct v; try now inv H. simpl in *. generalize dependent l0.
+    generalize dependent vs'.
+    induction l; intros; destruct l0; inv H.
+    1: inv H0.
+    1: destruct a; inv H2.
+    inv IHp. destruct a as [p1 p2], p as [v1 v2], H3 as [Hp1 Hp2]. simpl in H2.
+    unfold match_and in H2 at 1 2.
+    repeat case_match; try congruence.
+    inv H2.
+    do 2 rewrite flat_union_app in H0.
+    apply elem_of_union in H0 as [H0|H0]; [apply elem_of_union in H0 as [H0|H0]|].
+    - eapply Hp1 in H3; [|exact H0]. simpl. set_solver.
+    - eapply Hp2 in H5; [|exact H0]. simpl. set_solver.
+    - simpl. apply elem_of_union. right. exact (IHl H4 _ H0 _ H1).
+  * destruct v; try now inv H. simpl in *.
+    generalize dependent vs'. generalize dependent bits.
+    induction l; intros bits vs' H H0.
+    - case_match; try congruence. inv H. inv H0.
+    - destruct a as [va sz un ty sg en]. inv IHp. specialize (IHl H4). clear H4.
+      assert (Hdec : ∀ b vs, bind_match (decode_bits b ty (N.of_nat un) sg en) (match_pattern va) = Matches vs ->
+                ι ∈ flat_union usedPIDsVal vs -> ι ∈ (∅ : gset PID)).
+      { intros b vs0 Hd Hi. unfold bind_match, decode_bits in Hd.
+        destruct ty; simpl in Hd; try congruence.
+        all: try exact (H3 _ _ _ Hd Hi).
+        destruct (bvn_n b `mod` N.of_nat un =? 0)%N; simpl in Hd; try congruence.
+        exact (H3 _ _ _ Hd Hi). }
+      clear H3.
+      repeat (case_match; subst; try congruence).
+      + exact (Hdec _ _ H H0).
+      + unfold match_and in H. repeat case_match; try congruence.
+        inv H. rewrite flat_union_app in H0.
+        apply elem_of_union in H0 as [H0|H0].
+        -- exact (Hdec _ _ H3 H0).
+        -- exact (IHl _ _ H4 H0).
+Qed.
+
+(** The PIDs of the bindings of a successful list match occur in the matched
+    values. *)
+Lemma match_pattern_list_usedPIDs :
+  forall lp vs vs' ι,
+    match_pattern_list lp vs = Matches vs' ->
+    ι ∈ (flat_union usedPIDsVal vs') ->
+    ι ∈ (flat_union usedPIDsVal vs).
+Proof.
+  induction lp; destruct vs; intros; inv H. inv H0.
+  unfold match_and in H2.
+  repeat (case_match; try congruence). inv H2.
+  rewrite flat_union_app in H0. apply elem_of_union in H0 as [|].
+  - eapply match_pattern_usedPIDs in H. 2: eassumption.
+    apply elem_of_union. by left.
+  - eapply IHlp in H1; eauto. simpl.
+    apply elem_of_union. by right.
+Qed.
+
+(** These lemmas are only used to speed up the compilation of the following
+    lemmas (`set_solver` is slow on such goals). *)
+Lemma empty_2_subseteq {A} {Eqdec : EqDecision A} {count : Countable A} : forall S : gset A,
+  (∅ ∪ ∅) ⊆ S.
+Proof.
+  intros. set_solver.
+Qed.
+
+Lemma empty_3_subseteq {A} {Eqdec : EqDecision A} {count : Countable A} : forall S : gset A,
+  ∅ ∪ (∅ ∪ ∅) ⊆ S.
+Proof.
+  intros. set_solver.
+Qed.
+
+Lemma empty_4_subseteq {A} {Eqdec : EqDecision A} {count : Countable A} : forall S : gset A,
+  ∅ ∪ (∅ ∪ (∅ ∪ ∅)) ⊆ S.
+Proof.
+  intros. set_solver.
+Qed.
+
+Lemma empty_5_subseteq {A} {Eqdec : EqDecision A} {count : Countable A} : forall S : gset A,
+  ∅ ∪ (∅ ∪ (∅ ∪ (∅ ∪ ∅))) ⊆ S.
+Proof.
+  intros. set_solver.
+Qed.
+
+(** Solves goals stating that a union of empty sets is a subset of a set. *)
+Ltac empty_subseteq_tac :=
+  match goal with
+  | |- ∅ ∪ ∅ ⊆ _ => apply empty_2_subseteq
+  | |- ∅ ∪ (∅ ∪ ∅) ⊆ _ => apply empty_3_subseteq
+  | |- ∅ ∪ (∅ ∪ (∅ ∪ ∅)) ⊆ _ => apply empty_4_subseteq 
+  | |- ∅ ∪ (∅ ∪ (∅ ∪ (∅ ∪ ∅))) ⊆ _ => apply empty_5_subseteq
+  end.
+
+(** IO BIFs do not introduce new PIDs. *)
+Lemma eval_io_usedPIDs :
+  forall vl m f r eff',
+    eval_io m f vl = (r, eff') ->
+    usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_io in H. case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: clear H0.
+  all: destruct vl; try invSome; try set_solver.
+  all: simpl in *; destruct vl; try invSome; try set_solver.
+  simpl in *; destruct vl; try invSome; try set_solver.
+Qed.
+
+(** Logical BIFs do not introduce new PIDs. *)
+Lemma eval_logical_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_logical m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_logical.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; clear; set_solver.
+Qed.
+
+(** Equality BIFs do not introduce new PIDs. *)
+Lemma eval_equality_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_equality m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_equality.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; simpl; set_solver.
+Qed.
+
+(** List transformation BIFs (`++`, `--`, `split`) do not introduce new
+    PIDs. *)
+Lemma eval_transform_list_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_transform_list m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_transform_list.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst.
+  {
+    induction v; simpl.
+    1-3,5-10: set_solver.
+    repeat case_match; try set_solver.
+  }
+  {
+    revert v.
+    induction v0; simpl; destruct v; try clear IHv1; simpl; try empty_subseteq_tac.
+    (* remember + clear significantly speeds up set_solver *)
+    all: try by (try remember (flat_union _ _) as X; clear; set_solver).
+    all: case_match; simpl; try rewrite eval_subtract_nil; simpl; try assumption;
+        try by (try remember (flat_union _ _) as X; clear; set_solver).
+    case_match. clear H. simpl in *; try set_solver.
+    assert (forall v v', usedPIDsVal (subtract_elem v v') ⊆ usedPIDsVal v). {
+      clear. induction v; intros; simpl; try set_solver.
+      case_match; try set_solver.
+    }
+    specialize (IHv0_2 (VCons v1 (subtract_elem v2 v0_1))). clear IHv0_1 H0 H.
+    specialize (H2 (VCons v1 v2) v0_1). simpl in *. rewrite H1 in H2.
+    set_solver.
+  }
+  {
+    (* eval_split *)
+    assert (Hsplit : forall n w l1 l2, split_cons n w = Some (l1, l2) ->
+              usedPIDsVal l1 ∪ usedPIDsVal l2 ⊆ usedPIDsVal w).
+    { clear. induction n; intros w l1 l2 Hs; simpl in Hs.
+      - inv Hs. simpl. set_solver.
+      - destruct w; try discriminate. case_match; try discriminate.
+        destruct p. inv Hs. apply IHn in H. simpl. set_solver. }
+    unfold eval_split.
+    destruct v; simpl; try (clear; set_solver).
+    destruct l; simpl; try (clear; set_solver).
+    destruct v0; simpl; try (clear; set_solver).
+    all: case_match; simpl; try (clear; set_solver).
+    all: case_match; simpl; try (clear; set_solver).
+    all: destruct p; apply Hsplit in H1; simpl in *; set_solver.
+  }
+Qed.
+
+(** List-tuple conversion BIFs do not introduce new PIDs. *)
+Lemma eval_list_tuple_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_list_tuple m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  unfold eval_list_tuple. intros.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  3: clear; set_solver.
+  {
+    subst. clear. destruct v; simpl; try set_solver.
+    induction l; try set_solver.
+  }
+  {
+    subst. generalize dependent l0. clear. induction v; intros; simpl in *; try invSome; try set_solver.
+    case_match; try set_solver.
+  }
+Qed.
+
+(** Strings converted to lists contain no PIDs. *)
+Lemma string_to_vcons_usedPIDs :
+  forall s, usedPIDsVal (string_to_vcons s) = ∅.
+Proof.
+  induction s; simpl; set_solver.
+Qed.
+
+(** The conversion BIFs of `eval_convert` (e.g., `list_to_atom`) do not
+    introduce new PIDs. *)
+Lemma eval_list_atom_usedPIDs :
+  forall vl m f r eff,
+    eval_convert m f vl = (r, eff) ->
+    usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
+Proof.
+  unfold eval_convert. intros.
+  case_match; inv H; simpl.
+  all: try empty_subseteq_tac.
+  * case_match.
+    1:inv H2; simpl; try set_solver.
+    subst. case_match.
+    2:inv H2; simpl; try set_solver.
+    case_match.
+    2:inv H2; simpl; try set_solver.
+    inv H2. simpl; try set_solver.
+  * destruct vl as [|v1 [|v2 [|v3 vl]]]; simpl in H2; try invSome.
+    - clear. simpl. empty_subseteq_tac.
+    - destruct v1; try (destruct l); try simpl in H2; try invSome; simpl.
+      all: try empty_subseteq_tac.
+      all: try by (clear; set_solver).
+      rewrite string_to_vcons_usedPIDs. empty_subseteq_tac.
+    - destruct v1; try (destruct l); try simpl in H2; try invSome; simpl.
+      all: try by (clear; set_solver).
+      destruct v2; try (destruct l); try simpl in H2; try invSome; simpl.
+      all: try empty_subseteq_tac.
+      all: try by (clear; set_solver).
+      case_match; invSome; simpl.
+      1: empty_subseteq_tac.
+      rewrite string_to_vcons_usedPIDs. empty_subseteq_tac.
+    - destruct v1; try (destruct l); try simpl in H2; try invSome; simpl.
+      all: try empty_subseteq_tac.
+      destruct v2; try (destruct l); try simpl in H2; try invSome; simpl.
+      all: try empty_subseteq_tac.
+Qed.
+
+(** Comparison BIFs do not introduce new PIDs. *)
+Lemma eval_cmp_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_cmp m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_cmp.
+  case_match; try empty_subseteq_tac.
+  all: repeat case_match; simpl; try empty_subseteq_tac.
+  all: subst; clear; set_solver.
+Qed.
+
+(** `length` does not introduce new PIDs. *)
+Lemma eval_length_usedPIDs :
+  forall vl, usedPIDsRed (eval_length vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_length.
+  case_match. set_solver.
+  case_match. 2: set_solver.
+  subst. case_match. 2: set_solver.
+  induction v; try set_solver.
+Qed.
+
+(** `tuple_size` does not introduce new PIDs. *)
+Lemma eval_tuple_size_usedPIDs :
+  forall vl, usedPIDsRed (eval_tuple_size vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_tuple_size.
+  case_match; try empty_subseteq_tac.
+  all: repeat case_match; simpl; try empty_subseteq_tac.
+  all: subst; clear; set_solver.
+Qed.
+
+(** `hd` and `tl` do not introduce new PIDs. *)
+Lemma eval_hd_tl_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_hd_tl m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_hd_tl.
+  case_match; try empty_subseteq_tac.
+  all: repeat case_match; simpl; try empty_subseteq_tac.
+  all: subst; clear; set_solver.
+Qed.
+
+(** `element` and `setelement` do not introduce new PIDs. *)
+Lemma eval_elem_tuple_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_elem_tuple m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_elem_tuple.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+  * remember (_ (Pos.to_nat p)) as n. clear Heqn. cbn.
+    generalize dependent n.
+    induction l2; destruct n; simpl; set_solver.
+  * remember (_ (Pos.to_nat p)) as n. clear Heqn H.
+    generalize dependent l4. revert n. induction l2; destruct n; intros; simpl in *; try invSome.
+    - set_solver.
+    - case_match. apply IHl2 in H; invSome; try set_solver. congruence.
+Qed.
+
+(** Type checking BIFs do not introduce new PIDs. *)
+Lemma eval_check_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_check m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_check.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+Qed.
+
+(** The exceptions of concurrent BIFs in the sequential semantics do not
+    introduce new PIDs. *)
+Lemma eval_concurrent_usedPIDs :
+  forall vl m f r,
+    eval_concurrent m f vl = Some r ->
+    usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_concurrent in H.
+  case_match; simpl; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+Qed.
+
+(** Arithmetic BIFs do not introduce new PIDs. *)
+Lemma eval_arith_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_arith m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_arith.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; clear; set_solver.
+Qed.
+
+(** Exception raising BIFs do not introduce new PIDs. *)
+Lemma eval_error_usedPIDs :
+  forall vl m f r,
+    eval_error m f vl = Some r ->
+    usedPIDsRed (r) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_error in H.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+Qed.
+
+(** `fun_info` does not introduce new PIDs. *)
+Lemma eval_funinfo_usedPIDs :
+  forall vl,
+    usedPIDsRed (eval_funinfo vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_funinfo.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+Qed.
+
+(** The PIDs of a value found in a map occur in the map. *)
+Lemma map_get_usedPIDs : forall l k v,
+  map_get k l = Some v -> usedPIDsVal v ⊆ usedPIDsVal (VMap l).
+Proof.
+  induction l as [|[k' v'] l IH]; intros; simpl in *. 1: discriminate.
+  destruct (Val_ltb k' k).
+  - apply IH in H. set_solver.
+  - destruct (Val_eqb k k'); inv H; set_solver.
+Qed.
+
+(** Inserting into a map does not introduce new PIDs. *)
+Lemma map_put_usedPIDs : forall l k v,
+  usedPIDsVal (VMap (map_put k v l)) ⊆ usedPIDsVal k ∪ usedPIDsVal v ∪ usedPIDsVal (VMap l).
+Proof.
+  induction l as [|[k' v'] l IH]; intros; simpl in *. 1: set_solver.
+  destruct (Val_ltb k k'); simpl; [set_solver|].
+  destruct (Val_eqb k k'); simpl; [set_solver|].
+  specialize (IH k v). simpl in IH. set_solver.
+Qed.
+
+(** Converting a Core Erlang list to a meta-level list does not introduce new
+    PIDs. *)
+Lemma mk_list_flat_union_usedPIDs : forall v l,
+  mk_list v = Some l -> flat_union usedPIDsVal l ⊆ usedPIDsVal v.
+Proof.
+  induction v; intros; simpl in *; try discriminate.
+  - inv H. set_solver.
+  - destruct (mk_list v2) eqn:E; inv H. specialize (IHv2 l0 eq_refl). simpl. set_solver.
+Qed.
+
+(** Inserting a list of keys into a map does not introduce new PIDs. *)
+Lemma fold_map_put_usedPIDs : forall items value m,
+  usedPIDsVal (VMap (fold_left (λ m0 k, map_put k value m0) items m)) ⊆
+  flat_union usedPIDsVal items ∪ usedPIDsVal value ∪ usedPIDsVal (VMap m).
+Proof.
+  induction items; intros; simpl. 1: set_solver.
+  etrans. apply IHitems.
+  pose proof (map_put_usedPIDs m a value). set_solver.
+Qed.
+
+(** Map BIFs do not introduce new PIDs. *)
+Lemma eval_map_bifs_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_map_bifs m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_map_bifs.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+  * apply map_get_usedPIDs in H4. simpl in H4; set_solver.
+  * apply map_get_usedPIDs in H5. simpl in H5; set_solver.
+  * clear.
+    pose proof map_put_usedPIDs l2 v v0. simpl in H. set_solver.
+  * apply mk_list_flat_union_usedPIDs in H3.
+    pose proof (fold_map_put_usedPIDs l1 v0 []). simpl in H0.
+    clear H. remember (flat_union _ l1) as x. clear Heqx.
+    remember (flat_union _ _) as y. clear Heqy. set_solver.
+Qed.
+
+(** Bitstring size BIFs do not introduce new PIDs. *)
+Lemma eval_bin_size_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_bin_size m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_bin_size.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+Qed.
+
+(** A Core Erlang list built from PID-free values is PID-free. *)
+Lemma meta_to_cons_usedPIDs_empty :
+  forall l, Forall (fun v => usedPIDsVal v = ∅) l ->
+    usedPIDsVal (meta_to_cons l) = ∅.
+Proof.
+  induction l; intros H; simpl; try set_solver.
+  inv H. rewrite H2, IHl; auto.
+Qed.
+
+(** Bitstring-to-list conversion BIFs do not introduce new PIDs. *)
+Lemma eval_bin_to_list_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_bin_to_list m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_bin_to_list.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+  - rewrite meta_to_cons_usedPIDs_empty; [set_solver|].
+    apply Forall_map. apply Forall_true. intros. reflexivity.
+  - rewrite meta_to_cons_usedPIDs_empty; [set_solver|].
+    apply Forall_app. split.
+    + apply Forall_map. apply Forall_true. intros. reflexivity.
+    + constructor.
+  - rewrite meta_to_cons_usedPIDs_empty; [set_solver|].
+    apply Forall_app. split.
+    + apply Forall_map. apply Forall_true. intros. reflexivity.
+    + by constructor.
+Qed.
+
+(** The PIDs of a Core Erlang list built from a meta-level list are the PIDs
+    of its elements. *)
+Lemma meta_to_cons_usedPIDs : forall l,
+  usedPIDsVal (meta_to_cons l) = flat_union usedPIDsVal l.
+Proof.
+  induction l; simpl; auto. now rewrite IHl.
+Qed.
+
+(** Reversing a list of values does not change its PIDs. *)
+Lemma flat_union_rev : forall l : list Val,
+  flat_union usedPIDsVal (List.rev l) = flat_union usedPIDsVal l.
+Proof.
+  induction l; simpl. 1: reflexivity.
+  rewrite flat_union_app, IHl. simpl. set_solver.
+Qed.
+
+(** The PIDs of a list of values are the PIDs of its prefix and suffix. *)
+Lemma flat_union_take_drop : forall n (l : list Val),
+  flat_union usedPIDsVal (take n l) ∪ flat_union usedPIDsVal (drop n l) =
+  flat_union usedPIDsVal l.
+Proof.
+  intros. rewrite <- flat_union_app, take_drop. reflexivity.
+Qed.
+
+(** Repeating a value does not introduce new PIDs. *)
+Lemma flat_union_repeat : forall n (v : Val),
+  flat_union usedPIDsVal (repeat v n) ⊆ usedPIDsVal v.
+Proof.
+  induction n; intros; simpl. 1: set_solver.
+  specialize (IHn v). set_solver.
+Qed.
+
+(** Prepending a list of values to a Core Erlang list in reverse order does
+    not introduce new PIDs. *)
+Lemma flat_union_fold_cons : forall (items : list Val) tail,
+  usedPIDsVal (fold_left (λ acc x, VCons x acc) items tail) ⊆
+  flat_union usedPIDsVal items ∪ usedPIDsVal tail.
+Proof.
+  induction items; intros; simpl. 1: set_solver.
+  specialize (IHitems (VCons a tail)). simpl in IHitems. set_solver.
+Qed.
+
+(** The PIDs of an element found by `find_key` occur in the list. *)
+Lemma find_key_usedPIDs : forall items key n e,
+  find_key key n items = Some e -> usedPIDsVal e ⊆ flat_union usedPIDsVal items.
+Proof.
+  induction items; intros; unfold find_key in *; simpl in *. 1: discriminate.
+  destruct (match a with VTuple t => _ | _ => false end) eqn:E.
+  - inv H. set_solver.
+  - apply IHitems in H. set_solver.
+Qed.
+
+(** The simulated functions of the `lists` module do not introduce new
+    PIDs. *)
+Lemma eval_lists_bifs_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_lists_bifs m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_lists_bifs.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+  * apply mk_list_flat_union_usedPIDs in H6.
+    destruct (1 <=? x)%Z; simpl; try set_solver.
+    apply find_key_usedPIDs in H8. set_solver.
+  * apply mk_list_flat_union_usedPIDs in H2.
+    rewrite meta_to_cons_usedPIDs, flat_union_rev. set_solver.
+  * apply mk_list_flat_union_usedPIDs in H3.
+    pose proof flat_union_fold_cons l1 v0.
+    set_solver.
+Qed.
+
+(** Dropping more elements of a list of values does not introduce new
+    PIDs. *)
+Lemma flat_union_drop_le : forall n m (l : list Val), n <= m ->
+  flat_union usedPIDsVal (drop m l) ⊆ flat_union usedPIDsVal (drop n l).
+Proof.
+  intros. replace m with (n + (m - n)) by lia.
+  rewrite <- (drop_drop l (m - n) n).
+  pose proof (flat_union_take_drop (m - n) (drop n l)). set_solver.
+Qed.
+
+(** The tuple BIFs of `eval_tuple_bifs` do not introduce new PIDs. *)
+Lemma eval_tuple_bifs_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_tuple_bifs m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_tuple_bifs.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+  { pose proof (flat_union_take_drop (Z.to_nat x - 1) l2).
+    pose proof (flat_union_drop_le (Z.to_nat x - 1) (Z.to_nat x) l2 ltac:(lia)).
+    clear H H6. rewrite flat_union_app. set_solver. }
+  { pose proof (flat_union_take_drop (Z.to_nat x - 1) l2).
+    rewrite flat_union_app. set_solver. }
+  { pose proof flat_union_repeat (Z.to_nat x) v0. set_solver. }
+Qed.
+
+(** `split_binary` does not introduce new PIDs. *)
+Lemma eval_split_binary_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_split_binary m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval_split_binary.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+Qed.
+
+(** The conversion BIFs of `eval_conversion` (e.g., `list_to_integer`) do
+    not introduce new PIDs. *)
+Lemma eval_conversion_usedPIDs :
+  forall vl m f r eff,
+    eval_conversion m f vl = (r, eff) ->
+    usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
+Proof.
+  unfold eval_conversion. intros.
+  case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: repeat case_match; try invSome; simpl; try empty_subseteq_tac.
+  all: subst; try by (clear; set_solver).
+  rewrite string_to_vcons_usedPIDs; set_solver.
+Qed.
+
+(** The simulated BIFs do not introduce new PIDs. *)
+Lemma eval_usedPIDs :
+  forall vl m f r eff',
+    eval m f vl = Some (r, eff') ->
+    usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold eval in H.
+  pose proof eval_io_usedPIDs vl m f.
+  pose proof eval_logical_usedPIDs vl m f.
+  pose proof eval_equality_usedPIDs vl m f.
+  pose proof eval_transform_list_usedPIDs vl m f.
+  pose proof eval_list_tuple_usedPIDs vl m f.
+  pose proof eval_list_atom_usedPIDs vl m f.
+  pose proof eval_cmp_usedPIDs vl m f.
+  pose proof eval_length_usedPIDs vl.
+  pose proof eval_tuple_size_usedPIDs vl.
+  pose proof eval_hd_tl_usedPIDs vl m f.
+  pose proof eval_elem_tuple_usedPIDs vl m f.
+  pose proof eval_check_usedPIDs vl m f.
+  pose proof eval_concurrent_usedPIDs vl m f.
+  pose proof eval_error_usedPIDs vl m f.
+  pose proof eval_arith_usedPIDs vl m f.
+  pose proof eval_funinfo_usedPIDs vl.
+  pose proof eval_map_bifs_usedPIDs vl m f.
+  pose proof eval_bin_size_usedPIDs vl m f.
+  pose proof eval_bin_to_list_usedPIDs vl m f.
+  pose proof eval_lists_bifs_usedPIDs vl m f.
+  pose proof eval_tuple_bifs_usedPIDs vl m f.
+  pose proof eval_split_binary_usedPIDs vl m f.
+  pose proof eval_conversion_usedPIDs vl m f.
+  case_match; try invSome; try assumption; try by auto.
+  all: try case_match; try invSome; try assumption; try by auto.
+  * by eapply H0; eassumption.
+  * by eapply H0; eassumption.
+  * by eapply H5; eassumption.
+  * by eapply H5; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
+  * by eapply H22; eassumption.
+Qed.
+
+(** The simulated primitive operations do not introduce new PIDs. *)
+Lemma primop_eval_usedPIDs :
+  forall vl f r eff',
+    primop_eval f vl = Some (r, eff') ->
+    usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
+Proof.
+  intros. unfold primop_eval, eval_primop_error in H.
+  repeat case_match; try invSome; cbn in *; try congruence; set_solver.
+Qed.
+
+(** `create_result` does not introduce new PIDs: the PIDs of the result
+    occur in the arguments or in the frame identifier. *)
+Lemma create_result_usedPIDs :
+  forall ident vl r eff',
+    create_result ident vl = Some (r, eff') ->
+    usedPIDsRed r ⊆ flat_union usedPIDsVal vl ∪ usedPIDsFrameId ident.
+Proof.
+  intros. destruct ident; simpl in *; try invSome; simpl; try set_solver.
+  * induction vl using list_length_ind; destruct vl; simpl; try set_solver.
+    destruct vl; try set_solver.
+    simpl. specialize (H vl ltac:(slia)).
+    assert (forall l, flat_union (fun x => usedPIDsVal x.1 ∪ usedPIDsVal x.2) (Maps.map_insert v v0 l) ⊆ usedPIDsVal v ∪ usedPIDsVal v0 ∪ flat_union (fun x => usedPIDsVal x.1 ∪ usedPIDsVal x.2) l); try set_solver. {
+      clear. induction l; simpl; try set_solver.
+      destruct a. repeat break_match_goal; try set_solver.
+    }
+  * repeat break_match_hyp; try invSome; set_solver.
+  * repeat break_match_hyp; try invSome; try set_solver.
+    (* calls with non-atom module or function names: badarg *)
+    all: try (cbn; rewrite meta_to_cons_usedPIDs; set_solver).
+    etransitivity. 2: apply union_subseteq_l.
+    eapply eval_usedPIDs; eassumption.
+  * apply primop_eval_usedPIDs in H; try set_solver.
+  * break_match_hyp; try invSome; try set_solver.
+    break_match_hyp; try invSome; try set_solver.
+    (* arity mismatch: badarity carries the arguments *)
+    2: cbn; rewrite meta_to_cons_usedPIDs; set_solver.
+    simpl. apply elem_of_subseteq. intros.
+    apply (proj1 subst_usedPIDs e x) in H as [|]; try set_solver.
+    destruct_hyps. apply list_subst_idsubst_inl in H.
+    apply elem_of_app in H as [|].
+    - apply elem_of_union_r, elem_of_union_r, elem_of_flat_union.
+      apply elem_of_map_iff in H. destruct_hyps. destruct x2, p.
+      subst. simpl in *. apply elem_of_union in H0 as [|]; try set_solver.
+      by apply elem_of_flat_union in H.
+    - apply elem_of_union_l, elem_of_flat_union. eexists; by split.
 Qed.

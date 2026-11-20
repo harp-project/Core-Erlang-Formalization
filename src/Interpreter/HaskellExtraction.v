@@ -13,9 +13,14 @@ Extract Inductive comparison => "Prelude.Ordering" ["Prelude.EQ" "Prelude.LT" "P
 
 Extract Inlined Constant app => "(Prelude.++)".
 Extract Inlined Constant length => "(Data.List.genericLength)".
+(* otherwise the extracted [find] clashes with Data.List.find in the handwritten modules *)
+Extract Inlined Constant find => "Data.List.find".
 
 Extract Inlined Constant PosDef.Pos.succ => "(Prelude.+ 1)".
 Extract Inlined Constant PosDef.Pos.of_succ_nat => "(Prelude.+ 1)".
+(* Z.log2 would otherwise unfold to Pos.size, which depends on the removed Pos.succ *)
+Extract Inlined Constant Z.log2 =>
+  "(\z -> let go n acc = if n Prelude.<= 1 then acc else go (n `Prelude.div` 2) (acc Prelude.+ 1) in go z 0)".
 Extract Inlined Constant Pos.mul => "(Prelude.*)".
 Extract Inlined Constant Z.of_nat => "(Prelude.id)".
 Extract Inlined Constant Z.to_nat => "(Prelude.id)".
@@ -79,6 +84,11 @@ Extract Inlined Constant Signal_eqb_strict => "(Prelude.==)".
 Extract Constant Z.quot => "(\n m -> if m Prelude.== 0 then 0 else Prelude.quot n m)".
 Extract Constant Z.rem => "(\n m -> if m Prelude.== 0 then 0 else Prelude.rem n m)".
 
+(** NOTE: the following functions are needed for bitstring operations *)
+Extract Inlined Constant NatDef.N.sub => "(\n m -> case n of { N0 -> N0; Npos a -> case m of { N0 -> n; Npos b -> if a Prelude.> b then Npos (a Prelude.- b) else N0 } })".
+Extract Inlined Constant BinNat.N.sub => "(\n m -> case n of { N0 -> N0; Npos a -> case m of { N0 -> n; Npos b -> if a Prelude.> b then Npos (a Prelude.- b) else N0 } })".
+Extract Inlined Constant BinNatDef.N.sub => "(\n m -> case n of { N0 -> N0; Npos a -> case m of { N0 -> n; Npos b -> if a Prelude.> b then Npos (a Prelude.- b) else N0 } })".
+
 Extract Inlined Constant map => "(Prelude.map)".
 Extract Inlined Constant List.filter => "(Prelude.filter)".
 
@@ -118,7 +128,7 @@ Extract Inlined Constant Z.pred_double => "removed_Z_pred_double".
 Extract Inlined Constant Z.succ_double => "removed_Z_succ_double".
 Extract Inlined Constant Z.double => "removed_Z_double".
 Extract Inlined Constant NatDef.N.leb => "removed_NatDef_N_leb".
-Extract Inlined Constant NatDef.N.sub => "removed_NatDef_N_sub".
+
 Extract Inlined Constant NatDef.N.double => "removed_NatDef_N_double".
 Extract Inlined Constant NatDef.N.succ_double => "removed_NatDef_N_succ_double".
 Extract Inlined Constant NatDef.N.compare => "removed_NatDef_N_compare".
@@ -128,7 +138,6 @@ Extract Inlined Constant PosDef.Pos.double_pred_mask => "removed_PosDef_Pos_doub
 Extract Inlined Constant PosDef.Pos.double_mask => "removed_PosDef_Pos_double_mask".
 Extract Inlined Constant PosDef.Pos.succ_double_mask => "removed_PosDef_Pos_succ_double_mask".
 Extract Inlined Constant Pos.pred => "removed_Pos_pred".
-Extract Inlined Constant PosDef.Pos.pred_double => "removed_PosDef_Pos_pred_double".
 Extract Inlined Constant Pos.add_carry => "removed_Pos_add_carry".
 Extract Inlined Constant List.list_eq_dec => "removed_List_list_eq_dec".
 Extract Inlined Constant list_eq_dec => "removed_list_eq_dec".
@@ -139,6 +148,7 @@ Extract Inlined Constant PosDef.Pos.iter_op => "removed_PosDef_Pos_iter_op".
 Extract Inlined Constant Pos.iter_op => "removed_Pos_iter_op".
 Extract Inlined Constant Pos.pred_double => "removed_Pos_pred_double".
 Extract Inlined Constant Pos.succ => "removed_Pos_succ".
+Extract Inlined Constant Pos.size => "removed_Pos_size".
 
 Extract Inlined Constant mapM => "removed_mapM".
 Extract Inlined Constant mret => "removed_mret".
@@ -169,7 +179,9 @@ Extract Constant subst =>
         in e' `deepseq` EExp e'})
 ".
 
-Extraction "HaskellSrc/exe/RocqExtraction.hs"
+(* relative to the project root: use "make extract" *)
+Set Extraction Output Directory "src/Interpreter/HaskellSrc/exe/".
+Extraction "RocqExtraction.hs"
   substVal substNonVal
   nodeTauFirstStep makeInitialNode makeInitialConfig currentProcessList
   nodeSimpleStep interProcessStepFuncFast ex_Process 

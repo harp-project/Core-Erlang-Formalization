@@ -3,6 +3,7 @@ From CoreErlang.Interpreter Require Import StepFunctions Equivalences.
 From CoreErlang.Symbolic Require Import SymbTheorems SymbTactics.
 
 Import ListNotations.
+Import Notations.
 
 (** This file gives some examples for the "solve_symbolically" tactic.
  *)

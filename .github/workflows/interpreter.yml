@@ -1,0 +1,112 @@
+# Hand-written workflow (NOT generated from meta.yml, so regenerating the
+# coq-community templates does not touch it). The proofs themselves are checked
+# by docker-action.yml; this workflow checks the extracted interpreter:
+#   * extraction: the committed Haskell extraction is up to date with the Rocq
+#     sources, i.e. nobody forgot to run `make extract`;
+#   * validation: the extracted interpreter agrees with Erlang/OTP on the
+#     AtomVM test suite (except for the tests in test/blacklist.txt).
+# The validation job needs no Rocq at all (it uses the committed extraction),
+# so it runs in parallel with the proof checking; the extraction job makes sure
+# that what it tests is the current semantics.
+name: Interpreter CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  extraction:
+    name: Extraction is up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: coq-community/docker-coq-action@v1
+        with:
+          opam_file: 'coq-core-erlang-formalization.opam'
+          custom_image: 'rocq/rocq-prover:9.2'
+          # the default `install` step installs the dependencies of the opam file
+          before_script: |
+            startGroup "Workaround permission issue"
+              sudo chown -R 1000:1000 .
+            endGroup
+          script: |
+            startGroup "Extract the interpreter to Haskell"
+              make -j2 extract-hs
+            endGroup
+            startGroup "Compare with the committed extraction"
+              git diff --stat --exit-code -- \
+                src/Interpreter/HaskellSrc/exe/RocqExtraction.hs \
+                src/Interpreter/HaskellSrc/exe/ExampleProgs.hs \
+                || { echo "::error::The committed extraction is outdated, run 'make extract' and commit the result"; exit 1; }
+            endGroup
+          # the package itself is never installed by this job
+          uninstall: ''
+
+  validation:
+    name: AtomVM test suite
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true  # the tests are read from the atomvm submodule
+
+      # The pretty printer depends on the Core Erlang representation of the
+      # OTP release, so keep this in sync with the version used locally.
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: '26'
+
+      - id: setup-haskell
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.6.7'
+          cabal-version: '3.14'
+
+      - name: Cache the cabal store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.setup-haskell.outputs.cabal-store }}
+          key: cabal-store-${{ runner.os }}-ghc-9.6.7-hashable-1.5-unordered-containers-0.2.20
+
+      # The test driver calls plain `ghc` (not cabal) on the generated programs,
+      # so the libraries used by the extraction have to be visible to it
+      # through the default GHC environment. Such an environment exposes ONLY
+      # the listed packages (and base), so boot packages like deepseq have to be
+      # listed explicitly, too.
+      - name: Install the Haskell libraries of the extraction
+        run: |
+          cabal update
+          cabal install --lib hashable unordered-containers deepseq \
+            --constraint='hashable ^>=1.5' \
+            --constraint='unordered-containers ^>=0.2.20'
+
+      - name: Compile the test driver
+        working-directory: test
+        run: erlc execute_interp.erl misc.erl own_calls.erl pretty_print_fs_ghc.erl
+
+      - name: Run the test suite
+        working-directory: test
+        run: |
+          erl -noshell -eval '
+            case execute_interp:suite() of
+              [] -> halt(0);
+              Failed -> io:format("~nFailed tests: ~p~n", [Failed]), halt(1)
+            end.'
+
+      - name: Upload the reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-reports
+          path: test/generated/reports/
+          if-no-files-found: ignore

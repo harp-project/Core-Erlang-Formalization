@@ -1,41 +1,89 @@
 (**
-  This file contains boolean equality definitions for the syntax of Core Erlang.
-  It also defines several theorems about these and definitional equality.
+  This file contains decidable and boolean equality definitions for the syntax
+  of Core Erlang, together with the boolean less-than ordering of values (which
+  simulates Erlang's term order). It also proves several theorems about these
+  and their connection to definitional equality.
 *)
 
-From CoreErlang Require Export Induction.
+From CoreErlang Require Export Induction Bitstrings.
 
-Require Export Stdlib.Structures.OrderedTypeEx.
+From Stdlib Require Import Structures.OrderedTypeEx.
 Import Structures.OrderedTypeEx.String_as_OT.
-
-
-(* Export Core_Erlang_Induction.Induction. *)
 
 Import ListNotations.
 
-(** Decidable and boolean equality for product and sum types,
-    and corresponding theorems. *)
+(** Boolean equality for BinType, BinSign, BinEnd, and their basic properties. *)
+Scheme Equality for BinType.
+Scheme Equality for BinSign.
+Scheme Equality for BinEnd.
+
+Lemma BinType_eqb_refl :
+  forall l, BinType_beq l l = true.
+Proof.
+  destruct l; now simpl.
+Qed.
+
+Lemma BinSign_eqb_refl :
+  forall l, BinSign_beq l l = true.
+Proof.
+  destruct l; now simpl.
+Qed.
+
+Lemma BinEnd_eqb_refl :
+  forall l, BinEnd_beq l l = true.
+Proof.
+  destruct l; now simpl.
+Qed.
+
+Lemma BinType_eqb_eq :
+  forall l1 l2, BinType_beq l1 l2 = true <-> l1 = l2.
+Proof.
+  destruct l1, l2; split; intros; inv H; reflexivity.
+Qed.
+
+Lemma BinSign_eqb_eq :
+  forall l1 l2, BinSign_beq l1 l2 = true <-> l1 = l2.
+Proof.
+  destruct l1, l2; split; intros; inv H; reflexivity.
+Qed.
+
+Lemma BinEnd_eqb_eq :
+  forall l1 l2, BinEnd_beq l1 l2 = true <-> l1 = l2.
+Proof.
+  destruct l1, l2; split; intros; inv H; reflexivity.
+Qed.
+
+Lemma BinType_eqb_sym :
+  forall l1 l2, BinType_beq l1 l2 = BinType_beq l2 l1.
+Proof.
+  destruct l1, l2; simpl; auto.
+Qed.
+
+Lemma BinSign_eqb_sym :
+  forall l1 l2, BinSign_beq l1 l2 = BinSign_beq l2 l1.
+Proof.
+  destruct l1, l2; simpl; auto.
+Qed.
+
+Lemma BinEnd_eqb_sym :
+  forall l1 l2, BinEnd_beq l1 l2 = BinEnd_beq l2 l1.
+Proof.
+  destruct l1, l2; simpl; auto.
+Qed.
+
+
+(** Decidable and boolean equality for products and Segments, and
+    corresponding theorems. For the decidable equality of products, stdpp's
+    `prod_eq_dec` is used. *)
 Section Basic_Eq_Dec.
   Context {A B : Type}.
 
   Hypothesis A_eq_dec : forall a1 a2 : A, {a1 = a2} + {a1 <> a2}.
   Hypothesis B_eq_dec : forall b1 b2 : B, {b1 = b2} + {b1 <> b2}.
 
-  Proposition prod_eq_dec : forall p1 p2 : A * B, {p1 = p2} + {p1 <> p2}.
-  Proof.
-    set (eq1 := A_eq_dec).
-    set (eq2 := B_eq_dec).
-    decide equality.
-  Defined.
-
-  Proposition sum_eq_dec : forall p1 p2 : A + B, {p1 = p2} + {p1 <> p2}.
-  Proof.
-    set (eq1 := A_eq_dec).
-    set (eq2 := B_eq_dec).
-    decide equality.
-  Defined.
-
-  Definition prod_eqb {A B : Type} (eqx : A -> A -> bool) (eqy : B -> B -> bool) (p1 p2 : A * B) :=
+  (** Boolean equality of pairs, based on the boolean equalities of the
+      components. *)
+  Definition prod_eqb (eqx : A -> A -> bool) (eqy : B -> B -> bool) (p1 p2 : A * B) :=
   match p1, p2 with
   | (x, y), (x', y') => andb (eqx x x') (eqy y y')
   end.
@@ -43,7 +91,7 @@ Section Basic_Eq_Dec.
   Theorem prod_eqb_refl eqx eqy p :
     (forall p1, eqx p1 p1 = true) ->
     (forall p2, eqy p2 p2 = true) ->
-    @prod_eqb A B eqx eqy p p = true.
+    prod_eqb eqx eqy p p = true.
   Proof.
     intros. destruct p. simpl.
     rewrite (H a), (H0 b). auto.
@@ -51,18 +99,68 @@ Section Basic_Eq_Dec.
 
   Theorem prod_eqb_eq :
     forall p1 p2 eqx eqy,
-    (forall e1 e2, e1 = e2 <-> eqx e1 e2 = true) ->
-    (forall e1 e2, e1 = e2 <-> eqy e1 e2 = true) ->
-    p1 = p2
+    (forall e1 e2, eqx e1 e2 = true <-> e1 = e2) ->
+    (forall e1 e2, eqy e1 e2 = true <-> e1 = e2) ->
+    prod_eqb eqx eqy p1 p2 = true
   <->
-    @prod_eqb A B eqx eqy p1 p2 = true.
+    p1 = p2.
   Proof.
     split.
+    * intros. destruct p1, p2.
+      simpl in H1. apply andb_prop in H1 as [H1 H2].
+      apply H in H1. apply H0 in H2. by subst.
     * intros. subst. apply prod_eqb_refl.
-      intros. apply H. auto. intros. apply H0. auto.
-    * intros. destruct p1, p2. pose (H a a0). pose (H0 b b0).
-      simpl in H1. apply andb_prop in H1. destruct H1.
-      rewrite <- i in H1. rewrite <- i0 in H2. subst. auto.
+      - intros. by apply H.
+      - intros. by apply H0.
+  Qed.
+
+  (** Boolean equality of segments, based on the boolean equalities of the
+      value and size components. *)
+  Definition Segment_eqb (eqA : A -> A -> bool) (eqB : B -> B -> bool)
+    (segs1 segs2 : Segment A B) : bool :=
+  match segs1, segs2 with
+  | Build_Segment val1 size1 unit1 type1 sign1 endian1,
+    Build_Segment val2 size2 unit2 type2 sign2 endian2 =>
+    eqA val1 val2 && eqB size1 size2 && Nat.eqb unit1 unit2 &&
+    BinType_beq type1 type2 && BinSign_beq sign1 sign2 && BinEnd_beq endian1 endian2
+  end.
+
+  Proposition Segment_eq_dec : forall s1 s2 : Segment A B, {s1 = s2} + {s1 <> s2}.
+  Proof.
+    repeat decide equality.
+  Defined.
+
+  Theorem Segment_eqb_refl s eqx eqy:
+    (forall p1, eqx p1 p1 = true) ->
+    (forall p2, eqy p2 p2 = true) ->
+    Segment_eqb eqx eqy s s = true.
+  Proof.
+    intros. destruct s; simpl; rewrite H, H0.
+    rewrite Nat.eqb_refl, BinSign_eqb_refl, BinType_eqb_refl, BinEnd_eqb_refl.
+    reflexivity.
+  Qed.
+
+  Theorem Segment_eqb_eq :
+    forall (s1 s2 : Segment A B) eqx eqy,
+    (forall e1 e2, eqx e1 e2 = true <-> e1 = e2) ->
+    (forall e1 e2, eqy e1 e2 = true <-> e1 = e2) ->
+    Segment_eqb eqx eqy s1 s2 = true
+  <->
+    s1 = s2.
+  Proof.
+    split.
+    * intros. destruct s1 as [v1 sz1 u1 t1 sg1 en1], s2 as [v2 sz2 u2 t2 sg2 en2]. simpl in *.
+      repeat (rewrite andb_true_iff in H1; destruct H1 as [H1 ?]).
+      rewrite (proj1 (H v1 v2)). 2: assumption.
+      rewrite (proj1 (H0 sz1 sz2)). 2: assumption.
+      apply BinType_eqb_eq in H4.
+      apply BinSign_eqb_eq in H3.
+      apply BinEnd_eqb_eq in H2.
+      apply Nat.eqb_eq in H5.
+      by subst.
+    * intros. subst. apply Segment_eqb_refl.
+      - intros. by apply H.
+      - intros. by apply H0.
   Qed.
 
 End Basic_Eq_Dec.
@@ -71,7 +169,6 @@ End Basic_Eq_Dec.
 Section list_eqb.
 
   Context {A : Type}.
-
   Fixpoint list_eqb (eq : A -> A -> bool) (l1 l2 : list A) : bool :=
   match l1, l2 with
   | [], [] => true
@@ -91,19 +188,19 @@ Section list_eqb.
 
   Theorem list_eqb_eq :
     forall (l1 l2 : list A) eqf,
-    (forall e1 e2, e1 = e2 <-> eqf e1 e2 = true) ->
-    l1 = l2
+    (forall e1 e2, eqf e1 e2 = true <-> e1 = e2) ->
+    list_eqb eqf l1 l2 = true
   <->
-    list_eqb eqf l1 l2 = true.
+    l1 = l2.
   Proof.
     split.
-    * intros. subst. apply list_eqb_refl.
-      intros. apply H. auto.
     * generalize dependent l2. induction l1; intros.
       - destruct l2; try inversion H0. auto.
       - destruct l2; try inversion H0.
         apply andb_prop in H2. destruct H2. apply H in H1.
         apply IHl1 in H2. subst. auto.
+    * intros. subst. apply list_eqb_refl.
+      intros. by apply H.
   Qed.
 
 End list_eqb.
@@ -157,17 +254,9 @@ Section Equalities.
     set string_dec.
     set Z.eq_dec.
     decide equality.
-  Qed.
+    apply r.
+  Defined.
 
-  (** Decidable pattern equality *)
-  Fixpoint Pat_eq_dec (p1 p2 : Pat) : {p1 = p2} + {p1 <> p2}.
-  Proof.
-    set (Pat_list_eq_dec := list_eq_dec Pat_eq_dec).
-    set (Pat_var_eq_dec := string_dec).
-    set (Pat_literal_eq_dec := Lit_eq_dec).
-    set (list_eq_dec (prod_eq_dec Pat_eq_dec Pat_eq_dec)).
-    repeat decide equality.
-  Qed.
 
   (** The equality of function signatures *)
   Definition funid_eqb (v1 v2 : FunId) : bool :=
@@ -183,36 +272,16 @@ Section Equalities.
   | _, _ => false
   end.
 
-  (** Boolean equality for patterns *)
-  Fixpoint Pat_eqb (p1 p2 : Pat) {struct p1} : bool :=
-  match p1, p2 with
-   | PVar, PVar  => true
-   | PLit l1, PLit l2 => Lit_beq l1 l2
-   | PCons hd tl, PCons hd' tl' => Pat_eqb hd hd' && Pat_eqb tl tl'
-   | PTuple l, PTuple l' => (fix blist_eq l l' :=
-                            match l, l' with
-                            | [], [] => true
-                            | x::xs, x'::xs' => andb (Pat_eqb x x') (blist_eq xs xs')
-                            | _, _ => false
-                            end) l l'
-   | PNil, PNil => true
-   | PMap l, PMap l' => (fix blist_eq l l' :=
-                            match l, l' with
-                            | [], [] => true
-                            | (x, y)::xs, (x', y')::xs' => 
-          andb (andb (Pat_eqb x x') (Pat_eqb y y')) (blist_eq xs xs')
-                            | _, _ => false
-                            end) l l'
-   | _, _ => false
-  end.
 
-  (** Decidability of the expression/value/non-value equality *)
+  (** Decidability of the expression/value/non-value/pattern equality *)
   Proposition Exp_eq_dec (e1 e2 : Exp) :
     {e1 = e2} + {e1 <> e2}
   with Val_eq_dec (e1 e2 : Val):
     {e1 = e2} + {e1 <> e2}
   with NVal_eq_dec (e1 e2 : NonVal):
-    {e1 = e2} + {e1 <> e2}.
+    {e1 = e2} + {e1 <> e2}
+  with Pat_eq_dec (p1 p2 : Pat) :
+    {p1 = p2} + {p1 <> p2}.
   Proof.
     {
       decide equality.
@@ -221,25 +290,31 @@ Section Equalities.
       set (list_eq_dec Val_eq_dec).
       set (Nat.eq_dec).
       set (Lit_eq_dec).
-      set (list_eq_dec (prod_eq_dec Val_eq_dec Val_eq_dec)).
+      set (list_eq_dec (@prod_eq_dec _ Val_eq_dec _ Val_eq_dec)).
       decide equality.
       * decide equality.
-      * set (list_eq_dec (prod_eq_dec (prod_eq_dec Nat.eq_dec Nat.eq_dec) Exp_eq_dec)).
-        apply s3.
+      * apply (list_eq_dec (@prod_eq_dec _ (@prod_eq_dec _ Nat.eq_dec _ Nat.eq_dec) _ Exp_eq_dec)).
+      * apply bvn_eq_dec.
     }
     {
       set (list_eq_dec Exp_eq_dec).
       set (string_dec).
       set (Nat.eq_dec).
       set (Lit_eq_dec).
-      set (list_eq_dec (prod_eq_dec Exp_eq_dec Exp_eq_dec)).
+      set (list_eq_dec (@prod_eq_dec _ Exp_eq_dec _ Exp_eq_dec)).
       decide equality.
-      * set (list_eq_dec (prod_eq_dec (prod_eq_dec (list_eq_dec Pat_eq_dec) Exp_eq_dec) Exp_eq_dec)).
-        apply s4.
-      * set (list_eq_dec (prod_eq_dec Nat.eq_dec Exp_eq_dec)).
-        apply s4.
+      * apply (list_eq_dec (@prod_eq_dec _ (@prod_eq_dec _ (list_eq_dec Pat_eq_dec) _ Exp_eq_dec) _ Exp_eq_dec)).
+      * apply (list_eq_dec (@prod_eq_dec _ Nat.eq_dec _ Exp_eq_dec)).
+      * repeat decide equality.
     }
-  Qed.
+    {
+      set (Lit_eq_dec).
+      set (list_eq_dec Pat_eq_dec).
+      set (list_eq_dec (@prod_eq_dec _ Pat_eq_dec _ Pat_eq_dec)).
+      decide equality.
+      apply (list_eq_dec (Segment_eq_dec Pat_eq_dec Val_eq_dec)).
+    }
+  Defined.
 
   (** Boolean equality for values. Note that this equality is weakened!
       All PIDs are considered equal, and closures are compared based on
@@ -248,6 +323,11 @@ Section Equalities.
   match e1, e2 with
   | VNil, VNil => true
   | VLit l, VLit l' => Lit_beq l l'
+  (* NOTE: This is deliberate: value equality (and the ordering `Val_ltb`)
+     does not depend on the concrete PIDs, so it is invariant under PID
+     renaming (see `Concurrent/PIDRenaming.v`). As a consequence, unlike in
+     Erlang, `=:=` and `==` hold for any two PIDs, and map keys that differ
+     only in PIDs are merged. *)
   | VPid p, VPid p' => true
   | VCons hd tl, VCons hd' tl' => Val_eqb hd hd' && Val_eqb tl tl'
   | VTuple l, VTuple l' => (fix blist l l' := match l, l' with
@@ -265,83 +345,19 @@ Section Equalities.
   (* Note this line: closures are considered as equal, if their id is equal *)
   | VClos ext id vc e, VClos ext' id' vc' e' => Nat.eqb id id'
   (* | VClos ext id vc e, VClos ext' id' vc' e' => false  (*<- NOTE: not safe!*) *)
+  | VBitstring b1, VBitstring b2 => bvn_eqb b1 b2
   | _, _ => false
   end.
 
-  (** Expression equality on top of the value equality defined above. *)
-  Fixpoint Exp_eqb (e1 e2 : Exp) : bool :=
-  match e1, e2 with
-   | VVal a, VVal b => Val_eqb a b
-   | EExp (EValues l), EExp (EValues l') => (fix blist l l' := match l, l' with
-                                        | [], [] => true
-                                        | x::xs, x'::xs' => andb (Exp_eqb x x') 
-                                                                 (blist xs xs')
-                                        | _, _ => false
-                                        end) l l'
-   | EExp (EFun vl e), EExp (EFun vl' e') => Nat.eqb vl vl' && Exp_eqb e e'
-   | EExp (ECons hd tl), EExp (ECons hd' tl') => Exp_eqb hd hd' && Exp_eqb tl tl'
-   | EExp (ETuple l), EExp (ETuple l') => (fix blist l l' := match l, l' with
-                                                 | [], [] => true
-                                                 | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
-                                                 | _, _ => false
-                                                 end) l l'
-   | EExp (ECall m f l), EExp (ECall m' f' l') => Exp_eqb f f' && Exp_eqb m m' && (fix blist l l' := match l, l' with
-                                                 | [], [] => true
-                                                 | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
-                                                 | _, _ => false
-                                                 end) l l'
-   | EExp (EPrimOp f l), EExp (EPrimOp f' l') => String.eqb f f' && (fix blist l l' := match l, l' with
-                                                 | [], [] => true
-                                                 | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
-                                                 | _, _ => false
-                                                 end) l l'
-   | EExp (EApp exp l), EExp (EApp exp' l') => Exp_eqb exp exp' && (fix blist l l' := match l, l' with
-                                                 | [], [] => true
-                                                 | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
-                                                 | _, _ => false
-                                                 end) l l'
-   | EExp (ECase e l), EExp (ECase e' l') => Exp_eqb e e'
-    && Nat.eqb (length l) (length l') &&
-         (fix blist l l' := match l, l' with
-             | [], [] => true
-             | (pl,y,z)::xs, (pl',y',z')::xs' => andb (
-               (fix blist l l' := match l, l' with
-               | [], [] => true
-               | x::xs, x'::xs' => andb (Pat_eqb x x') (blist xs xs')
-               | _, _ => false
-               end) pl pl') 
-               (andb (Exp_eqb y y') (andb (Exp_eqb z z') (blist xs xs')))
-                                                 | _, _ => false
-                                                 end) l l' 
-   | EExp (ELet l e1 e2), EExp (ELet l' e1' e2') => Nat.eqb l l' && Exp_eqb e1 e1' && Exp_eqb e2 e2'
-   | EExp (ESeq e1 e2), EExp (ESeq e1' e2') => andb (Exp_eqb e1 e1') (Exp_eqb e2 e2')
-   | EExp (ELetRec l e), EExp (ELetRec l' e') => 
-                                               (fix blist l l' := match l, l' with
-                                                 | [], [] => true
-                                                 | (x,y)::xs, (x',y')::xs' => 
-                                                 andb (Nat.eqb x x') (andb (Exp_eqb y y') (blist xs xs'))
-                                                 | _, _ => false
-                                                 end) l l' &&
-                                               Exp_eqb e e'
-   | EExp (EMap l), EExp (EMap l') => (fix blist l l' := match l, l' with
-                                                 | [], [] => true
-                                                 | (x,y)::xs, (x',y')::xs' => andb (Exp_eqb x x') (andb (Exp_eqb y y') (blist xs xs'))
-                                                 | _, _ => false
-                                                 end) l l'
-   | EExp (ETry e1 vl1 e2 vl2 e3), EExp (ETry e1' vl1' e2' vl2' e3') => Nat.eqb vl1 vl1' && Nat.eqb vl2 vl2' &&
-                                                          Exp_eqb e1 e1' && Exp_eqb e2 e2' &&
-                                                          Exp_eqb e3 e3'
-   | _, _ => false
-  end.
-
-  (** Comparison for the Core Erlang syntax. In Erlang, all values can be compared
-      and the following functions simulate this comparison. *)
+  (** Less-than for strings (lexicographic, based on `String_as_OT.cmp`). *)
   Definition string_ltb (s1 s2 : string) : bool :=
   match cmp s1 s2 with
   | Lt => true
   | _ => false
   end.
 
+  (** Less-than for literals: integers are ordered numerically, atoms
+      lexicographically, and every integer is less than every atom. *)
   Definition Lit_ltb (l1 l2 : Lit) : bool :=
   match l1, l2 with
   | Integer x, Integer x' => Z.ltb x x'
@@ -350,11 +366,14 @@ Section Equalities.
   | _, _ => false
   end.
 
+  (** Lexicographic less-than of lists, based on a less-than (`less`) and an
+      equality (`eq`) function on the elements. *)
   Section bool_list_ltb.
     Variable A : Type.
     Hypothesis less : A -> A -> bool.
     Hypothesis eq : A -> A -> bool.
 
+    (** Lexicographic less-than: a proper prefix is less than the list. *)
     Fixpoint list_less (a b : list A) : bool :=
     match a, b with
     | [], [] => false
@@ -363,17 +382,14 @@ Section Equalities.
     | x::xs, y::ys => if eq x y then list_less xs ys else less x y
     end.
 
-    Fixpoint list_equal (a b : list A) : bool :=
-    match a, b with
-    | [], [] => true
-    | x::xs, [] => false
-    | [], y::ys => false
-    | x::xs, y::ys => if eq x y then list_equal xs ys else false
-    end.
-
   End bool_list_ltb.
 
-    (** Comparison for values. *)
+    (** Less-than for values. In Erlang, all values can be compared; this
+        function simulates Erlang's term order:
+        number < atom < fun < pid < tuple < map < nil < list < bitstring
+        (references and ports are not modelled). Similarly to `Val_eqb`,
+        closures are compared based on their reference number, and PIDs are
+        not ordered. *)
     Fixpoint Val_ltb (k v : Val) : bool :=
     match k, v with
     | VLit l, VLit l' => Lit_ltb l l'
@@ -390,16 +406,20 @@ Section Equalities.
     | VClos _ _ _ _, VMap _ => true
     | VClos _ _ _ _, VNil => true
     | VClos _ _ _ _, VCons _ _ => true
+    | VClos _ _ _ _, VBitstring _ => true
+    (* NOTE: PIDs are not ordered, see the note in `Val_eqb`. *)
     | VPid p, VPid p' => false
     | VPid _, VTuple _ => true
     | VPid _, VMap _ => true
     | VPid _, VNil => true
     | VPid _, VCons _ _ => true
+    | VPid _, VBitstring _ => true
     | VTuple l, VTuple l' => orb (Nat.ltb (length l) (length l')) 
                                 (andb (Nat.eqb (length l) (length l')) (list_less Val Val_ltb Val_eqb l l'))
     | VTuple _, VNil => true
     | VTuple _, VMap _ => true
     | VTuple l, VCons _ _ => true
+    | VTuple _, VBitstring _ => true
     (** For maps, the comparison is a bit complicated. First, the keys are
         compared, only then the values (if all keys were equal). *)
     | VMap l, VMap l' => orb (Nat.ltb (length l) (length l')) (andb (Nat.eqb (length l) (length l'))
@@ -412,7 +432,7 @@ Section Equalities.
                                     if Val_eqb x x' then list_less xs ys else Val_ltb x x'
                             end) l l')
                             (andb 
-                            (list_equal Val Val_eqb (map fst l) (map fst l'))
+                            (list_eqb Val_eqb (map fst l) (map fst l'))
 
                             ((fix list_less (l l' : list (Val * Val)) :=
                             match l, l' with
@@ -424,14 +444,19 @@ Section Equalities.
                             end) l l'))))
     | VMap _, VNil => true
     | VMap _, VCons _ _ => true
+    | VMap _, VBitstring _ => true
     | VNil, VCons _ _ => true
+    | VNil, VBitstring _ => true
     | VCons hd tl, VCons hd' tl' => if Val_eqb hd hd' then Val_ltb tl tl' else Val_ltb hd hd'
+    | VCons _ _, VBitstring _ => true
+    (** Lexicographic comparison, see [bvn_ltb] - using MSB first *)
+    | VBitstring b1, VBitstring b2 => bvn_ltb b1 b2
     | _, _ => false
     end.
 
 End Equalities.
 
-Notation "e1 =ₑ e2" := (Exp_eqb e1 e2) (at level 69, no associativity).
+(** Notations for the boolean equality and less-than of values. *)
 Notation "v1 =ᵥ v2" := (Val_eqb v1 v2) (at level 69, no associativity).
 Notation "v1 <ᵥ v2" := (Val_ltb v1 v2) (at level 69, no associativity).
 
@@ -439,11 +464,10 @@ Notation "v1 <ᵥ v2" := (Val_ltb v1 v2) (at level 69, no associativity).
 Hint Unfold PBoth : core.
 
 
-(** The following theorems are for basic properties of value
-    equality and ordering. Note, that because these relations
-    do not correspond to their syntactical counterpart, thus
-    the proofs are complex, because all of the steps Rocq could
-    handle in Prop, needs to be done for bool. *)
+(** The following theorems are about the basic properties of value
+    equality and ordering. Since these relations do not correspond to
+    their syntactical counterparts, the proofs are complex: all of the
+    steps that Rocq could handle in Prop need to be done for bool. *)
 (** Reflexivity of value equality. *)
 Lemma Val_eqb_refl :
   forall v, v =ᵥ v = true.
@@ -452,7 +476,6 @@ Proof.
     (Q := Forall (fun v => v =ᵥ v = true))
     (R := Forall (PBoth (fun v => v =ᵥ v = true))); simpl; auto.
   * now rewrite Lit_eqb_refl.
-  (* * now rewrite Nat.eqb_refl. *)
   * now rewrite IHv1, IHv2.
   * induction IHv; auto. now rewrite H, IHIHv. 
   * induction IHv; auto. destruct x, H. simpl in *.
@@ -460,6 +483,7 @@ Proof.
   * now rewrite Nat.eqb_refl.
   * destruct n; simpl; now do 2 rewrite Nat.eqb_refl.
   * now rewrite Nat.eqb_refl.
+  * apply bvn_eqb_refl.
 Qed.
 
 (** Symmetry of value equality. *)
@@ -468,7 +492,6 @@ Lemma Val_eqb_sym :
 Proof.
   valinduction; try destruct v2; simpl; auto.
   * now rewrite Lit_eqb_sym.
-  (* * now rewrite Nat.eqb_sym. *)
   * now rewrite IHv1_1, IHv1_2.
   * revert l0. induction IHv1; intros; destruct l0; simpl in *; try congruence.
   * revert l0. induction IHv1; intros; destruct l0; simpl in *; try congruence.
@@ -479,6 +502,7 @@ Proof.
   * intros; destruct n, n0; simpl in *.
     rewrite (Nat.eqb_sym n0). now rewrite (Nat.eqb_sym n2).
   * intros. now rewrite Nat.eqb_sym.
+  * apply bvn_eqb_sym.
 Qed.
 
 (** Transitivity of value equality. *)
@@ -494,7 +518,6 @@ Proof.
     (R := Forall (PBoth FProp)); subst FProp; intros; simpl; auto.
   all: try destruct v3, v2; simpl in *; try congruence; auto.
   * apply Lit_eqb_eq. apply Lit_eqb_eq in H, H0. now subst.
-  (* * apply Nat.eqb_eq in H, H0. subst. now rewrite Nat.eqb_refl. *)
   * apply Bool.andb_true_iff in H as [H_1 H_2], H0 as [H0_1 H0_2].
     now rewrite (IHv1_1 _ _ H_1 H0_1), (IHv1_2 _ _ H_2 H0_2).
   * generalize dependent l1. revert l0. induction IHv1; simpl; intros;
@@ -521,6 +544,7 @@ Proof.
     apply Nat.eqb_eq in H_1, H0_1, H_2, H0_2. subst.
     now do 2 rewrite Nat.eqb_refl.
   * apply Nat.eqb_eq in H, H0. subst. apply Nat.eqb_refl.
+  * apply bvn_eqb_eq in H, H0. subst. apply bvn_eqb_refl.
 Qed.
 
 (** Non-equality and equality combined results in non-equality. *)
@@ -531,7 +555,6 @@ Lemma Val_eqb_neqb :
 Proof.
   valinduction; intros; try destruct v2, v3; simpl in *; try congruence; auto.
   * apply Lit_eqb_eq in H0. now subst.
-  (* * apply Nat.eqb_eq in H0. now subst. *)
   * apply Bool.andb_true_iff in H0 as [H0_1 H0_2].
     apply Bool.andb_false_iff in H as [H | H].
     - erewrite IHv1_1. 2-3: eassumption. reflexivity.
@@ -562,6 +585,7 @@ Proof.
     apply Bool.andb_true_iff in H0 as [H0_1 H0_2].
     apply Nat.eqb_eq in H0_1, H0_2. now subst.
   * apply Nat.eqb_eq in H0. now subst.
+  * apply bvn_eqb_eq in H0. now subst.
 Qed.
 
 (** Less-than is irreflexive for literals *)
@@ -583,7 +607,6 @@ Lemma Val_ltb_irrefl :
 Proof.
   valinduction; auto; simpl.
   * now apply Lit_ltb_irrefl.
-  (* * now apply Nat.ltb_irrefl. *)
   * now rewrite Val_eqb_refl.
   * rewrite Nat.eqb_refl, Nat.ltb_irrefl. simpl.
     induction l; simpl; auto.
@@ -600,6 +623,7 @@ Proof.
       destruct x. now rewrite Val_eqb_refl, IHIHv.
     }
   * now rewrite Nat.ltb_irrefl.
+  * apply bvn_ltb_irrefl.
 Qed.
 
 (** Transitivity of equality and less-than for values *)
@@ -609,7 +633,6 @@ Lemma Val_eqb_ltb_trans :
 Proof.
   valinduction; intros; try destruct v2, v3; simpl in *; try congruence; auto.
   * apply Lit_eqb_eq in H. now subst.
-  (* * apply Nat.eqb_eq in H. now subst. *)
   * apply Bool.andb_true_iff in H as [H_1 H_2].
     break_match_hyp.
     - eapply Val_eqb_trans in Heqb. 2: eassumption.
@@ -679,7 +702,7 @@ Proof.
           destruct p0; simpl in *.
           apply Bool.andb_true_iff in H as [H_1 H_2].
           apply Bool.andb_true_iff in H_2 as [H_2 H_3].
-          destruct Val_eqb eqn:Eq1 in H0_21; try congruence.
+          destruct Val_eqb eqn:Eq1 in H0_21; simpl in H0_21; try congruence.
           eapply Val_eqb_trans in Eq1. 2: eassumption.
           rewrite Eq1. eapply IHl; eassumption.
         }
@@ -702,6 +725,9 @@ Proof.
         }
       }
   * apply Nat.eqb_eq in H. now subst.
+  * repeat match goal with
+           | H : bvn_eqb _ _ = true |- _ => apply bvn_eqb_eq in H; subst
+           end. assumption.
 Qed.
 
 
@@ -712,7 +738,6 @@ Lemma Val_ltb_eqb_trans :
 Proof.
   valinduction; try intros v2 v3 H0 H; intros; try destruct v2, v3; simpl in *; try congruence; auto.
   * apply Lit_eqb_eq in H. now subst.
-  (* * apply Nat.eqb_eq in H. now subst. *)
   * apply Bool.andb_true_iff in H as [H_1 H_2].
     break_match_hyp.
     - eapply Val_eqb_trans in H_1. 2: eassumption.
@@ -779,7 +804,7 @@ Proof.
           destruct p0; simpl in *.
           apply Bool.andb_true_iff in H as [H_1 H_2].
           apply Bool.andb_true_iff in H_2 as [H_2 H_3].
-          destruct Val_eqb eqn:Eq1 in H0_21; try congruence.
+          destruct Val_eqb eqn:Eq1 in H0_21; simpl in H0_21; try congruence.
           eapply Val_eqb_trans in H_1. 2: eassumption.
           rewrite H_1. eapply IHl; eassumption.
         }
@@ -799,9 +824,12 @@ Proof.
         }
       }
   * apply Nat.eqb_eq in H. now subst.
+  * repeat match goal with
+           | H : bvn_eqb _ _ = true |- _ => apply bvn_eqb_eq in H; subst
+           end. assumption.
 Qed.
 
-(** Less-than is asymetric *)
+(** Less-than is asymmetric. *)
 Lemma Val_ltb_asym :
   forall v1 v2, v1 <ᵥ v2 = true -> v2 <ᵥ v1 = true -> False.
 Proof.
@@ -812,7 +840,6 @@ Proof.
     rewrite String_as_OT.cmp_antisym in H.
     destruct String_as_OT.cmp; simpl in *; congruence.
     congruence.
-  (* * apply Nat.ltb_lt in H, H0. lia. *)
   * break_match_hyp.
     - rewrite Val_eqb_sym, Heqb in H. now apply IHv1_2 in H.
     - rewrite Val_eqb_sym, Heqb in H. now apply IHv1_1 in H.
@@ -848,15 +875,15 @@ Proof.
         apply Bool.andb_true_iff in H0 as [H0 _].
         generalize dependent l0. induction IHv1; intros; destruct l0; try destruct p; try destruct x; simpl in *; try congruence.
         break_match_hyp.
-        - rewrite Val_eqb_sym, Heqb in H0. eapply IHIHv1; eassumption.
-        - congruence.
+        - rewrite Val_eqb_sym, Heqb in H1. simpl in H1. eapply IHIHv1; eassumption.
+        - rewrite Val_eqb_sym, Heqb in H1. simpl in H1. congruence.
       }
       {
         apply Bool.andb_true_iff in H as [H _].
         generalize dependent l0. induction IHv1; intros; destruct l0; try destruct p; try destruct x; simpl in *; try congruence.
         break_match_hyp.
-        - rewrite Val_eqb_sym, Heqb in H0. eapply IHIHv1; eassumption.
-        - rewrite Val_eqb_sym, Heqb in H0. congruence.
+        - rewrite Val_eqb_sym, Heqb in H0. simpl in H0. eapply IHIHv1; eassumption.
+        - rewrite Val_eqb_sym, Heqb in H0. simpl in H0. congruence.
       }
       {
         apply Bool.andb_true_iff in H as [_ H].
@@ -868,6 +895,7 @@ Proof.
           eapply H2; eassumption.
       }
   * apply Nat.ltb_lt in H, H0. lia.
+  * apply bvn_ltb_asym in H. congruence.
 Qed.
 
 (** Value equality means that less-than cannot be satisfied. *)
@@ -880,7 +908,7 @@ Proof.
   rewrite Val_ltb_irrefl in H. congruence.
 Qed.
 
-(** If one value is less than another, they are inequal. *)
+(** If one value is less than another, they are not equal. *)
 Corollary Val_ltb_eqb :
   forall v1 v2, v1 <ᵥ v2 = true -> v1 =ᵥ v2 = false.
 Proof.
@@ -905,8 +933,6 @@ Proof.
       pose proof (OrderedTypeEx.String_as_OT.lt_trans _ _ _ Heqc0 Heqc).
       apply OrderedTypeEx.String_as_OT.cmp_lt in H1. now rewrite H1.
     - lia.
-  (* * destruct v2; simpl in *; try congruence.
-    apply Nat.ltb_lt in H, H0. apply Nat.ltb_lt. lia. *)
   * simpl in *. destruct v2; simpl in *; try congruence.
     do 2 break_match_hyp.
     - rewrite (Val_eqb_trans _ _ _ Heqb0 Heqb).
@@ -985,7 +1011,7 @@ Proof.
       split.
       apply Nat.eqb_eq. lia.
       (* map comparison is based first on keys, then on values, 
-         thus a different stategy is needed to compare them: *)
+         thus a different strategy is needed to compare them: *)
       apply Bool.orb_true_iff in H_2 as [H_2 | H_2];
       apply Bool.orb_true_iff in H0_2 as [H0_2 | H0_2];
       try apply Bool.andb_true_iff in H0_2 as [H0_21 H0_22].
@@ -1014,7 +1040,7 @@ Proof.
         induction l; destruct l0, l1; simpl; intros; try congruence.
         destruct p0, p; simpl in *. destruct a.
         inv IHv1. destruct H1. simpl in *.
-        destruct Val_eqb eqn:H0_23 in H0_21; try congruence.
+        destruct Val_eqb eqn:H0_23 in H0_21; simpl in H0_21; try congruence.
         break_match_hyp.
         * eapply Val_eqb_trans in H0_23. 2: eassumption. rewrite H0_23.
           erewrite IHl. 5: eassumption.
@@ -1031,7 +1057,7 @@ Proof.
         destruct p; auto; congruence.
         destruct a, p, p0.
         inv IHv1. destruct H1. simpl in *.
-        destruct Val_eqb eqn:H_23 in H_21; try congruence.
+        destruct Val_eqb eqn:H_23 in H_21; simpl in H_21; try congruence.
         break_match_hyp.
         * eapply Val_eqb_trans in Heqb. 2: eassumption. rewrite Heqb.
           erewrite IHl. 5: eassumption.
@@ -1051,9 +1077,8 @@ Proof.
           induction l; destruct l0, l1; simpl; intros;
           try destruct p; try destruct a; try congruence.
           destruct p0; simpl in *.
-          do 2 break_match_hyp; try congruence.
-          eapply Val_eqb_trans in Heqb. 2: eassumption.
-          erewrite Heqb, IHl; auto; eassumption.
+          apply andb_prop in H_21 as [Hk1 Hl1]. apply andb_prop in H0_21 as [Hk2 Hl2].
+          erewrite Val_eqb_trans, IHl; eauto.
         }
         {
           clear H_21 H0_21 H0_1 H_1.
@@ -1078,11 +1103,13 @@ Proof.
       }
   * destruct v2; simpl in *; try congruence.
     apply Nat.ltb_lt in H, H0. apply Nat.ltb_lt. lia.
+  * destruct v2; simpl in *; try congruence.
+    eapply bvn_ltb_trans; eassumption.
 Qed.
 
-(** If two values are equal, and a third is greater or equal to the second, then
-    the first is also greater or equal to the third. *)
-Lemma Val_geb_eqb_trans :
+(** If two values are equal, and the second is greater than or equal to a
+    third, then the first is also greater than or equal to the third. *)
+Lemma Val_eqb_geb_trans :
   forall v1 v2 v3,
     v1 =ᵥ v2 = true -> v2 <ᵥ v3 = false ->
     v1 <ᵥ v3 = false.
@@ -1093,8 +1120,6 @@ Proof.
     destruct l, l1, l0; simpl in *; try congruence.
     - destruct string_dec; subst; try congruence.
     - lia.
-  (* * destruct v2; simpl in *; try congruence.
-    apply Nat.eqb_eq in H. now subst. *)
   * destruct v2; simpl in *; try congruence.
     apply Bool.andb_true_iff in H as [H_1 H_2].
     break_match_hyp.
@@ -1160,12 +1185,9 @@ Proof.
         try destruct x; try destruct p; try destruct p0; simpl in *; try congruence.
         apply Bool.andb_true_iff in H0 as [H0_11 H0_12].
         apply Bool.andb_true_iff in H0_12 as [H0_12 H0_13].
-        break_match_hyp.
-        - eapply Val_eqb_trans in Heqb. 2: eassumption. rewrite Heqb.
-          eapply IHIHv1; eassumption.
-        - rewrite Val_eqb_sym in H0_11. eapply Val_eqb_neqb in H0_11 as H0_11'.
-          2: rewrite Val_eqb_sym; eassumption. rewrite Val_eqb_sym, H0_11'.
-          reflexivity.
+        apply Bool.andb_false_iff in H0_22 as [Hk | Hl]; apply Bool.andb_false_iff.
+        - left. rewrite Val_eqb_sym in Hk, H0_11 |- *. eapply Val_eqb_neqb; eassumption.
+        - right. eapply IHIHv1; eassumption.
       * apply Bool.andb_false_iff. right. generalize dependent l1. revert l0.
         induction IHv1; intros; destruct l0, l1; 
         try destruct x; try destruct p; try destruct p0; simpl in *; try congruence.
@@ -1180,10 +1202,15 @@ Proof.
     }
   * destruct v2; simpl in *; try congruence.
     apply Nat.eqb_eq in H. now subst.
+  * destruct v2; simpl in *; try congruence.
+    repeat match goal with
+           | H : bvn_eqb _ _ = true |- _ => apply bvn_eqb_eq in H; subst
+           end. assumption.
 Qed.
 
-(** greater or equal than and equality is transitive *)
-Lemma Val_eqb_geb_trans :
+(** If a value is greater than or equal to a second one, which is equal to a
+    third, then the first is also greater than or equal to the third. *)
+Lemma Val_geb_eqb_trans :
   forall v1 v2 v3,
     v1 <ᵥ v2 = false -> v2 =ᵥ v3 = true ->
     v1 <ᵥ v3 = false.
@@ -1194,8 +1221,6 @@ Proof.
     destruct l, l1, l0; simpl in *; try congruence.
     - destruct string_dec; subst; try congruence.
     - lia.
-  (* * destruct v2; simpl in *; try congruence.
-    apply Nat.eqb_eq in H0. now subst. *)
   * destruct v2; simpl in *; try congruence.
     apply Bool.andb_true_iff in H0 as [H0_1 H0_2].
     break_match_hyp.
@@ -1259,12 +1284,9 @@ Proof.
         try destruct x; try destruct p; try destruct p0; simpl in *; try congruence.
         apply Bool.andb_true_iff in H0 as [H0_11 H0_12].
         apply Bool.andb_true_iff in H0_12 as [H0_12 H0_13].
-        break_match_hyp.
-        - eapply Val_eqb_trans in H0_11. 2: eassumption. rewrite H0_11.
-          eapply IHIHv1; eassumption.
-        - eapply Val_eqb_neqb in H0_11 as H0_11'.
-          2: eassumption. rewrite H0_11'.
-          reflexivity.
+        apply Bool.andb_false_iff in H_22 as [Hk | Hl]; apply Bool.andb_false_iff.
+        - left. eapply Val_eqb_neqb; eassumption.
+        - right. eapply IHIHv1; eassumption.
       * apply Bool.andb_false_iff. right. generalize dependent l1. revert l0.
         induction IHv1; intros; destruct l0, l1; 
         try destruct x; try destruct p; try destruct p0; simpl in *; try congruence.
@@ -1279,16 +1301,38 @@ Proof.
     }
   * destruct v2; simpl in *; try congruence.
     apply Nat.eqb_eq in H0. now subst.
+  * destruct v2; simpl in *; try congruence.
+    repeat match goal with
+           | H : bvn_eqb _ _ = true |- _ => apply bvn_eqb_eq in H; subst
+           end. assumption.
 Qed.
 
+(** For literals, value equality coincides with syntactic equality. *)
 Lemma VLit_val_eq: forall v l, v =ᵥ VLit l = true -> v = VLit l.
 Proof.
   intros. destruct v; simpl in H; try congruence.
   apply Lit_eqb_eq in H. rewrite H. reflexivity.
 Qed.
 
+(** If a value is not equal to a literal, it is syntactically different. *)
 Lemma VLit_val_neq: forall v l, v =ᵥ VLit l = false -> v <> VLit l.
 Proof.
   intros. intro.
   rewrite H0 in H. rewrite Val_eqb_refl in H. discriminate.
+Qed.
+
+(** Value equality is compatible with itself: replacing both arguments with
+    equal values does not change the result. *)
+Lemma Val_eqb_congr x x' y y' :
+  x =ᵥ x' = true -> y =ᵥ y' = true ->
+  x =ᵥ y = (x' =ᵥ y').
+Proof.
+  intros H1 H2. destruct (x =ᵥ y) eqn:E.
+  * assert (x' =ᵥ x = true) as A by (rewrite Val_eqb_sym; exact H1).
+    pose proof (Val_eqb_trans _ _ _ A E) as A2.
+    pose proof (Val_eqb_trans _ _ _ A2 H2) as A3. symmetry. exact A3.
+  * destruct (x' =ᵥ y') eqn:E'; auto.
+    assert (y' =ᵥ y = true) as B by (rewrite Val_eqb_sym; exact H2).
+    pose proof (Val_eqb_trans _ _ _ E' B) as B2.
+    pose proof (Val_eqb_trans _ _ _ H1 B2). congruence.
 Qed.

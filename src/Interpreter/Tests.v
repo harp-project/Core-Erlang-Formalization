@@ -2,6 +2,7 @@ From CoreErlang.FrameStack Require Export Frames SubstSemantics.
 From CoreErlang.Concurrent Require Export ProcessSemantics.
 From CoreErlang.Interpreter Require Import StepFunctions.
 From CoreErlang Require Import StrictEqualities.
+Import Notations.
 
 (*-----------------------------------------------*)
 (* Process semantics tests *)

@@ -1,8 +1,25 @@
+(**
+  This file formalises the atom exhaustion vulnerability on top of the
+  labeled frame stack semantics. Atoms are never garbage collected in Erlang,
+  so a program that creates too many distinct atoms crashes the runtime once
+  the atom table limit is exceeded. The formalisation is described in the
+  paper https://dl.acm.org/doi/10.1145/3759161.3763045.
+
+  The file contains:
+  - `mk_atom_set`, the set of atoms created in a side-effect trace;
+  - `generates_at_least_n_unique_atoms` (GALNUA), an inductive
+    characterisation of programs creating at least `n` new atoms;
+  - `atom_exhaustion`, the trace-based definition of the vulnerability;
+  - the equivalence of the two characterisations (`soundness` and
+    `completeness`), and the lemmas they rely on.
+
+  The definitions are inside the `AtomExhaustion` module; import it
+  explicitly to use them unqualified.
+*)
+
 From CoreErlang.FrameStack Require Import SubstSemanticsLabeledLemmas.
 From stdpp Require Import gmap sets list.
-Require Import Stdlib.Program.Equality.
 From Stdlib Require Import Lia.
-From Stdlib Require List.
 
 Open Scope string_scope.
 
@@ -10,20 +27,18 @@ Module AtomExhaustion.
 
 Import ListNotations.
 
-Definition mk_atom_set (l: SideEffectList): gset string :=
-  list_to_set (((List.map
-    (fun x => match x with
-              | (_, [VLit (Atom av)]) => av
-              | _ => ""
-              end))
-∘
-  (List.filter
-    (fun x => match x with
-              | (AtomCreation, [VLit (Atom _)]) => true
-              | _ => false
-              end)))
-    l).
+(** * Atoms created in a side-effect trace *)
 
+(** The set of atoms created in the side-effect trace `l`, i.e., the atoms
+    of its `AtomCreation` entries. *)
+Definition mk_atom_set (l: SideEffectList): gset string :=
+  list_to_set (omap
+    (fun x => match x with
+              | (AtomCreation, [VLit (Atom av)]) => Some av
+              | _ => None
+              end) l).
+
+(** Creating an atom adds it to the set. *)
 Lemma mk_atom_set_union : forall (av: string) (l: SideEffectList),
   mk_atom_set (((AtomCreation, [VLit av]):SideEffect) :: l) =
     ({[av]} ∪ mk_atom_set l).
@@ -31,25 +46,22 @@ Proof.
   intros. unfold mk_atom_set. simpl. reflexivity.
 Qed.
 
+(** Trace entries which are not atom creations do not change the set. *)
 Lemma mk_atom_set_unfit : forall (el: SideEffect) (l: SideEffectList),
   (forall (av: string), el <> (AtomCreation, [VLit av])) ->
   mk_atom_set (el :: l) = mk_atom_set l.
 Proof.
-  intros. destruct el. destruct s.
-  1-2: unfold mk_atom_set; reflexivity.
-  destruct l0.
-  - unfold mk_atom_set; reflexivity.
-  - destruct l0.
-    + destruct v.
-      1: unfold mk_atom_set; reflexivity.
-      2-8: unfold mk_atom_set; reflexivity.
-      destruct l0. specialize (H s). contradiction.
-      unfold mk_atom_set; reflexivity.
-    + unfold mk_atom_set; simpl. destruct v.
-      all: try reflexivity.
-      destruct l1. all: try reflexivity.
+  intros el l H. destruct el as [id vl].
+  destruct id, vl as [|v vl].
+  all: try reflexivity.
+  all: destruct v as [|lit| | | | | | | |]; try reflexivity.
+  all: destruct lit; try reflexivity.
+  all: destruct vl; try reflexivity.
+  specialize (H s). contradiction.
 Qed.
 
+(** Trace entries of other kinds than `AtomCreation` do not change the
+    set. *)
 Lemma mk_atom_set_unfit2 : forall (id: SideEffectId),
   id <> AtomCreation -> forall vl l,
   mk_atom_set (((id, vl):SideEffect) :: l) = mk_atom_set l.
@@ -59,15 +71,23 @@ Proof.
   contradiction.
 Qed.
 
-(* Compute mk_atom_set [
-  (AtomCreation, [VLit (Atom "e")]);
-  (Input, [VLit (Atom "a")]);
-  (AtomCreation, [VLit (Atom "b")]);
-  (AtomCreation, [VLit (Atom "b")])]. *)
+(** Repeated atom creations and other side effects are ignored. *)
+Example mk_atom_set_test :
+  mk_atom_set [
+    (AtomCreation, [VLit (Atom "e")]);
+    (Input, [VLit (Atom "a")]);
+    (AtomCreation, [VLit (Atom "b")]);
+    (AtomCreation, [VLit (Atom "b")])] = {["e"; "b"]}.
+Proof.
+  reflexivity.
+Qed.
 
-(* ------------------------------------------------------------- *)
-(* ------------------------------------------------------------- *)
+(** * Programs generating new atoms *)
 
+(** `generates_at_least_n_unique_atoms fs r s n`: the evaluation of `r` in
+    `fs` creates at least `n` distinct atoms which are not in `s`. Each step
+    either may be skipped (`generates_step_false`), or creates a new atom,
+    which is then added to `s` (`generates_step_true_unique`). *)
 Inductive generates_at_least_n_unique_atoms :
   FrameStack -> Redex -> gset string -> nat -> Prop :=
 | generates_terminal fs r s:
@@ -85,20 +105,24 @@ Inductive generates_at_least_n_unique_atoms :
   (generates_at_least_n_unique_atoms fs' r' ({[av]} ∪ s) n) ->
   generates_at_least_n_unique_atoms fs r s (S n).
 
-(* ------------------------------------------------------------- *)
-(* ------------------------------------------------------------- *)
+(** * The atom exhaustion vulnerability *)
 
+(** `atom_exhaustion_aux fs r avs atom_limit`: the evaluation of `r` in `fs`
+    can reach a state where, together with the atoms already in `avs`, more
+    than `atom_limit` atoms exist. *)
 Definition atom_exhaustion_aux (fs: FrameStack) (r: Redex) (avs: gset string) (atom_limit: nat) :=
   exists fs' r' l, ⟨ fs , r ⟩ -[ l ]->ₗ* ⟨ fs' , r' ⟩ /\
     size (mk_atom_set l ∖ avs) >= atom_limit - size (avs) + 1.
 
+(** `atom_exhaustion e atom_limit`: the evaluation of `e` creates more than
+    `atom_limit` distinct atoms. *)
 Definition atom_exhaustion (e: Exp) (atom_limit: nat) :=
   atom_exhaustion_aux [] e ∅ atom_limit.
 
-(* ------------------------------------------------------------- *)
-(* ------------------------------------------------------------- *)
+(** * Properties of GALNUA *)
 
-Lemma galnua_gen_one_less : forall fs r set n,
+(** Generating `n` atoms implies generating `n - 1` atoms. *)
+Lemma GALNUA_gen_one_less : forall fs r set n,
   generates_at_least_n_unique_atoms fs r set n ->
   generates_at_least_n_unique_atoms fs r set (pred n).
 Proof.
@@ -110,17 +134,19 @@ Proof.
     + eapply generates_step_true_unique; eassumption.
 Qed.
 
-Lemma galnua_gen_many_less : forall fs r set n,
+(** Generating `n` atoms implies generating any fewer atoms. *)
+Lemma GALNUA_gen_many_less : forall fs r set n,
   generates_at_least_n_unique_atoms fs r set n -> forall m, m <= n ->
   generates_at_least_n_unique_atoms fs r set m.
 Proof.
   intros. induction H0.
   - assumption.
-  - apply galnua_gen_one_less in H; simpl in H.
+  - apply GALNUA_gen_one_less in H; simpl in H.
     apply IHle. assumption.
 Qed.
 
-Lemma galnua_set_relax : forall fs r set n,
+(** Removing an atom from the set of existing atoms preserves GALNUA. *)
+Lemma GALNUA_set_relax : forall fs r set n,
   generates_at_least_n_unique_atoms fs r set n ->
   forall av, generates_at_least_n_unique_atoms fs r (set ∖ {[av]}) n.
 Proof.
@@ -139,7 +165,9 @@ Proof.
       rewrite H2. assumption.
 Qed.
 
-Lemma galnua_set_strengthen : forall fs r avs n,
+(** Adding a new atom to the set of existing atoms decreases the number of
+    generated atoms by at most one. *)
+Lemma GALNUA_set_strengthen : forall fs r avs n,
   generates_at_least_n_unique_atoms fs r avs n ->
   forall av, av ∉ avs
 ->
@@ -160,7 +188,10 @@ Proof.
       apply IHgenerates_at_least_n_unique_atoms. assumption.
 Qed.
 
-Lemma galnua_multistep :
+(** GALNUA is preserved by evaluation: the atoms created by the evaluation
+    are added to the set, and the number of atoms still to be generated
+    decreases by the number of new ones. *)
+Lemma GALNUA_multistep :
   forall fs r fs' r' l, ⟨ fs , r ⟩ -[ l ]->ₗ* ⟨ fs' , r' ⟩ ->
   forall avs n, generates_at_least_n_unique_atoms fs r avs n
 ->
@@ -178,7 +209,7 @@ Proof.
     + rewrite Nat.sub_0_l. apply generates_terminal.
     + apply (step_determinism_labeled H) in H2. destruct H2, H4.
       rewrite H4, H5 in *. specialize (IHstep_rt _ _ H3).
-      destruct s.
+      destruct s; simpl option_cons in *.
       * destruct s. destruct s eqn:Hid.
         3: {
           apply side_effect_ac_value in H. destruct H. subst.
@@ -193,7 +224,7 @@ Proof.
                 assert (({[x]} ∪ mk_atom_set l) ∖ s0 = mk_atom_set l ∖ s0).
                 { set_solver. } rewrite H1. assumption.
              ++ assert (x ∉ s0 ∪ mk_atom_set l). { set_solver. }
-                pose proof (galnua_set_strengthen _ _ _ _ IHstep_rt x H1).
+                pose proof (GALNUA_set_strengthen _ _ _ _ IHstep_rt x H1).
                 assert (s0 ∪ ({[x]} ∪ mk_atom_set l) =
                   {[x]} ∪ (s0 ∪ mk_atom_set l)). { set_solver. }
                 rewrite H4; clear H4.
@@ -213,7 +244,7 @@ Proof.
           rewrite H1; assumption.
       * rewrite H1. assumption.
     + apply (step_determinism_labeled H) in H2. destruct H2, H5.
-      subst. specialize (IHstep_rt _ _ H4).
+      subst. simpl option_cons in *. specialize (IHstep_rt _ _ H4).
       assert (((({[av]}) ∪ s0) ∪ (mk_atom_set l)) =
         (s0 ∪ (mk_atom_set (((AtomCreation, [VLit av]):SideEffect) :: l)))).
       {
@@ -251,7 +282,10 @@ Proof.
       rewrite H2. assumption.
 Qed.
 
-Lemma galnua_multistep_rev :
+(** The converse of `GALNUA_multistep`: GALNUA after an evaluation implies
+    GALNUA before it, increased by the number of new atoms created by the
+    evaluation. *)
+Lemma GALNUA_multistep_rev :
   forall fs r fs' r' l, ⟨ fs , r ⟩ -[ l ]->ₗ* ⟨ fs' , r' ⟩ ->
   forall avs n, generates_at_least_n_unique_atoms fs' r'
     (avs ∪ (mk_atom_set l)) n
@@ -266,7 +300,7 @@ Proof.
     assert (∅ ∖ avs = ∅). { set_solver. }
     rewrite H1, size_empty, Nat.add_0_r.
     rewrite H0 in H. assumption.
-  - destruct s.
+  - destruct s; simpl option_cons in *.
     + destruct s; destruct s eqn:Hid.
       3: {
         pose proof (side_effect_ac_value _ _ _ _ _ H).
@@ -309,7 +343,9 @@ Proof.
       eapply generates_step_false; eassumption.
 Qed.
 
-Corollary galnua_multistep_rev_alt:
+(** A variant of `GALNUA_multistep_rev` with the subtraction in the
+    premise, mirroring `GALNUA_multistep`. *)
+Corollary GALNUA_multistep_rev_alt:
   forall fs r fs' r' l, ⟨ fs , r ⟩ -[ l ]->ₗ* ⟨ fs' , r' ⟩ ->
   forall avs n, generates_at_least_n_unique_atoms fs' r'
     (avs ∪ (mk_atom_set l)) (n - (size ((mk_atom_set l) ∖ avs)))
@@ -321,7 +357,7 @@ Proof.
   { assert (exists m, n = m + size (mk_atom_set l ∖ avs)).
     { clear - l0. exists (n - size (mk_atom_set l ∖ avs)). lia. }
     destruct H1. subst.
-    eapply galnua_multistep_rev. 
+    eapply GALNUA_multistep_rev. 
     + exists x. eassumption.
     + assert (x0 + size (mk_atom_set l ∖ avs) -
         size (mk_atom_set l ∖ avs) = x0). { lia. }
@@ -331,11 +367,15 @@ Proof.
     assert (exists m, n = size (mk_atom_set l ∖ avs) - m).
     { clear - n0. exists (size (mk_atom_set l ∖ avs) - n). lia. }
     destruct H1; subst.
-    apply galnua_gen_many_less with (n := 0 + size (mk_atom_set l ∖ avs)).
-    + eapply galnua_multistep_rev; [exists x|]; eassumption.
+    apply GALNUA_gen_many_less with (n := 0 + size (mk_atom_set l ∖ avs)).
+    + eapply GALNUA_multistep_rev; [exists x|]; eassumption.
     + clear - n0. lia. }
 Qed.
 
+(** * Equivalence of GALNUA and atom exhaustion *)
+
+(** GALNUA with `n` implies an evaluation creating at least `n` new
+    atoms. *)
 Lemma soundness_helper1 :
   forall fs r avs n, generates_at_least_n_unique_atoms fs r avs n
 ->
@@ -381,17 +421,19 @@ Proof.
       { set_solver. } rewrite H4. clear - H3. lia.
 Qed.
 
+(** Soundness of GALNUA for `atom_exhaustion_aux`. *)
 Corollary soundness_helper2 : forall atom_limit fs r avs,
   generates_at_least_n_unique_atoms fs r avs (atom_limit - size (avs) + 1) ->
   atom_exhaustion_aux fs r avs atom_limit.
 Proof.
-  unfold atom_exhaustion. intros.
+  intros.
   apply soundness_helper1 in H.
   do 5 destruct H. do 3 eexists. split.
   - eexists. eassumption.
-  - clear - H0. eassumption.
+  - assumption.
 Qed.
 
+(** Completeness of GALNUA for `atom_exhaustion_aux`. *)
 Lemma completeness_helper (fs: FrameStack) (r: Redex) (avs: gset string) (atom_limit: nat):
   atom_exhaustion_aux fs r avs atom_limit
 ->
@@ -399,18 +441,15 @@ Lemma completeness_helper (fs: FrameStack) (r: Redex) (avs: gset string) (atom_l
 Proof.
   unfold atom_exhaustion_aux.
   intros. do 4 destruct H.
-  eapply galnua_multistep_rev_alt.
+  eapply GALNUA_multistep_rev_alt.
   + eassumption.
-  + (* assert (mk_atom_set x1 ∖ ∅ = mk_atom_set x1).
-    { set_solver. } rewrite H1.
-    assert (atom_limit - size (mk_atom_set x1) = 0).
-    { lia. } rewrite H2. apply generates_terminal. *)
-    remember (atom_limit - size (avs)) as s. clear Heqs.
+  + remember (atom_limit - size (avs)) as s. clear Heqs.
     assert (s + 1 - size (mk_atom_set x1 ∖ avs) = 0). { lia. }
     rewrite H1. apply generates_terminal.
 Qed.
 
-
+(** Soundness: if `e` generates more than `atom_limit` new atoms, then it is
+    vulnerable to atom exhaustion. *)
 Theorem soundness (e: Exp) (atom_limit: nat):
   generates_at_least_n_unique_atoms [] e ∅ (atom_limit + 1)
 ->
@@ -421,6 +460,8 @@ Proof.
   unfold atom_exhaustion. apply soundness_helper2.
 Qed.
 
+(** Completeness: if `e` is vulnerable to atom exhaustion, then it generates
+    more than `atom_limit` new atoms. *)
 Theorem completeness (e: Exp) (atom_limit: nat):
   atom_exhaustion e atom_limit
 ->
@@ -432,9 +473,11 @@ Proof.
   apply completeness_helper.
 Qed.
 
-(* ------------------------------------------------------------- *)
-(* ------------------------------------------------------------- *)
+(** * Compositional reasoning *)
 
+(** GALNUA for `let`: if `e1` evaluates to `vs`, then `let <...> = e1 in e2`
+    generates the atoms of `e1` followed by the atoms of
+    `e2.[vs/...]`. *)
 Lemma GALNUA_let :
   forall fs n (e1 e2 : Exp) (vs : list Val) avs atoms l,
     ⟨[], e1⟩ -[l]->ₗ* ⟨[], RValSeq vs⟩ ->
@@ -446,16 +489,13 @@ Proof.
   eapply generates_step_false. by constructor. destruct H.
   apply frame_indep_nil_labeled with (Fs' := FLet n e2 :: fs) in H.
   simpl in H. apply ex_intro with (x := x) in H.
-  eapply galnua_multistep_rev in H.
+  eapply GALNUA_multistep_rev in H.
   2: {
     eapply generates_step_false. econstructor. assumption.
     exact H1.
   }
   assert ((atoms - size (mk_atom_set l ∖ avs) + size (mk_atom_set l ∖ avs)) >= atoms) by lia.
-  eapply galnua_gen_many_less; eassumption.
+  eapply GALNUA_gen_many_less; eassumption.
 Qed.
 
-
 End AtomExhaustion.
-
-Export AtomExhaustion.

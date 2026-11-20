@@ -18,6 +18,12 @@
 
 file=$1
 
+# The script is not idempotent: it must be run on the freshly extracted file only
+if grep -q "^import Control.DeepSeq" "$file"; then
+	echo "$file has already been preprocessed, extract again first (make extract)" >&2
+	exit 1
+fi
+
 temp=$(mktemp)
 
 cat preamble >> "$temp"

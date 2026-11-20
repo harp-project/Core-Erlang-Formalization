@@ -1,13 +1,23 @@
 (**
-  This file defines the frame stack semantics of Core Erlang.
+  This file defines the (unlabeled) frame stack semantics of Core Erlang. Side
+  effects are not recorded by this semantics; its labeled counterpart (with
+  the same rules, in the same order) is defined in `SubstSemanticsLabeled.v`,
+  and the equivalence of the two is proved in `SubstSemanticsLemmas.v`.
 *)
 
 From CoreErlang.FrameStack Require Export Frames.
 
 Import ListNotations.
 
-(* Note: for simplicity, this semantics allows guards to evaluate
-   to exceptions, which is not allowed in normal Core Erlang. *)
+(* Note on guards (checked against compiled Core Erlang, `erlc +from_core`):
+   - Exceptions raised in a guard propagate out of the `case` expression (as
+     in Core Erlang; the Erlang compiler wraps guards so that code compiled
+     from Erlang does not raise exceptions in them).
+   - A guard that evaluates to a single value other than `true` (`false` or
+     a non-boolean value) fails, and the next clause is tried, as in compiled
+     Core Erlang. *)
+(** `⟨ fs, e ⟩ --> ⟨ fs', e' ⟩`: one reduction step of the redex `e` in the
+    frame stack `fs`. *)
 Reserved Notation "⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩" (at level 0).
 Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 (**  Reduction rules *)
@@ -32,11 +42,11 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 (* 0 subexpression in complex expressions: *)
 | eval_cool_params_0 xs ident (vl : list Val) (res : Redex) (l : option SideEffect) : 
   ident <> IMap ->
-  Some (res, l) = create_result ident vl -> (* TODO: side effects *)
+  Some (res, l) = create_result ident vl -> (* side effects are ignored here, see SubstSemanticsLabeled.v *)
   ⟨FParams ident vl [] ::xs, RBox⟩ --> ⟨xs, res⟩
 
 | eval_cool_params xs ident (vl : list Val) (v : Val) (res : Redex) (l : option SideEffect):
-  Some (res, l) = create_result ident (vl ++ [v]) ->(* TODO: side effects *)
+  Some (res, l) = create_result ident (vl ++ [v]) -> (* side effects are ignored here, see SubstSemanticsLabeled.v *)
   ⟨FParams ident vl [] :: xs, RValSeq [v]⟩ --> ⟨xs, res⟩
 
 (************************************************)
@@ -46,6 +56,9 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 
 | eval_heat_tuple (el : list Exp) (xs : list Frame):
   ⟨ xs, ETuple el ⟩ --> ⟨ (FParams ITuple [] el)::xs, RBox ⟩
+
+| eval_heat_bin (el : list Exp) (xs : list Frame):
+  ⟨ xs, EBin el ⟩ --> ⟨ FParams IBin [] el :: xs, RBox ⟩
 
 (* This is handled separately, to satisfy the invariant in FCLOSED for maps *)
 | eval_heat_map_0 (xs : list Frame):
@@ -123,14 +136,14 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
    e1 the guard needs to be evaluated. vs' (the result of the pattern
    matching is stored in the frame) *)
 | eval_step_case_match lp e1 e2 l vs vs' xs :
-  match_pattern_list lp vs = Some vs' ->
+  match_pattern_list lp vs = Matches vs' ->
   ⟨ (FCase1 ((lp,e1,e2)::l))::xs, RValSeq vs ⟩ -->
   ⟨ (FCase2 vs e2.[list_subst vs' idsubst] l)::xs, RExp (e1.[list_subst vs' idsubst]) ⟩
 
 (* reduction started or it is already ongoing, the first pattern doesn't 
    match, so we check the next pattern *)
 | eval_step_case_not_match lp e1 e2 l vs xs :
-  match_pattern_list lp vs = None ->
+  match_pattern_list lp vs = NotMatches ->
   ⟨ (FCase1 ((lp,e1,e2)::l))::xs, RValSeq vs ⟩ -->
   ⟨ (FCase1 l)::xs, RValSeq vs ⟩
 
@@ -140,14 +153,32 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
   ⟨ (FCase2 vs e' l)::xs, RValSeq [ VLit (Atom "true") ] ⟩ --> 
   ⟨ xs, RExp e' ⟩
 
-(* reduction is ongoing, the pattern matched, and the guard is false, thus
-   we check the next pattern. *)
-| eval_step_case_false vs e' l xs :
-  ⟨ (FCase2 vs e' l)::xs, RValSeq [ VLit (Atom "false") ] ⟩ --> ⟨ (FCase1 l)::xs, RValSeq vs ⟩
+(* reduction is ongoing, the pattern matched, and the guard is not true
+   (e.g., it is false, or a non-boolean value, as in compiled Core Erlang),
+   thus we check the next pattern. *)
+| eval_step_case_false vs e' l xs v :
+  v <> VLit (Atom "true") ->
+  ⟨ (FCase2 vs e' l)::xs, RValSeq [ v ] ⟩ --> ⟨ (FCase1 l)::xs, RValSeq vs ⟩
 
 (** Exceptions *)
 | eval_cool_case_empty vs xs:
   ⟨ (FCase1 [])::xs, RValSeq vs ⟩ --> ⟨ xs, RExc if_clause ⟩
+
+(** segments *)
+(** Heating *)
+| eval_heat_seg seg xs :
+  ⟨ xs, ESeg seg ⟩ -->
+  ⟨FSeg1 (seg_size seg) (seg_unit seg) (seg_type seg) (seg_sign seg) (seg_endian seg) :: xs, seg_val seg⟩
+
+(** Cooling *)
+| eval_cool_seg_val v size unit type sign endian xs :
+  ⟨ FSeg1 size unit type sign endian :: xs, RValSeq [v] ⟩ -->
+  ⟨ FSeg2 v unit type sign endian :: xs, size ⟩
+
+| eval_cool_seg_size v vsize type unit sign endian xs r :
+  segment_to_bitstring v vsize unit type endian = Some r ->
+  ⟨ FSeg2 v unit type sign endian :: xs, RValSeq [vsize] ⟩ -->
+  ⟨ xs, r ⟩
 
 (**  LetRec *)
 (**  Cooling *)
@@ -172,7 +203,7 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
   ⟨ xs, ETry e1 vl1 e2 vl2 e3 ⟩ --> ⟨ (FTry vl1 e2 vl2 e3)::xs, RExp e1 ⟩
   
 (** Exceptions *)
-(** Propogation *)
+(** Propagation *)
 | eval_prop_exc F exc xs :
   isPropagatable F = true ->
   ⟨ F::xs, RExc exc ⟩ --> ⟨ xs, RExc exc ⟩
@@ -180,7 +211,11 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 
 where "⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩" := (step fs e fs' e').
 
+Add Search Blacklist "_ind" "_sind".
 
+
+(** `⟨ fs, e ⟩ -[ k ]-> ⟨ fs', e' ⟩`: the configuration `⟨ fs', e' ⟩` is
+    reachable from `⟨ fs, e ⟩` in exactly `k` steps. *)
 Reserved Notation "⟨ fs , e ⟩ -[ k ]-> ⟨ fs' , e' ⟩" (at level 0).
 Inductive step_rt : FrameStack -> Redex -> nat -> FrameStack -> Redex -> Prop :=
 | step_refl fs e : ⟨ fs, e ⟩ -[ 0 ]-> ⟨ fs, e ⟩
@@ -190,9 +225,17 @@ Inductive step_rt : FrameStack -> Redex -> nat -> FrameStack -> Redex -> Prop :=
   ⟨ fs, e ⟩ -[S k]-> ⟨fs'', e''⟩
 where "⟨ fs , e ⟩ -[ k ]-> ⟨ fs' , e' ⟩" := (step_rt fs e k fs' e').
 
+(** `⟨ fs, e ⟩ -->* r`: the evaluation of `e` in the frame stack `fs`
+    terminates with the result `r` (a value sequence or an exception) and an
+    empty frame stack, in some number of steps. *)
 Definition step_any (fs : FrameStack) (e : Redex) (r : Redex) : Prop :=
   exists k, is_result r /\ ⟨fs, e⟩ -[k]-> ⟨[], r⟩.
 Notation "⟨ fs , e ⟩ -->* v" := (step_any fs e v) (at level 0, v at level 50).
+
+(** A simple evaluation tactic: performs one step of a `-[ k ]->` goal
+    (proving the side conditions of the step with `auto`), and simplifies the
+    rest of the evaluation. *)
+Ltac do_step := econstructor; [constructor;auto| simpl].
 
 Local Lemma test_precedence : ⟨ [], ˝VNil ⟩ -->* RValSeq [VNil].
 Abort.

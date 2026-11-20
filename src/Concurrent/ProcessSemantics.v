@@ -5,80 +5,74 @@
 *)
 From CoreErlang Require Export StrictEqualities.
 From CoreErlang.FrameStack Require Export SubstSemantics.
+From CoreErlang.FrameStack Require Import SubstSemanticsLemmas.
 From CoreErlang.Concurrent Require Export PIDRenaming.
 Require Export Stdlib.Sorting.Permutation.
 From stdpp Require Export option gmap.
 
 Import ListNotations.
+Import Notations.
 
-(** destruct_decide is taken *)
+(** Case-splits on the first `decide (x = y)` of the goal or of a
+    hypothesis, and solves the contradictory branches with `congruence`.
+    (The name `destruct_decide` is already taken by stdpp.) *)
 Ltac destruct_decide_eq :=
   match goal with
-  (* TODO Optimisations - potentially these are not necessary *)
-(*   | [ |- context [ decide (?x = ?x) ] ] => 
-      destruct (decide (x = x)); [| congruence]
-  | [H : context [ decide (?x = ?x) ] |- _] => destruct (decide (x = x)); [| congruence]
-  | [H : ?x ≠ ?y |- context [ decide (?x = ?y) ]] =>
-      destruct (decide (x = y)); [congruence |]
-  | [H : ?y ≠ ?x |- context [ decide (?x = ?y) ]] =>
-      destruct (decide (x = y)); [congruence |]
-  | [H : ?x ≠ ?y, H2 : context [ decide (?x = ?y) ] |- _] =>
-      destruct (decide (x = y)); [congruence |]
-  | [H : ?y ≠ ?x, H2 : context [ decide (?x = ?y) ] |- _] =>
-      destruct (decide (x = y)); [congruence |] *)
-
-
   | [ |- context [ decide (?x = ?y) ] ] =>
       destruct (decide (x = y)); try congruence
   | [H : context [ decide (?x = ?y) ] |- _] =>
       destruct (decide (x = y)); try congruence
   end.
 
+(** * Processes *)
 
-(**
-   mailbox: [old msg₁, old msg₁, ...] ++ 
-            current msg₁ :: [new msg₁, new msg₂, ...] *)
+(** Mailboxes consist of two parts: the messages that have already been
+    checked by the current `receive`, and the unchecked ones, the first of
+    which is the current message:
+    `([old msg₁, old msg₂, ...], current msg :: [new msg₁, new msg₂, ...])` *)
 Definition Mailbox : Set := list Val * list Val.
+
+(** The empty mailbox *)
 Definition emptyBox : Mailbox := ([], []).
+
+(** The `trap_exit` flag of processes *)
 Definition ProcessFlag : Set := bool.
+
+(** Live processes: a frame stack, the redex under evaluation, the mailbox,
+    the linked processes and the `trap_exit` flag. *)
 Definition LiveProcess : Set := FrameStack * Redex * Mailbox * gset PID * ProcessFlag.
 
-Instance PIDVal_eq_dec : EqDecision (PID * Val).
-Proof.
-  pose proof Val_eq_dec.
-  eapply prod_eq_dec.
-  Unshelve.
-  unfold EqDecision, Decision. apply H.
-Defined.
-
-Hint Resolve PIDVal_eq_dec : core.
-
-Instance Val_eq_decision : EqDecision Val.
+(** Equality of values is decidable (as an stdpp instance). *)
+#[global] Instance Val_eq_decision : EqDecision Val.
 Proof.
   pose proof Val_eq_dec.
   unfold EqDecision, Decision. apply H.
 Defined.
 
-Hint Resolve Val_eq_decision : core.
+#[global] Hint Resolve Val_eq_decision : core.
 
-
-Instance singleton_PID : Singleton PID (gset PID).
-Proof.
-  unfold Singleton.
-  intro x. exact {[x]}.
-Defined.
-
-Hint Resolve singleton_PID : core.
-
+(** Dead processes: the exit reasons still to be sent to the linked
+    processes. *)
 Definition DeadProcess : Set := gmap PID Val.
+
+(** Processes are either alive or dead. *)
 Definition Process : Set := LiveProcess + DeadProcess.
 
+(** Signals that processes can send to each other: messages, exit signals
+    (the boolean flag is true if the signal is sent because of a link), and
+    link and unlink requests. *)
 Inductive Signal : Set :=
 | SMessage (e : Val)
 | SExit (r : Val) (b : bool)
 | SLink
 | SUnlink.
 
+(** Equality of signals is decidable. *)
+Theorem Signal_eq_dec (s s' : Signal) : {s = s'} + {s <> s'}.
+Proof. decide equality; try apply Val_eq_dec; try apply Nat.eq_dec. decide equality. Qed.
+
+(** The actions of processes: sending and receiving (arrival of) signals,
+    querying the own PID, spawning a new process, and silent steps. *)
 Inductive Action : Set :=
 | ASend (sender receiver : PID) (t : Signal)
 | AArrive (sender receiver : PID) (t : Signal)
@@ -88,25 +82,29 @@ Inductive Action : Set :=
 | ε (** epsilon is used for process-local silent operations (e.g., mailbox manipulation), which are NOT confluent *)
 .
 
-
-Instance Action_dec : EqDecision Action.
+(** Equality of actions is decidable. *)
+#[global] Instance Action_dec : EqDecision Action.
 Proof.
   unfold EqDecision. intros. unfold Decision.
   decide equality; subst; auto.
   all: try apply Nat.eq_dec.
-  all: try apply Signal_eq_dec.
   all: try apply Val_eq_dec.
   all: decide equality.
   all: try apply Val_eq_dec.
   all: decide equality.
 Defined.
 
+(** * Mailbox operations *)
+
+(** Removes the current message, and moves the already checked messages back
+    to the unchecked part (used when a `receive` clause matched). *)
 Definition removeMessage (m : Mailbox) : option Mailbox :=
   match m with
   | (m1, msg :: m2) => Some ([], m1 ++ m2)
   | _ => None
   end.
 
+(** The current message, if there is one. *)
 (* in Core Erlang, this function returns a flag and a message, if there is
    a current message *)
 Definition peekMessage (m : Mailbox) : option Val :=
@@ -115,6 +113,8 @@ Definition peekMessage (m : Mailbox) : option Val :=
   | _ => None
   end.
 
+(** Moves the current message to the already checked part (used when no
+    `receive` clause matched the current message). *)
 (* TODO: Check C implementation, how this exactly works *)
 Definition recvNext (m : Mailbox) : option Mailbox :=
   match m with
@@ -122,30 +122,47 @@ Definition recvNext (m : Mailbox) : option Mailbox :=
   | (m1, [])        => None
   end.
 
+(** Appends a newly arrived message to the end of the mailbox. *)
 Definition mailboxPush (m : Mailbox) (msg : Val) : Mailbox :=
   (m.1, m.2 ++ [msg]).
 
 Arguments mailboxPush m msg /.
 
-(* Since OTP 24.0, receive-s are syntactic sugars
+(** * `receive` as derived syntax *)
+
+(** Renames the clauses of a case expression in the same way as [renameNonVal]
+    does for [ECase]: the guards and bodies are renamed under the variables
+    bound by the patterns. *)
+Definition rename_clauses (ρ : Renaming) (l : list (list Pat * Exp * Exp))
+  : list (list Pat * Exp * Exp) :=
+  map (fun '(p, x, y) => (map (renamePat ρ) p,
+                          rename (uprenn (PatListVars p) ρ) x,
+                          rename (uprenn (PatListVars p) ρ) y)) l.
+
+(** Since OTP 24.0, receive-s are syntactic sugars
    https://www.erlang.org/eeps/eep-0052
 
-  NOTE that whenever this expression is used the free variables of `l` should
-  be shifted by 3, since `ELetRec` and `ELet` bind 3 indices all together!
+  `EReceive l t e` is `receive l after t -> e end`, where the clauses `l`, the
+  timeout `t` and the after-body `e` are all written in the scope of the
+  receive itself. The expansion binds 3 variables around the clauses and the
+  timeout (the `ELetRec` and the `ELet`), and 4 around the after-body (+ the
+  `ELet` of the timeout); these are not visible to the arguments, because the
+  arguments are shifted over them.
 *)
 Definition EReceive l t e :=
   ELetRec [(0,
      °ELet 2 (EPrimOp "recv_peek_message" [])
        (ECase (˝VVar 0) [
          ([PLit (Atom "true")], ˝ttrue, °ECase (˝VVar 1) (
-           map (fun '(pl, g, e) => (pl, g, °ESeq (EPrimOp "remove_message" []) e)) l ++
+           map (fun '(pl, g, e) => (pl, g, °ESeq (EPrimOp "remove_message" []) e))
+               (rename_clauses (Nat.add 3) l) ++
            [([PVar], ˝ttrue, °ESeq (EPrimOp "recv_next" [])
                                  (EApp (˝VFunId (3, 0)) [])
            )]));
          ([PLit (Atom "false")], ˝ttrue,
-           °ELet 1 (EPrimOp "recv_wait_timeout" [t])
+           °ELet 1 (EPrimOp "recv_wait_timeout" [rename (Nat.add 3) t])
               (ECase (˝VVar 0)
-                [([PLit (Atom "true")], ˝ttrue, e); (* TODO: timeout *)
+                [([PLit (Atom "true")], ˝ttrue, rename (Nat.add 4) e); (* TODO: timeout *)
                  ([PLit (Atom "false")], ˝ttrue, °EApp (˝VFunId (3, 0)) [])
                 ]
               )
@@ -154,8 +171,9 @@ Definition EReceive l t e :=
     )]
     (EApp (˝VFunId (0, 0)) []).
 
-(*
-  if a ˝receive˝ is evaluated:
+(** The expansion of `receive` is well-scoped if its components are.
+
+  If a `receive` is evaluated:
   1) try the first message against the clauses
     a) if it matches one, evaluate its guard
     b) if the guard is true, go to step 2)
@@ -165,26 +183,53 @@ Definition EReceive l t e :=
      the first part retrieved from the separate cell, and the second is the
      current mailbox
 *)
-
 Lemma EReceive_scope :
   forall l time r Γ,
-  Forall (fun '(pl, g, e) => EXP PatListScope pl + (3 + Γ) ⊢ g /\ EXP PatListScope pl + (3 + Γ) ⊢ e) l ->
-  EXP 3 + Γ ⊢ time ->
-  EXP 4 + Γ ⊢ r ->
+  Forall (fun '(pl, g, e) =>
+    Forall (PatScoped Γ) pl /\
+    EXP PatListVars pl + Γ ⊢ g /\ EXP PatListVars pl + Γ ⊢ e) l ->
+  EXP Γ ⊢ time ->
+  EXP Γ ⊢ r ->
   EXP Γ ⊢ EReceive l time r.
 Proof.
-  intros. do 6 scope_solver_step.
+  intros l time r Γ Hl Ht Hr.
+  (* first, the shifted arguments are scoped under the binders of the expansion *)
+  pose proof ren_preserves_scope as [Hexp [_ [_ Hpat]]].
+  assert (forall n, RENSCOPE Γ ⊢ Nat.add n ∷ n + Γ) as Hshift.
+  { intros n x Hx. lia. }
+  assert (Forall (fun '(pl, g, e) =>
+    Forall (PatScoped (3 + Γ)) pl /\
+    EXP PatListVars pl + (3 + Γ) ⊢ g /\ EXP PatListVars pl + (3 + Γ) ⊢ e)
+    (rename_clauses (Nat.add 3) l)) as H.
+  {
+    unfold rename_clauses. rewrite Forall_map.
+    eapply Forall_impl; [exact Hl|].
+    intros [[pl g] e] (Hp & Hg & He). cbn.
+    rewrite PatListVars_rename.
+    split; [|split].
+    - rewrite Forall_map. eapply Forall_impl; [exact Hp|].
+      intros p Hp'. apply (proj1 (Hpat p Γ) Hp'), (Hshift 3).
+    - apply (proj1 (Hexp g _) Hg). apply uprenn_scope, (Hshift 3).
+    - apply (proj1 (Hexp e _) He). apply uprenn_scope, (Hshift 3).
+  }
+  assert (EXP 3 + Γ ⊢ rename (Nat.add 3) time) as H0.
+  { apply (proj1 (Hexp time Γ) Ht), (Hshift 3). }
+  assert (EXP 4 + Γ ⊢ rename (Nat.add 4) r) as H1.
+  { apply (proj1 (Hexp r Γ) Hr), (Hshift 4). }
+  (* then, the expansion itself is scoped *)
+  unfold EReceive. revert H H0 H1.
+  generalize (rename_clauses (Nat.add 3) l) (rename (Nat.add 3) time) (rename (Nat.add 4) r).
+  clear l time r Hl Ht Hr Hexp Hpat Hshift.
+  intros l time r H H0 H1.
+  repeat scope_solver_step.
   1: scope_solver.
-  2: lia.
-  do 2 scope_solver_step. scope_solver.
-  1: scope_solver.
-  do 2 scope_solver_step.
-  1: scope_solver.
-  do 2 scope_solver_step.
-  scope_solver_step.
-  1: scope_solver.
+  1-3: lia.
+  scope_solver.
+  1, 5: lia.
+  4: scope_solver.
   all: intros; simpl in *; rewrite length_app, length_map in H2; simpl in H2;
-  assert (i < length l \/ i = length l) by lia; destruct H3.
+  assert (i < length l \/ i = length l) as X by lia; destruct X.
+  (* guards *)
   {
     rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H.
     apply H in H3 as H'.
@@ -195,11 +240,13 @@ Proof.
     setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     destruct nth, p. cbn. apply H'.
   }
+  (* last guard *)
   {
     rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     subst. erewrite <- length_map. rewrite nth_middle. cbn. scope_solver.
   }
+  (* bodies *)
   {
     rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H.
     apply H in H3 as H'.
@@ -219,19 +266,47 @@ Proof.
     1: apply H'.
     by rewrite length_map.
   }
+  (* last body *)
   {
     rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     subst. erewrite <- length_map. rewrite nth_middle. cbn. scope_solver.
   }
+  (* patterns *)
+  {
+    rewrite map_app in H3 |- *.
+    rewrite app_nth1 in H3; [|by rewrite !length_map].
+    rewrite app_nth1; [|by rewrite !length_map].
+    assert (HLP : Forall (Forall (PatScoped (3 + Γ)))
+      (map (fst ∘ fst) (map (λ '(pl, g, e), (pl, g, ° ESeq (° EPrimOp "remove_message" []) e)) l))).
+    { rewrite map_map, Forall_map. eapply Forall_impl; [exact H|].
+      intros [[pl g] e] [Hp _]. cbn. exact Hp. }
+    rewrite Forall_nth in HLP.
+    pose proof (HLP i ltac:(rewrite !length_map; exact H4)) as HP.
+    rewrite Forall_nth in HP.
+    exact (HP j H3).
+  }
+  (* last pattern *)
+  {
+    rewrite map_app in H3 |- *.
+    rewrite app_nth2 in H3; [|by rewrite !length_map; lia].
+    rewrite app_nth2; [|by rewrite !length_map; lia].
+    rewrite !length_map, H4, Nat.sub_diag in H3 |- *.
+    cbn in *.
+    destruct j; [apply scoped_pvar | lia].
+  }
 Qed.
 
+(** * Process-local semantics *)
 
+(** Converts a boolean to the corresponding atom. *)
 Definition lit_from_bool (b : bool) : Val :=
 match b with
 | true => VLit "true"%string
 | false => VLit "false"%string
 end.
+
+(** Converts the atoms `true` and `false` to booleans. *)
 Definition bool_from_lit (e : Val) : option bool :=
 match e with
 | VLit (Atom x) =>
@@ -243,18 +318,33 @@ match e with
 | _ => None
 end.
 
+(** The exit reason sent to the linked processes of a process terminated by
+    the uncaught exception `(class, reason, details)`. As in Erlang, the
+    reasons of errors are paired with the stack trace, and the reasons of
+    throws are also wrapped in `{nocatch, reason}`; the details of
+    exceptions approximate the stack trace (see `Exception` in
+    `Syntax.v`). *)
+Definition make_exit_signal (exc : Exception) : Val :=
+match exc with
+| (Error, reason, details) => VTuple [reason; details]
+| (Throw, reason, details) =>
+    VTuple [VTuple [VLit "nocatch"%string; reason]; details]
+| (Exit, reason, _) => reason
+end.
+
 Reserved Notation "p -⌈ a ⌉-> p'" (at level 50).
 (*
   Fredlund: https://www.diva-portal.org/smash/get/diva2:8988/FULLTEXT01.pdf
   - it is similar, kill rules on page 66 are quite similar to our exit rules, and both differ from doc.
 *)
+(** `p -⌈ a ⌉-> p'`: the process `p` can take a step to `p'` with the action
+    `a`. *)
 Inductive processLocalStep : Process -> Action -> Process -> Prop :=
 (********** LOCAL STEPS **********)
 | p_local fs e fs' e' mb links flag :
   ⟨fs, e⟩ --> ⟨fs', e'⟩
 ->
   inl (fs, e, mb, links, flag) -⌈ τ ⌉-> inl (fs', e', mb, links, flag)
-
 
 (********** SIGNAL ARRIVAL **********)
 (* message arrival *)
@@ -266,7 +356,7 @@ Inductive processLocalStep : Process -> Action -> Process -> Prop :=
 | p_exit_drop fs e mb links flag dest source reason b :
   (
     reason = normal /\ dest <> source /\ flag = false \/
-    source ∉ links /\ b = true /\ dest <> source
+    (source ∉ links) /\ b = true /\ dest <> source
                                            (*    ^------------ TODO: this check is missing from doc? *)
   ) ->
   inl (fs, e, mb, links, flag) -⌈ AArrive source dest (SExit reason b) ⌉->
@@ -312,17 +402,16 @@ Inductive processLocalStep : Process -> Action -> Process -> Prop :=
 | p_link fs ι mb flag links selfι :
   inl (FParams (ICall erlang link) [] [] :: fs, RValSeq [VPid ι], mb, links, flag)
   -⌈ASend selfι ι SLink⌉->
-  inl (fs, RValSeq [ok], mb, {[ι]} ∪ links, flag)
+  inl (fs, RValSeq [ttrue], mb, {[ι]} ∪ links, flag)
 (* unlink *)
 | p_unlink fs ι mb flag links selfι :
   inl (FParams (ICall erlang unlink) [] [] :: fs, RValSeq [VPid ι], mb, links, flag) 
   -⌈ASend selfι ι SUnlink⌉->
-  inl (fs, RValSeq [ok], mb, links ∖ {[ι]}, flag)
+  inl (fs, RValSeq [ttrue], mb, links ∖ {[ι]}, flag)
 (* DEAD PROCESSES *)
 | p_dead ι selfι links reason:
   links !! ι = Some reason ->
   inr links -⌈ASend selfι ι (SExit reason true)⌉-> inr (delete ι links)
-
 
 (********** SELF **********)
 (* self *)
@@ -342,7 +431,7 @@ Inductive processLocalStep : Process -> Action -> Process -> Prop :=
   inl (FParams (ICall erlang spawn_link) [VClos ext id vars e] [] :: fs, RValSeq [l], mb, links, flag)
     -⌈ASpawn ι (VClos ext id vars e) l true⌉-> inl (fs, RValSeq [VPid ι], mb, {[ι]} ∪ links, flag)
 
-(********** RECEVIE **********)
+(********** RECEIVE **********)
 (* nonempty peeks are confluent, while empty peeks are not *)
 | p_recv_peek_message_ok fs mb msg links flag :
   peekMessage mb = Some msg ->
@@ -354,7 +443,6 @@ Inductive processLocalStep : Process -> Action -> Process -> Prop :=
   peekMessage mb = None ->
   inl (FParams (IPrimOp "recv_peek_message") [] [] :: fs, RBox, mb, links, flag) -⌈ε⌉->
     inl (fs, RValSeq [ffalse;ErrorVal], mb, links, flag) (* TODO: errorVal is probably not used here, but I could not find the behaviour *)
-
 
 | p_recv_next fs mb links flag mb':
   recvNext mb = Some mb' ->
@@ -379,6 +467,9 @@ Inductive processLocalStep : Process -> Action -> Process -> Prop :=
   inl (fs, RValSeq [ttrue], mb, links, flag)
 
 (* This rule is also confluent *)
+(* NOTE: time is not modelled, thus finite, non-zero timeouts are not
+   supported: they raise `timeout_value` too, while in Erlang, they are valid
+   (e.g., `receive ... after 1000 -> ...`). *)
 | p_recv_wait_timeout_invalid fs mb links flag v:
   v <> VLit 0%Z -> v <> infinity ->
   inl (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs, RValSeq [v], mb, links, flag) -⌈τ⌉-> inl (fs, RExc (timeout_value v), mb, links, flag)
@@ -408,15 +499,16 @@ Inductive processLocalStep : Process -> Action -> Process -> Prop :=
 (********** EXCEPTIONS **********)
 (* creation *)
 | p_terminate_exc exc mb links flag:
-  (* NOTE: if the final result is an exception, it's reason is sent
+  (* NOTE: if the final result is an exception, its exit reason is sent
      to the linked processes *)
   inl ([], RExc exc, mb, links, flag) -⌈ε⌉->
-   inr (gset_to_gmap exc.1.2 links)
+   inr (gset_to_gmap (make_exit_signal exc) links)
 
 where "p -⌈ a ⌉-> p'" := (processLocalStep p a p').
 
-(** peculiar exit: *)
-Goal
+(** A peculiar exit: a `kill` exit signal sent through a link by a process
+    which is not linked is dropped. *)
+Local Example kill_from_unlinked_dropped :
   inl ([], RExp (˝VNil), emptyBox, ∅, false) -⌈AArrive 0 1 (SExit kill true)⌉->
   inl ([], RExp (˝VNil), emptyBox, ∅, false).
 Proof.
@@ -424,12 +516,11 @@ Proof.
   set_solver.
 Qed.
 
-Inductive LabelStar {A B : Type} (r : A -> B -> A -> Prop) : A -> list B -> A -> Prop :=
-| lsrefl x : LabelStar r x [] x
-| lsstep x l ls y z : r x l y -> LabelStar r y ls z -> LabelStar r x (l::ls) z.
-
+(** `p -⌈ as ⌉->* p'`: the process `p` can take a sequence of steps with the
+    actions `as` to `p'`. *)
 Notation "x -⌈ xs ⌉->* y" := (LabelStar processLocalStep x xs y) (at level 50).
 
+(** * PID renaming in processes and actions *)
 
 (** This is needed to ensure that a process is not spawned with a wrong PID
     in the equivalence. *)
@@ -446,6 +537,8 @@ Definition sendPIDOf (a : Action) : option PID :=
   | _ => None
   end.
 
+(** The PIDs selected by `f` (e.g., `spawnPIDOf`) from the actions of a
+    list of actions paired with the PIDs of the acting processes. *)
 (* TODO: do this with Applicative/Monad *)
 Definition PIDsOf (f : Action -> option PID) (l : list (Action * PID)) : list PID :=
   flat_map (fun a =>
@@ -454,10 +547,12 @@ Definition PIDsOf (f : Action -> option PID) (l : list (Action * PID)) : list PI
     | None => []
     end) l.
 
+(** Renaming a single PID *)
 Definition renamePIDPID (p p' : PID) := fun s => if s =? p
                                                  then p'
                                                  else s.
 
+(** PID renaming in signals *)
 Definition renamePIDSignal (p p' : PID) (s : Signal) : Signal :=
 match s with
  | SMessage e => SMessage (renamePIDVal p p' e)
@@ -466,6 +561,7 @@ match s with
  | SUnlink => s
 end.
 
+(** The PIDs used in signals *)
 Definition usedPIDsSignal (s : Signal) : gset PID :=
 match s with
  | SMessage e => usedPIDsVal e
@@ -474,10 +570,12 @@ match s with
  | SUnlink => ∅
 end.
 
+(** Notation for PID renaming in signals *)
+Notation "e .ₛ[ x ↦ y ]" := (renamePIDSignal x y e) (at level 1).
 
-Notation "e .ₛ[ x ↦ y ]" := (renamePIDSignal x y e) (at level 2).
-
-Corollary isNotUsed_renamePID_signal :
+(** Renaming a PID that does not occur in a signal leaves the signal
+    unchanged. *)
+Corollary isNotUsed_renamePID_sig :
   forall s from to, from ∉ (usedPIDsSignal s) -> renamePIDSignal from to s = s.
 Proof.
   intros. destruct s; try reflexivity; simpl.
@@ -485,25 +583,31 @@ Proof.
   * now rewrite isNotUsed_renamePID_val.
 Qed.
 
-Corollary double_renamePID_signal :
+(** Renaming the PID `from` to `to` and then back restores a signal in which `to`
+    does not occur. *)
+Corollary double_renamePID_sig :
   forall s from to, to ∉ (usedPIDsSignal s) -> renamePIDSignal to from (renamePIDSignal from to s) = s.
 Proof.
   intros. destruct s; try reflexivity; simpl.
-  * now rewrite double_PIDrenaming_val.
-  * now rewrite double_PIDrenaming_val.
+  * now rewrite double_renamePID_val.
+  * now rewrite double_renamePID_val.
 Qed.
 
-From stdpp Require Import base.
+(** Processes are compared by Leibniz equality (as an stdpp instance). *)
+#[global] Instance Process_equiv : Equiv Process := eq.
 
-Instance Process_equiv : Equiv Process := eq.
-Instance Process_leibniz : LeibnizEquiv Process.
+(** The equivalence of processes is Leibniz equality. *)
+#[global] Instance Process_leibniz : LeibnizEquiv Process.
 Proof.
   intros x y H. exact H.
 Defined.
 
+(** PID renaming in mailboxes *)
 Definition renamePIDMb (p p' : PID) (mb : Mailbox) : Mailbox :=
   (map (renamePIDVal p p') mb.1, map (renamePIDVal p p') mb.2).
 
+(** Swaps the PIDs `p` and `p'`; it is used to rename the keys of dead
+    processes, since PID renaming has to be injective there. *)
 Definition renamePIDPID_sym (p p' : PID) := fun s => if s =? p
                                                      then p'
                                                      else if s =? p'
@@ -512,16 +616,20 @@ Definition renamePIDPID_sym (p p' : PID) := fun s => if s =? p
                                                           then p
                                                           else s.
 
-Instance renamePIDPID_sym_Inj p p' : Inj eq eq (renamePIDPID_sym p p').
+(** Swapping PIDs is injective. *)
+#[global] Instance renamePIDPID_sym_Inj p p' : Inj eq eq (renamePIDPID_sym p p').
 Proof.
   unfold Inj. intros. unfold renamePIDPID_sym in H.
   repeat case_match; eqb_to_eq; subst; auto; try congruence.
 Defined.
 
-Hint Resolve renamePIDPID_sym_Inj : core.
-Hint Resolve prod_map_inj : core.
-Hint Resolve id_inj : core.
+#[global] Hint Resolve renamePIDPID_sym_Inj : core.
+#[global] Hint Resolve prod_map_inj : core.
+#[global] Hint Resolve id_inj : core.
 
+(** PID renaming in processes: in live processes, the PID is renamed in all
+    components; in dead processes, the keys (linked PIDs) are swapped, and
+    the PID is renamed in the exit reasons. *)
 Definition renamePIDProc (p p' : PID) (pr : Process) : Process :=
 match pr with
 | inl (fs, r, mb, links, flag) =>
@@ -531,18 +639,11 @@ match pr with
 | inr dpr => inr (kmap (renamePIDPID_sym p p') (fmap (renamePIDVal p p') dpr))
 end.
 
-Definition union_set {A C : Type} {H : Union C} {H0 : Elements C A} {H1 : Empty C} (s : A) : C := union_list (elements s).
-
-Instance gsetPID_elem_of : Elements (gset PID) (gset (gset PID)).
-Proof.
-  unfold Elements.
-  exact elements.
-Defined.
-
-
+(** The PIDs used in processes: in dead processes, both the linked PIDs and
+    the PIDs of the exit reasons count. *)
 Definition usedPIDsProc (p : Process) : gset PID :=
 match p with
-| inl (fs, r, mb, links, flag) => 
+| inl (fs, r, mb, links, flag) =>
     usedPIDsStack fs ∪
     usedPIDsRed r ∪
     links ∪
@@ -553,6 +654,8 @@ match p with
     @union_set _ _ _ gsetPID_elem_of _ (map_to_set (fun k x => {[k]} ∪ usedPIDsVal x) links)
 end.
 
+(** Case-splits on the PID equalities of `renamePIDPID` (`_sym`) in the goal
+    or in a hypothesis. *)
 Ltac renamePIDPID_case_match :=
   unfold renamePIDPID; repeat case_match; eqb_to_eq; subst; try lia.
 Ltac renamePIDPID_case_match_hyp H :=
@@ -562,6 +665,9 @@ Ltac renamePIDPID_sym_case_match :=
 Ltac renamePIDPID_sym_case_match_hyp H :=
   unfold renamePIDPID_sym in H; repeat case_match; eqb_to_eq; subst; try lia.
 
+(** Renaming a PID that does not occur in a process leaves the process
+    unchanged; for dead processes, the new PID must not occur either, since
+    their keys are swapped. *)
 Corollary isNotUsed_renamePID_proc :
   forall p from to, from ∉ (usedPIDsProc p) ->
     to ∉ usedPIDsProc p -> (* needed for dead processes *)
@@ -634,6 +740,8 @@ Proof.
       do 2 eexists. split. exact P. reflexivity.
 Qed.
 
+(** Renaming the PID `from` to `to` and then back restores a process in which `to`
+    does not occur. *)
 Corollary double_renamePID_proc :
   forall p from to, to ∉ (usedPIDsProc p) -> renamePIDProc to from (renamePIDProc from to p) = p.
 Proof.
@@ -641,11 +749,11 @@ Proof.
   * destruct l, p, p, p, m. simpl.
     simpl in H. repeat apply not_elem_of_union in H as [H ?].
     rewrite not_elem_of_flat_union in H0, H1.
-    rewrite double_PIDrenaming_red, double_PIDrenaming_stack; auto.
+    rewrite double_renamePID_red, double_renamePID_stack; auto.
     repeat f_equal.
     1: unfold renamePIDMb; simpl; f_equal.
     1-2: rewrite map_map, <- map_id; apply map_ext_in; intros; simpl.
-    1-2: rewrite double_PIDrenaming_val; apply list_elem_of_In in H4; set_solver.
+    1-2: rewrite double_renamePID_val; apply list_elem_of_In in H4; set_solver.
     apply set_eq; split; intros.
     - apply elem_of_map in H4; destruct_hyps.
       apply elem_of_map in H5; destruct_hyps.
@@ -671,7 +779,7 @@ Proof.
       destruct (d !! from) eqn:P.
       2: by setoid_rewrite P.
       setoid_rewrite P. simpl.
-      rewrite double_PIDrenaming_val. reflexivity.
+      rewrite double_renamePID_val. reflexivity.
       intro. apply H.
       unfold union_set in *. apply elem_of_union_list.
       exists ({[from]} ∪ usedPIDsVal v). split. 2: set_solver.
@@ -687,7 +795,7 @@ Proof.
       destruct (d !! to) eqn:P.
       2: by setoid_rewrite P.
       setoid_rewrite P. simpl.
-      rewrite double_PIDrenaming_val. reflexivity.
+      rewrite double_renamePID_val. reflexivity.
       intro. apply H.
       unfold union_set in *. apply elem_of_union_list.
       exists ({[to]} ∪ usedPIDsVal v). split. 2: set_solver.
@@ -703,7 +811,7 @@ Proof.
       destruct (d !! i) eqn:P.
       2: by setoid_rewrite P.
       setoid_rewrite P. simpl.
-      rewrite double_PIDrenaming_val. reflexivity.
+      rewrite double_renamePID_val. reflexivity.
       intro. apply H.
       unfold union_set in *. apply elem_of_union_list.
       exists ({[i]} ∪ usedPIDsVal v). split. 2: set_solver.
@@ -711,8 +819,10 @@ Proof.
       do 2 eexists. split. exact P. reflexivity.
 Qed.
 
-Notation "e .ₚ⟦ x ↦ y ⟧" := (renamePIDProc x y e) (at level 2).
+(** Notation for PID renaming in processes *)
+Notation "e .ₚ⟦ x ↦ y ⟧" := (renamePIDProc x y e) (at level 1).
 
+(** PID renaming in actions *)
 Definition renamePIDAct (from to : PID) (a : Action) : Action :=
   match a with
   | ASend sender receiver t =>
@@ -725,9 +835,11 @@ Definition renamePIDAct (from to : PID) (a : Action) : Action :=
   | x => x
   end.
 
-Notation "e .ₐ⟦ x ↦ y ⟧" := (renamePIDAct x y e) (at level 2).
+(** Notation for PID renaming in actions *)
+Notation "e .ₐ⟦ x ↦ y ⟧" := (renamePIDAct x y e) (at level 1).
 
-Lemma mailboxPush_rename :
+(** PID renaming commutes with pushing a message into a mailbox. *)
+Lemma mailboxPush_renamePID :
   forall mb v from to, 
          renamePIDMb from to (mailboxPush mb v) =
          mailboxPush (renamePIDMb from to mb) (renamePIDVal from to v).
@@ -738,6 +850,7 @@ Proof.
   rewrite map_app. now simpl.
 Qed.
 
+(** The PIDs used in actions *)
 Definition usedPIDsAct (a : Action) : gset PID :=
 match a with
  | ASend sender receiver t => {[sender]} ∪ {[receiver]} ∪ usedPIDsSignal t
@@ -747,6 +860,8 @@ match a with
  | _ => ∅
 end.
 
+(** Renaming the PIDs of a list commutes with removing a PID from it, if the
+    new PID does not occur in the list. *)
 Lemma map_renamePIDPID_remove :
   forall l x from to,
     to ∉ l ->
@@ -768,6 +883,7 @@ Proof.
       -- simpl; rewrite IHl; now auto.
 Qed.
 
+(** PID renaming does not change the length of a Core Erlang list. *)
 Lemma len_renamePID :
   forall l from to, len l.⟦from ↦ to⟧ᵥ = len l.
 Proof.
@@ -780,6 +896,8 @@ Proof.
   * constructor; auto.
 Qed.
 
+(** The current message of a renamed mailbox is the renamed current
+    message. *)
 Lemma peekMessage_renamePID :
   forall mb from to,
     peekMessage (renamePIDMb from to mb) = fmap (renamePIDVal from to) (peekMessage mb).
@@ -788,6 +906,7 @@ Proof.
   now destruct l0.
 Qed.
 
+(** PID renaming commutes with `recvNext`. *)
 Lemma recvNext_renamePID :
   forall mb from to,
     option_map (renamePIDMb from to) (recvNext mb) = recvNext (renamePIDMb from to mb).
@@ -797,6 +916,7 @@ Proof.
   simpl. by rewrite map_app.
 Qed.
 
+(** PID renaming commutes with `removeMessage`. *)
 Lemma removeMessage_renamePID :
   forall mb from to,
     removeMessage (renamePIDMb from to mb) = fmap (renamePIDMb from to) (removeMessage mb).
@@ -806,19 +926,23 @@ Proof.
   f_equal. now rewrite map_app.
 Qed.
 
+(** Renaming the PID `a` to `b` maps `a` to `b`. *)
 Lemma renamePIDPID_1 :
   forall a b, renamePIDPID a b a = b.
 Proof.
   unfold renamePIDPID. intros. by rewrite Nat.eqb_refl.
 Qed.
 
+(** Swapping `a` and `b` maps `a` to `b`. *)
 Lemma renamePIDPID_sym_1 :
   forall a b, renamePIDPID_sym a b a = b.
 Proof.
   unfold renamePIDPID_sym. intros. by rewrite Nat.eqb_refl.
 Qed.
 
-Lemma rename_eq :
+(** Swapping `from` and `to` agrees with renaming the PID `from` to `to` on PIDs
+    different from `to`. *)
+Lemma renamePIDPID_sym_neq :
   forall from to ι,
   ι <> to ->
   renamePIDPID_sym from to ι = renamePIDPID from to ι.
@@ -828,8 +952,18 @@ Proof.
   eqb_to_eq; congruence.
 Qed.
 
+(** PID renaming commutes with computing the exit reason of an exception. *)
+Lemma renamePID_make_exit_signal :
+  forall c r d from to,
+    (make_exit_signal (c, r, d)).⟦from ↦ to⟧ᵥ =
+    make_exit_signal (c, r.⟦from ↦ to⟧ᵥ, d.⟦from ↦ to⟧ᵥ).
+Proof.
+  destruct c; reflexivity.
+Qed.
+
 Opaque mailboxPush.
-(* For this theorem, freshness is needed! *)
+(** The process-local steps are preserved by renaming to a fresh PID (i.e.,
+    one which is used neither by the process, nor by the action). *)
 Theorem renamePID_is_preserved_local :
   forall p p' a, p -⌈a⌉-> p' ->
     forall from to,
@@ -842,7 +976,7 @@ Proof.
   all: try now simpl; constructor.
   * apply renamePID_is_preserved with (from := from) (to := to) in H2.
     simpl. destruct mb. now constructor.
-  * simpl. rewrite mailboxPush_rename.
+  * simpl. rewrite mailboxPush_renamePID.
     constructor.
   * simpl. constructor. destruct_or!; destruct_and!; subst; simpl in *.
     - left. split; auto. split; auto.
@@ -867,7 +1001,7 @@ Proof.
       f_equal. apply map_eq. intros.
       rewrite lookup_gset_to_gmap. unfold guard. case_match; simpl.
       * clear H0. apply elem_of_map in e; destruct_hyps.
-        subst. rewrite <- rename_eq by set_solver.
+        subst. rewrite <- renamePIDPID_sym_neq by set_solver.
         setoid_rewrite lookup_kmap; auto.
         setoid_rewrite lookup_fmap.
         rewrite lookup_gset_to_gmap. simpl.
@@ -914,7 +1048,7 @@ Proof.
         clear -H. intro; destruct reason; simpl in *; try congruence.
         break_match_hyp; congruence.
     - right. right. now split; auto.
-  * simpl. rewrite mailboxPush_rename. simpl.
+  * simpl. rewrite mailboxPush_renamePID. simpl.
     pose proof (p_exit_convert (renamePIDStack from to fs) (e .⟦ from ↦ to ⟧ᵣ)
        (renamePIDMb from to mb) (set_map (renamePIDPID from to) links) (renamePIDPID from to dest) (renamePIDPID from to source) (reason .⟦ from ↦ to ⟧ᵥ) b).
     (* TODO: boiler plate code: *)
@@ -1023,9 +1157,9 @@ Proof.
   * simpl in *.
     setoid_rewrite fmap_delete.
     setoid_rewrite kmap_delete; auto.
-    rewrite rename_eq. 2: set_solver. apply p_dead.
+    rewrite renamePIDPID_sym_neq. 2: set_solver. apply p_dead.
     setoid_rewrite lookup_kmap_Some; auto.
-    exists ι. split. rewrite rename_eq. 2: set_solver. reflexivity.
+    exists ι. split. rewrite renamePIDPID_sym_neq. 2: set_solver. reflexivity.
     setoid_rewrite lookup_fmap. by setoid_rewrite H2.
   * simpl in *. destruct Nat.eqb eqn:P; eqb_to_eq; subst.
     - replace (renamePIDPID ι to ι) with to by (unfold renamePIDPID; now rewrite Nat.eqb_refl). constructor.
@@ -1062,7 +1196,7 @@ Proof.
       rewrite lookup_gset_to_gmap. unfold guard. case_match.
       * clear H. simpl.
         apply elem_of_map in e. destruct_hyps. subst.
-        rewrite <- rename_eq. 2: set_solver.
+        rewrite <- renamePIDPID_sym_neq. 2: set_solver.
         setoid_rewrite lookup_kmap; auto.
         rewrite lookup_gset_to_gmap. unfold guard. case_match.
         all: clear H; set_solver.
@@ -1070,20 +1204,21 @@ Proof.
         intros. subst.
         apply lookup_gset_to_gmap_None.
         intro. apply n. apply elem_of_map. eexists. split.
-        rewrite rename_eq. 2: set_solver.
+        rewrite renamePIDPID_sym_neq. 2: set_solver.
         reflexivity. assumption.
     }
     constructor.
-  * simpl. destruct exc, p. simpl.
-    rewrite fmap_gset_to_gmap.
+  * destruct exc, p.
+    remember (make_exit_signal (e, v0, v)) as reason eqn:Hreason.
+    simpl. rewrite fmap_gset_to_gmap.
     replace (inr _) with
-      (inr (gset_to_gmap v0 .⟦ from ↦ to ⟧ᵥ (set_map (renamePIDPID from to) links)) : Process).
+      (inr (gset_to_gmap reason .⟦ from ↦ to ⟧ᵥ (set_map (renamePIDPID from to) links)) : Process).
     2: {
       f_equal. apply map_eq. intros.
       rewrite lookup_gset_to_gmap. unfold guard. case_match.
       * clear H. simpl.
         apply elem_of_map in e0. destruct_hyps. subst.
-        rewrite <- rename_eq. 2: set_solver.
+        rewrite <- renamePIDPID_sym_neq. 2: set_solver.
         setoid_rewrite lookup_kmap; auto.
         rewrite lookup_gset_to_gmap. unfold guard. case_match.
         all: clear H; set_solver.
@@ -1091,13 +1226,15 @@ Proof.
         intros. subst.
         apply lookup_gset_to_gmap_None.
         intro. apply n. apply elem_of_map. eexists. split.
-        rewrite rename_eq. 2: set_solver.
+        rewrite renamePIDPID_sym_neq. 2: set_solver.
         reflexivity. assumption.
     }
+    subst reason. rewrite renamePID_make_exit_signal.
     constructor.
 Qed.
 Transparent mailboxPush.
 
+(** Renaming a PID to itself leaves a process unchanged. *)
 Corollary renamePID_id_proc :
   forall pr p, renamePIDProc p p pr = pr.
 Proof.
@@ -1127,6 +1264,7 @@ Proof.
       setoid_rewrite lookup_fmap. renamePIDPID_sym_case_match_hyp H; by setoid_rewrite P.
 Qed.
 
+(** Renaming a PID to itself leaves a signal unchanged. *)
 Corollary renamePID_id_sig :
   forall s p, renamePIDSignal p p s = s.
 Proof.
@@ -1134,6 +1272,7 @@ Proof.
   all: by rewrite renamePID_id_val.
 Qed.
 
+(** Renaming a PID to itself leaves an action unchanged. *)
 Corollary renamePID_id_act :
   forall a p, renamePIDAct p p a = a.
 Proof.
@@ -1142,36 +1281,42 @@ Proof.
   all: by renamePIDPID_case_match.
 Qed.
 
+(** Renaming a PID that does not occur in an action leaves the action
+    unchanged. *)
 Corollary isNotUsed_renamePID_action :
   forall a from to, from ∉ (usedPIDsAct a) -> renamePIDAct from to a = a.
 Proof.
   intros. destruct a; try reflexivity; simpl in *.
-  * rewrite isNotUsed_renamePID_signal.
+  * rewrite isNotUsed_renamePID_sig.
     unfold renamePIDPID; repeat case_match; eqb_to_eq. all: set_solver.
-  * rewrite isNotUsed_renamePID_signal.
+  * rewrite isNotUsed_renamePID_sig.
     unfold renamePIDPID; repeat case_match; eqb_to_eq. all: set_solver.
   * unfold renamePIDPID; repeat case_match; eqb_to_eq. all: set_solver.
   * rewrite isNotUsed_renamePID_val. rewrite isNotUsed_renamePID_val.
     unfold renamePIDPID; repeat case_match; eqb_to_eq. all: set_solver.
 Qed.
 
+(** Renaming the PID `from` to `to` and then back restores an action in which `to`
+    does not occur. *)
 Corollary double_renamePID_action :
   forall a from to, to ∉ (usedPIDsAct a) -> renamePIDAct to from (renamePIDAct from to a) = a.
 Proof.
   intros. destruct a; try reflexivity; simpl.
   * unfold renamePIDPID. simpl in *.
-    rewrite double_renamePID_signal.
+    rewrite double_renamePID_sig.
     repeat case_match; eqb_to_eq. all: set_solver.
   * unfold renamePIDPID. simpl in *.
-    rewrite double_renamePID_signal.
+    rewrite double_renamePID_sig.
     repeat case_match; eqb_to_eq. all: set_solver.
   * unfold renamePIDPID. simpl in *.
     repeat case_match; eqb_to_eq. all: set_solver.
   * unfold renamePIDPID. simpl in *.
-    rewrite double_PIDrenaming_val. rewrite double_PIDrenaming_val.
+    rewrite double_renamePID_val. rewrite double_renamePID_val.
     repeat case_match; eqb_to_eq. all: set_solver.
 Qed.
 
+(** Two independent PID renamings (`from1 ≠ from2`, `from1 ≠ to2`,
+    `from2 ≠ to1`) can be applied to a signal in either order. *)
 Corollary renamePID_swap_sig :
   forall s from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
                renamePIDSignal from1 to1 (renamePIDSignal from2 to2 s) =
@@ -1182,6 +1327,8 @@ Proof.
   * by rewrite renamePID_swap_val.
 Qed.
 
+(** Two independent PID renamings (`from1 ≠ from2`, `from1 ≠ to2`,
+    `from2 ≠ to1`) can be applied to an action in either order. *)
 Corollary renamePID_swap_act :
   forall a from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
                renamePIDAct from1 to1 (renamePIDAct from2 to2 a) =
@@ -1201,6 +1348,9 @@ Proof.
   * reflexivity.
 Qed.
 
+(** Two independent PID renamings with different new PIDs can be applied to a
+    process in either order (the extra condition `to1 ≠ to2` is needed
+    because the keys of dead processes are swapped). *)
 Corollary renamePID_swap_proc :
   forall p from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 -> to1 ≠ to2 ->
                renamePIDProc from1 to1 (renamePIDProc from2 to2 p) =
@@ -1311,6 +1461,8 @@ Proof.
       1: by rewrite renamePID_swap_val.
 Qed.
 
+(** Renaming the PID `p` to `p'` in a signal removes `p` from its used PIDs, and
+    adds `p'` if `p` was used. *)
 Corollary usedPIDsSig_rename :
   (forall s p p',
     usedPIDsSignal (renamePIDSignal p p' s) = if decide (p ∈ usedPIDsSignal s)
@@ -1322,6 +1474,8 @@ Proof.
   1-2: rewrite usedPIDsVal_rename; set_solver.
 Qed.
 
+(** Renaming the PID `p` to `p'` in an action removes `p` from its used PIDs, and
+    adds `p'` if `p` was used. *)
 Corollary usedPIDsAct_rename :
   (forall a p p',
     usedPIDsAct (renamePIDAct p p' a) = if decide (p ∈ usedPIDsAct a)
@@ -1340,6 +1494,8 @@ Proof.
     repeat destruct decide; repeat case_match; eqb_to_eq; subst; set_solver.
 Qed.
 
+(** Renaming the PID `p` to `p'` in a live process removes `p` from its used PIDs,
+    and adds `p'` if `p` was used. *)
 Corollary usedPIDsLiveProc_rename :
   forall pr p p',
     usedPIDsProc (renamePIDProc p p' (inl pr)) = if decide (p ∈ usedPIDsProc (inl pr))
@@ -1378,6 +1534,8 @@ Proof.
   repeat destruct decide; set_solver. (* NOTE: this line takes long to compile *)
 Qed.
 
+(** PID renaming does not change whether a PID different from the old and the
+    new PID occurs in a dead process. *)
 Theorem usedPIDsDeadProc_rename_neq :
   forall d ι p p',
   ι <> p -> ι <> p' ->
@@ -1446,7 +1604,8 @@ Proof.
   }
 Qed.
 
-
+(** If the renamed PID occurs in a renamed dead process, then the new PID
+    occurs in the original process. *)
 Theorem usedPIDsDeadProc_rename_old :
   forall d p p',
   p ∈ usedPIDsProc (inr d) .ₚ⟦ p ↦ p' ⟧ ->
@@ -1475,6 +1634,8 @@ Proof.
     do 2 eexists. split. exact P. set_solver.
 Qed.
 
+(** If the old PID occurs in a dead process, then the new PID occurs in the
+    renamed process. *)
 Theorem usedPIDsDeadProc_rename_new_1 :
   forall d p p',
   p ∈ usedPIDsProc (inr d) ->
@@ -1516,6 +1677,9 @@ Proof.
       setoid_rewrite lookup_fmap. by setoid_rewrite H.
 Qed.
 
+(** Renaming the PID `p` to a fresh `p'` in a dead process removes `p` from its used
+    PIDs, and adds `p'` if `p` was used (only one direction holds, as an
+    inclusion). *)
 Theorem usedPIDsDeadProc_rename :
   forall pr p p',
     p' ∉ usedPIDsProc (inr pr) -> (* Remaning is symmetric for dead processes, thus
@@ -1608,6 +1772,9 @@ Proof.
     set_solver.
 Qed.
 
+(** * Strict equality of signals *)
+
+(** Strict boolean equality of signals, based on `Val_eqb_strict`. *)
 Definition Signal_eqb_strict (sig1 sig2 : Signal) : bool :=
   match sig1, sig2 with
   | SMessage v1, SMessage v2 => Val_eqb_strict v1 v2
@@ -1617,24 +1784,151 @@ Definition Signal_eqb_strict (sig1 sig2 : Signal) : bool :=
   | _, _ => false
   end.
 
+(** `Signal_eqb_strict` is reflexive. *)
 Lemma Signal_eqb_strict_refl: forall sig, Signal_eqb_strict sig sig = true.
 Proof.
   intros. destruct sig; simpl; auto.
-  * apply Val_eqb_strict_refl.
-  * rewrite Val_eqb_strict_refl. simpl. apply eqb_reflx.
+  * apply eqb_strict_refl_val.
+  * rewrite eqb_strict_refl_val. simpl. apply eqb_reflx.
 Qed.
 
+(** `Signal_eqb_strict` decides the equality of signals. *)
 Lemma Signal_eqb_strict_eq: forall sig1 sig2, Signal_eqb_strict sig1 sig2 = true <-> sig1 = sig2.
 Proof.
   intros. split; intro.
   * unfold Signal_eqb_strict in H. destruct sig1 eqn:Hs1.
     + destruct sig2 eqn:Hs2; try discriminate.
-      apply Val_eqb_strict_eq in H. subst. reflexivity.
+      apply eqb_strict_eq_val in H. subst. reflexivity.
     + destruct sig2 eqn:Hs2; try discriminate.
       symmetry in H. apply andb_true_eq in H. destruct H.
-      symmetry in H0, H. apply eqb_prop in H0. apply Val_eqb_strict_eq in H.
+      symmetry in H0, H. apply eqb_prop in H0. apply eqb_strict_eq_val in H.
       subst. reflexivity.
     + destruct sig2 eqn:Hs2; try discriminate. reflexivity.
     + destruct sig2 eqn:Hs2; try discriminate. reflexivity.
   * rewrite H. apply Signal_eqb_strict_refl.
+Qed.
+
+(** * Properties of the process-local semantics *)
+
+(** Values converted to booleans by `bool_from_lit` are closed. *)
+Theorem bool_from_lit_val :
+  forall y e, Some y = bool_from_lit e -> VALCLOSED e.
+Proof.
+  destruct e; intros; inversion H.
+  now constructor.
+Qed.
+
+(** The process-local semantics is deterministic for a given action. *)
+Lemma process_local_determinism :
+  forall p p' a, p -⌈a⌉-> p' -> forall p'', p -⌈a⌉-> p'' -> p' = p''.
+Proof.
+  intros p p' a IH. induction IH; intros; try now inv H.
+  * inv H0; try (now inv H; cbn in *; invSome).
+    - eapply step_determinism in H. 2: exact H7. destruct H. now subst.
+  * inv H0; firstorder; subst; try congruence.
+  * inv H0; firstorder; subst; try congruence.
+  * inv H0; firstorder; subst; try congruence.
+  * inv H0; firstorder; subst; try congruence.
+  * now inv H0.
+  * now inv H0.
+  * inv H0.
+    - inv H7.
+    - reflexivity.
+  * inv H0. congruence.
+  * inv H0. by inv H7. reflexivity.
+  * inv H0.
+    - inv H7.
+    - reflexivity.
+  * inv H.
+    - inv H6.
+    - now auto.
+  * inv H.
+    - by inv H6.
+    - reflexivity.
+  * inv H1.
+    - inv H8.
+    - now auto.
+  * inv H0. rewrite <-H in H7. now inv H7.
+  * inv H0. now inv H7.
+    reflexivity.
+Qed.
+
+(** Only live processes can take `τ` steps. *)
+Theorem internal_is_alive :
+  forall p p', p -⌈τ⌉-> p' -> exists pa, p = inl pa.
+Proof.
+  intros. inversion H; subst; try (do 2 eexists; split; reflexivity).
+Qed.
+
+(** * Equality of signals up to `Val_eqb` *)
+
+(** Boolean equality of signals based on `Val_eqb` (which considers all PIDs
+    equal, see `Equalities.v`); used to compare the barbs of nodes in the
+    bisimulations. *)
+Definition Signal_eqb (s1 s2 : Signal) : bool :=
+match s1,  s2 with
+ | SMessage m, SMessage m' => m =ᵥ m'
+ | SExit r b, SExit r' b' => Bool.eqb b b' && (r =ᵥ r')
+ | SLink, SLink => true
+ | SUnlink, SUnlink => true
+ | _, _ => false
+end.
+
+Notation "s1 ==ₛ s2" := (Signal_eqb s1 s2) (at level 69, no associativity).
+
+(** The propositional version of `Signal_eqb` *)
+Definition Signal_eq (s1 s2 : Signal) : Prop := s1 ==ₛ s2 = true.
+
+Arguments Signal_eq s1 s2 /.
+
+Notation "s1 =ₛ s2" := (Signal_eq s1 s2) (at level 69, no associativity).
+
+(** `Signal_eq` unfolds to `Signal_eqb` with `simpl` (because of its
+    `Arguments` declaration). *)
+Local Example Signal_eq_unfold : forall s1 s2, s1 ==ₛ s2 = true -> s1 =ₛ s2.
+Proof.
+  intros. simpl. assumption.
+Qed.
+
+(** `=ₛ` is reflexive. *)
+Corollary Signal_eq_refl :
+  forall s, s =ₛ s.
+Proof.
+  destruct s; cbn; try reflexivity.
+  * cbn. unfold "=ₛ". simpl. apply Val_eqb_refl.
+  * cbn. unfold "=ₛ". simpl. rewrite Val_eqb_refl.
+    now destruct b.
+Qed.
+
+(** `=ₛ` is symmetric. *)
+Corollary Signal_eq_sym :
+  forall s s', s =ₛ s' -> s' =ₛ s.
+Proof.
+  destruct s eqn:ES1, s' eqn:ES2; unfold "=ₛ"; cbn; intro H; try reflexivity; try now inv H.
+  * now rewrite Val_eqb_sym.
+  * cbn. rewrite Val_eqb_sym.
+    destruct b, b0; auto.
+Qed.
+
+(** `=ₛ` is transitive. *)
+Corollary Signal_eq_trans :
+  forall s s' s'', s =ₛ s' -> s' =ₛ s'' -> s =ₛ s''.
+Proof.
+  destruct s eqn:ES1, s' eqn:ES2, s'' eqn:ES3;
+    unfold "=ₛ"; cbn; intros H1 H2; try reflexivity; try now inv H1; try now inv H2.
+  * erewrite Val_eqb_trans; eauto.
+  * apply andb_true_iff in H1, H2. destruct_and!.
+    rewrite (Val_eqb_trans _ _ _ H3 H0).
+    now destruct b, b0, b1.
+Qed.
+
+(** A signal is `=ₛ`-equal to its PID-renamed version. *)
+Lemma Signal_eq_renamePID :
+  forall s from to,
+    s =ₛ renamePIDSignal from to s.
+Proof.
+  destruct s; intros; try reflexivity.
+  all: unfold Signal_eq; simpl; rewrite renamePID_Val_eqb.
+  2: rewrite eqb_reflx.
+  all: reflexivity.
 Qed.

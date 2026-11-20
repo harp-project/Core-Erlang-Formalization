@@ -1,21 +1,24 @@
 -R src CoreErlang
 
 src/Basics.v
+src/Bitstrings.v
 src/Syntax.v
 src/Induction.v
 src/Equalities.v
+src/StrictEqualities.v
 src/SideEffects.v
 src/Scoping.v
-src/Auxiliaries.v
-src/Maps.v
 src/Manipulation.v
 src/ScopingLemmas.v
+src/Maps.v
+src/Auxiliaries.v
+src/AuxiliariesTests.v
 src/Matching.v
-src/StrictEqualities.v
 
 src/FrameStack/Frames.v
 src/FrameStack/SubstSemanticsLabeled.v
 src/FrameStack/SubstSemantics.v
+src/FrameStack/SubstSemanticsAutoSolver.v
 src/FrameStack/Tests/Tests.v
 src/FrameStack/Tests/ExceptionTests.v
 src/FrameStack/Termination.v
@@ -25,16 +28,16 @@ src/FrameStack/SubstSemanticsLemmas.v
 src/FrameStack/LogRel.v
 src/FrameStack/Compatibility.v
 src/FrameStack/CIU.v
-src/FrameStack/Examples.v
-src/FrameStack/CTX.v
-src/FrameStack/Tests/EvalExamples.v
-src/FrameStack/SubstSemanticsAutoSolver.v
 src/FrameStack/Tests/SubstSemanticsAutoSolverTests.v
+src/FrameStack/CTX.v
+src/FrameStack/Examples.v
+src/FrameStack/Tests/EvalExamples.v
 
 src/FrameStack/Vulnerabilities/AtomExhaustion.v
 src/FrameStack/Vulnerabilities/AtomExhaustionExamples.v
 
 
+src/Concurrent/Utilities.v
 src/Concurrent/PIDRenaming.v
 src/Concurrent/ProcessSemantics.v
 src/Concurrent/NodeSemantics.v
@@ -43,6 +46,8 @@ src/Concurrent/StrongBisim.v
 src/Concurrent/WeakBisim.v
 src/Concurrent/BarbedBisim.v
 src/Concurrent/BisimRenaming.v
+src/Concurrent/BisimUpToRenaming.v
+src/Concurrent/NodeCompatibility.v
 
 src/Concurrent/BisimReductions.v
 src/Concurrent/MapPmap.v
@@ -54,7 +59,7 @@ src/Interpreter/InterpreterAuxLemmas.v
 src/Interpreter/StepFunctions.v
 src/Interpreter/Scheduler.v
 src/Interpreter/Equivalences.v
-src/Interpreter/ExampleASTs
+src/Interpreter/Tests.v
 
 src/Symbolic/SymbTheorems.v
 src/Symbolic/SymbTactics.v

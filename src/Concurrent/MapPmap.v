@@ -1,988 +1,97 @@
 (**
-  This file proves the equivalence of a sequential and a parallel implementation
-  of list transformation.
+  This file proves the equivalence of a sequential and a parallel
+  implementation of `map` (`map_pmap_empty_context_bisim`). The sequential
+  implementation (`map_seq_send`) maps the list with the `map` closure of
+  `FrameStack/Examples.v`, and sends the result to the observed PID `ι`. The
+  parallel implementation (`par_map`) splits the list into two parts, spawns
+  a process that maps the first part and sends it back, maps the second part
+  itself, then receives the first part, and sends the concatenation of the
+  two parts to `ι`. Both programs are evaluated in a single-process node with
+  an empty ether, and the two nodes are barbed bisimilar, observing `ι`.
 *)
 
 From CoreErlang.Concurrent Require Import BisimReductions.
 From CoreErlang.FrameStack Require Import SubstSemantics Examples.
 
 Import ListNotations.
-
-Lemma etherAdd_lookup :
-  forall ιs ιd ι1 ι2 t l eth,
-    etherAdd ιs ιd t eth !! (ι1, ι2) = Some l ->
-      eth !! (ι1, ι2) = Some l \/ 
-      (ι1 = ιs /\ ι2 = ιd /\ exists l', l = l' ++ [t]).
-Proof.
-  intros. destruct (decide ((ιs, ιd) = (ι1, ι2))).
-  * inv e. right. intuition.
-    unfold etherAdd in H. case_match; setoid_rewrite lookup_insert_eq in H; inv H.
-    1: by eexists.
-    1: by exists [].
-  * unfold etherAdd in H. case_match; setoid_rewrite lookup_insert_ne in H; auto.
-Qed.
-
-
-Definition appearsOnlyAsSourceAndNoLink (ι : PID) (eth : Ether) : Prop :=
-  ¬isTargetedEther ι eth /\
-  (forall (ιs ιd : PID) (t : list Signal),
-         eth !! (ιs, ιd) = Some t -> ι ∉ flat_union usedPIDsSignal t) /\
-  (forall ιd l, eth !! (ι, ιd) = Some l -> SLink ∉ l /\ forall r b, SExit r b ∉ l).
-
-Theorem appearsOnlyAsSource_preserved :
-  forall A B ι a O,
-    A -[a | ι]ₙ-> B with O ->
-    forall ιs, appearsOnlyAsSourceAndNoLink ιs A.1 ->
-      ¬ isUsedPool ιs A.2 ->
-      Some ιs ≠ spawnPIDOf a ->
-      appearsOnlyAsSourceAndNoLink ιs B.1 /\ ¬isUsedPool ιs B.2.
-Proof with by setoid_rewrite lookup_insert_eq.
-  intros. inv H; simpl in *.
-  * clear H2. destruct H0.
-    split. split. 2: split.
-    - intro. apply H. apply isTargetedEther_etherAdd_rev in H2. assumption.
-      intro. subst. apply H1. right. exists ι, p. split. auto...
-      inv H3; simpl in *.
-      1-4: set_solver.
-      apply elem_of_union_list. exists ({[ιs]} ∪ usedPIDsVal reason).
-      split. 2: set_solver.
-      apply elem_of_elements, elem_of_map_to_set. do 2 eexists. split. 2: reflexivity.
-      assumption.
-    - intros. apply etherAdd_lookup in H2 as H2'. destruct H2'.
-      + by apply H0 in H4.
-      + destruct_hyps; subst.
-        intro.
-        assert (ιs ∈ usedPIDsSignal t). {
-          unfold etherAdd in H2. case_match; setoid_rewrite lookup_insert_eq in H2.
-          ** inv H2. apply app_inv_tail in H8. subst.
-             apply H0 in H5. rewrite flat_union_app in H4. simpl in H4.
-             set_solver.
-          ** inv H2. destruct x; inv H8. 2: { destruct x; inv H9. }
-             set_solver.
-        }
-        apply H1. right. exists ι, p. split. auto...
-        inv H3; simpl in *.
-        1-4: set_solver.
-        apply elem_of_union_list. exists ({[ι']} ∪ usedPIDsVal reason).
-        split. 2: set_solver.
-        apply elem_of_elements, elem_of_map_to_set. do 2 eexists. split. 2: reflexivity.
-        assumption.
-    - destruct H0. intros. apply etherAdd_lookup in H4 as H4'.
-      destruct H4'.
-      + by apply H2 in H5.
-      + destruct_hyps; subst.
-        assert (SLink ≠ t /\ forall r b, SExit r b <> t). {
-          inv H3; auto; exfalso;
-          apply H1; left...
-        }
-        unfold etherAdd in H4. case_match; setoid_rewrite lookup_insert_eq in H4.
-        ** inv H4. apply app_inv_tail in H8. subst.
-           apply H2 in H6. set_solver.
-        ** inv H4. destruct x; inv H8. 2: { destruct x; inv H9. }
-           set_solver.
-    - intro. apply H1. apply isUsedPool_insert_1 in H2.
-      apply isUsedPool_insert_2. intuition.
-      inv H3; simpl in *.
-      1-4: do 2 right; set_solver.
-      apply elem_of_union_list in H2. destruct_hyps.
-      apply elem_of_elements, elem_of_map_to_set in H0; destruct_hyps. subst.
-      apply lookup_delete_Some in H0 as [? ?].
-      do 2 right. apply elem_of_union_list. exists ({[x0]} ∪ usedPIDsVal x1). split.
-      2: assumption.
-      apply elem_of_elements, elem_of_map_to_set. do 2 eexists. split. 2: reflexivity.
-      assumption.
-  * destruct H0. split. split. 2: split.
-    - intro. apply H. eapply isTargetedEther_etherPop_rev; eassumption.
-    - intros. unfold etherPop in H3. repeat case_match; try congruence. inv H3.
-      apply H0 in H6. simpl in H6.
-      destruct (decide ((ι1, ι) = (ιs0, ιd))).
-      + inv e. setoid_rewrite lookup_insert_eq in H5. inv H5.
-        set_solver.
-      + setoid_rewrite lookup_insert_ne in H5; auto.
-        by apply H0 in H5.
-    - intros. unfold etherPop in H3. repeat case_match; try congruence. inv H3.
-      destruct H0 as [_ H0].
-      destruct (decide ((ι1, ι) = (ιs, ιd))).
-      + inv e. setoid_rewrite lookup_insert_eq in H5. inv H5.
-        apply H0 in H6. set_solver.
-      + setoid_rewrite lookup_insert_ne in H5; auto.
-        by apply H0 in H5.
-    - intro. apply H1. apply isUsedPool_insert_1 in H5.
-      apply isUsedPool_insert_2. destruct H5. 1: intuition. destruct H5. 1: intuition.
-      unfold etherPop in H3. repeat case_match; try congruence. inv H3.
-      destruct H0.
-      specialize (H0 _ _ _ H6).
-      simpl in H0.
-      inv H4; simpl in *; do 2 right.
-      + rewrite flat_union_app in H5. set_solver.
-      (* the following 3 cases can't happen, but only 2 would cause
-         issues (exit convert, link) since those add the source of the
-         signal to the usedPIDsProc *)
-      + set_solver.
-      + apply elem_of_union_list in H5; destruct_hyps.
-        apply elem_of_elements, elem_of_map_to_set in H4; destruct_hyps.
-        subst. apply lookup_gset_to_gmap_Some in H4 as [? ?]. subst.
-        apply elem_of_union in H5 as [|].
-        ** set_solver.
-        ** destruct_or! H12; destruct_hyps; subst; simpl in H5.
-           all: set_solver.
-      + rewrite flat_union_app in H5. simpl in H5.
-        assert (ιs <> ι1). {
-          intro. subst. apply H3 in H6 as [_ ?]. set_solver.
-        }
-        set_solver.
-      + assert (ιs <> ι1). {
-          intro. subst. apply H3 in H6. set_solver.
-        }
-        set_solver.
-      + set_solver.
-  * split. 1: assumption.
-    eapply not_isUsedPool_step. eassumption.
-    2: { eapply n_other. exact H3. assumption. }
-    destruct_or! H4; subst; simpl. 1,3: set_solver.
-    intro. apply H1. apply elem_of_singleton in H. subst. left...
-  * split. 1: assumption.
-    eapply not_isUsedPool_step.
-    eassumption. 2: eapply n_spawn; try eassumption.
-    assert (ιs <> ι') by congruence.
-    assert (ιs ∉ usedPIDsVal v1 ∪ usedPIDsVal v2). {
-      intro. apply H1. right. exists ι, p. split. auto...
-      inv H8; simpl; simpl in H9; set_solver.
-    }
-    set_solver.
-  Unshelve.
-    exact O.
-    exact ether.
-Qed.
-
-
-Unset Guard Checking.
-Theorem almost_terminated_bisim :
-  forall O A mb flag ι vs,
-    appearsOnlyAsSourceAndNoLink ι A.1 ->
-    ¬isUsedPool ι A.2 ->
-    ι ∉ O ->
-    A ~ᵇ (A.1, ι ↦ inl ([], RValSeq vs, mb, ∅, flag) ∥ A.2) observing O.
-Proof with left; by setoid_rewrite lookup_insert_eq.
-  cofix IH. intros * Heth HΠ HO. constructor; intros.
-  2,4: exists source; do 2 eexists; split; [apply n_refl|]; simpl; apply option_biforall_refl; intros; apply Signal_eq_refl.
-  * inversion H; subst; simpl in *.
-    - eapply appearsOnlyAsSource_preserved in H as [H_1 H_2]; try eassumption.
-      2: by simpl.
-      do 2 eexists. split.
-      + setoid_rewrite insert_insert_ne.
-        2: by apply not_isUsedPool_insert_1 in HΠ as [_ ?].
-        eapply n_trans. 2: apply n_refl. by apply n_send.
-      + setoid_rewrite insert_insert_ne. 2: apply not_isUsedPool_insert_1 in HΠ; set_solver.
-        apply IH; assumption.
-    - eapply appearsOnlyAsSource_preserved in H as [H_1 H_2]; try eassumption.
-      2: by simpl.
-      do 2 eexists. split.
-      + setoid_rewrite insert_insert_ne; subst.
-        2: by apply not_isUsedPool_insert_1 in HΠ as [_ ?].
-        eapply n_trans. 2: apply n_refl. by apply n_arrive.
-      + setoid_rewrite insert_insert_ne. 2: by apply not_isUsedPool_insert_1 in HΠ as [_ ?].
-        apply IH; try assumption.
-    - assert (ι <> ι0). {
-        intro. subst. apply HΠ...
-      }
-      do 2 eexists. split.
-      + setoid_rewrite insert_insert_ne. 2: assumption.
-        eapply n_trans. 2: apply n_refl. by apply n_other.
-      + setoid_rewrite insert_insert_ne. 2: auto.
-        apply IH; try assumption.
-        simpl.
-        eapply not_isUsedPool_step. eassumption. 2: apply n_other; eassumption.
-        destruct_or! H1; subst.
-        all: set_solver.
-    - assert (exists fresh, ¬isUsedPool fresh (ι0 ↦ p ∥ Π)
-                         /\ ¬appearsEther fresh ether
-                         /\ fresh <> ι'
-                         /\ fresh ∉ O
-                         /\ fresh ∉ usedPIDsAct (ASpawn ι' v1 v2 link_flag)
-                         /\ ¬isUsedPool fresh (ι ↦ inl ([], RValSeq vs, mb, ∅, flag) ∥ ι0 ↦ p ∥ Π)
-                         /\ ¬ isUsedPool fresh
-         (ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι0]} else ∅, false) ∥ ι0 ↦ p' ∥ Π)) as [fresh Hf]. {
-        (* freshness *)
-        clear.
-        pose proof (infinite_is_fresh (
-             elements (allPIDsPool (ι0 ↦ p ∥ Π))
-          ++ elements (allPIDsEther ether)
-          ++ [ι']
-          ++ elements O
-          ++ elements (usedPIDsAct (ASpawn ι' v1 v2 link_flag))
-          ++ elements (allPIDsPool (ι ↦ inl ([], RValSeq vs, mb, ∅, flag) ∥ ι0 ↦ p ∥ Π))
-          ++ elements (allPIDsPool (ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι0]} else ∅, false)
-                   ∥ ι0 ↦ p' ∥ Π))
-        )).
-        repeat apply not_elem_of_app in H as [? H].
-        apply not_elem_of_cons in H2 as [H2 _].
-        eexists. split_and!.
-        3: exact H2.
-        3-4: set_solver.
-        2: apply allPIDsEther_does_not_appear_1; set_solver.
-        all: apply allPIDsPool_isNotUsed_1; set_solver.
-      }
-      destruct_hyps.
-      assert (fresh <> ι0) as Hf2. {
-        intro. subst. apply H6...
-      }
-      assert (ι' <> ι0) as Hneq. {
-        intro. subst. apply H2...
-      }
-      assert (fresh <> ι) as Hf. {
-        intro. subst. apply H11...
-      }
-      assert (ι' ∉ usedPIDsVal v1 ∪ usedPIDsVal v2 ∪ usedPIDsProc p). {
-        intro. apply H2.
-        right. exists ι0, p. split. by setoid_rewrite lookup_insert_eq.
-        inv H5; simpl in *; set_solver.
-      }
-      assert (renamePIDProc ι' fresh 
-               (inl ([], r, emptyBox, if link_flag then {[ι0]} else ∅, false)) =
-               (inl ([], r, emptyBox, if link_flag then {[ι0]} else ∅, false))) as Hp.
-      {
-        cbn. replace (set_map (renamePIDPID ι' fresh) (if link_flag then {[ι0]} else ∅)) with
-                     (if link_flag then {[ι0]} else ∅ : gset PID). 2: {
-          case_match; auto. setoid_rewrite set_map_singleton_L.
-          clear -Hf2 Hneq. by renamePIDPID_case_match.
-        }
-        repeat f_equal.
-        rewrite isNotUsed_renamePID_red. reflexivity.
-        destruct v1; inv H4; cbn.
-        1-8: set_solver.
-        case_match; inv H15. 2: set_solver.
-        simpl. intro. apply subst_usedPIDs in H14; simpl in *.
-        destruct H14; destruct_hyps. set_solver.
-        apply list_subst_idsubst_inl in H14.
-        apply elem_of_app in H14 as [|].
-        * apply elem_of_map_iff in H14; destruct_hyps. destruct x1, p0. subst.
-          simpl in H15. apply elem_of_union in H15 as [|]. 2: set_solver.
-          assert (ι' ∈ flat_union (λ x : nat * nat * Exp, usedPIDsExp x.2) ext). {
-            apply elem_of_flat_union. eexists; split; eassumption.
-          }
-          set_solver.
-        * eapply mk_list_usedPIDs in H0.
-          assert (ι' ∈ flat_union usedPIDsVal l). {
-            apply elem_of_flat_union. eexists; split; eassumption.
-          }
-          set_solver.
-      }
-      assert (
-       ι0 ↦ renamePIDProc ι' fresh p' 
-       ∥ fresh
-         ↦ (inl ([], r, emptyBox, if link_flag then {[ι0]} else ∅, false)) ∥ Π .[ ι' ⇔ fresh ]ₚₚ = ι0 ↦ renamePIDProc ι' fresh p' 
-       ∥ fresh
-         ↦ (inl ([], r, emptyBox, if link_flag then {[ι0]} else ∅, false)) ∥ Π
-      ) as HΠ2.
-      {
-        apply map_eq. intros.
-        destruct (decide (ι0 = i)).
-        - subst. by setoid_rewrite lookup_insert_eq.
-        - setoid_rewrite lookup_insert_ne; auto.
-          destruct (decide (fresh = i)).
-          + subst. by setoid_rewrite lookup_insert_eq.
-          + setoid_rewrite lookup_insert_ne; auto.
-            destruct (decide (i = ι')).
-            ** subst.
-               replace (ι') with (renamePIDPID_sym ι' fresh fresh) at 1 by renamePIDPID_sym_case_match.
-               setoid_rewrite lookup_kmap; auto. setoid_rewrite lookup_fmap.
-               assert (fresh ∉ dom Π /\ ι' ∉ dom Π) as [D1 D2]. {
-                 split.
-                 * apply not_isUsedPool_insert_1 in H6. apply H6.
-                 * apply not_isUsedPool_insert_1 in H2. apply H2.
-               }
-               apply not_elem_of_dom in D1, D2. setoid_rewrite D1.
-               by setoid_rewrite D2.
-            ** replace i with (renamePIDPID_sym ι' fresh i) at 1 by renamePIDPID_sym_case_match.
-               setoid_rewrite lookup_kmap; auto. setoid_rewrite lookup_fmap.
-               destruct (Π !! i) eqn:P; setoid_rewrite P. 2: reflexivity.
-               simpl.
-               setoid_rewrite isNotUsed_renamePID_proc. reflexivity.
-               -- intro. apply H2. right. exists i, p0. split. 2: eassumption.
-                  by setoid_rewrite lookup_insert_ne.
-               -- intro. apply H6. right. exists i, p0. split. 2: eassumption.
-                  by setoid_rewrite lookup_insert_ne.
-      }
-      assert (ι <> ι0). 1: intro; subst; apply HΠ...
-      exists (renamePIDEther ι' fresh ether, ι ↦ inl ([], RValSeq vs, mb, ∅, flag) ∥ renamePIDPool ι' fresh (
-      ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι0]} else ∅, false) ∥ ι0 ↦ p' ∥ Π)), [(renamePIDAct ι' fresh (ASpawn ι' v1 v2 link_flag), ι0)].
-      split.
-      + setoid_rewrite (insert_insert_ne _ ι ι0); auto.
-        setoid_rewrite (insert_insert_ne _ ι' ι0); auto.
-        repeat rewrite pool_insert_renamePID.
-        replace (renamePIDPID_sym ι' fresh ι0) with ι0.
-        replace (renamePIDPID_sym ι' fresh ι') with fresh.
-        2: {
-          renamePIDPID_sym_case_match.
-        }
-        2: {
-          (* clear -H9 H4 H12. *) renamePIDPID_sym_case_match.
-        }
-        simpl renamePIDAct.
-        rewrite Hp, HΠ2.
-        replace (renamePIDPID ι' fresh ι') with fresh by renamePIDPID_case_match.
-        rewrite isNotUsed_renamePID_val, isNotUsed_renamePID_val.
-        2-3: set_solver.
-        eapply n_trans. eapply n_spawn; try eassumption.
-        ** setoid_rewrite insert_insert_ne. assumption. set_solver.
-        ** eapply renamePID_is_preserved_local with (from := ι') (to := fresh) in H5.
-           simpl in H5.
-           rewrite isNotUsed_renamePID_val, isNotUsed_renamePID_val in H5.
-           replace (renamePIDPID ι' fresh ι') with fresh in H5 by renamePIDPID_case_match.
-           rewrite isNotUsed_renamePID_proc in H5.
-           exact H5.
-           1,3-5: set_solver.
-           all: intro; apply H11; right; exists ι0, p; split; [|assumption].
-           all: setoid_rewrite lookup_insert_ne; auto; by setoid_rewrite lookup_insert_eq.
-        ** rewrite does_not_appear_renamePID_ether; auto.
-           setoid_rewrite (insert_insert_ne _ ι ι0); auto.
-           setoid_rewrite (insert_insert_ne _ fresh ι0); auto.
-           setoid_rewrite (insert_insert_ne _ fresh ι); auto.
-           apply n_refl.
-      + eapply barbedBisim_trans.
-        eapply (rename_bisim O _ _ [(ι', fresh)]). cbn. set_solver.
-        simpl. apply IH; simpl. 3: assumption.
-        ** by rewrite does_not_appear_renamePID_ether.
-        ** repeat rewrite pool_insert_renamePID.
-           replace (renamePIDPID_sym ι' fresh ι0) with ι0.
-           replace (renamePIDPID_sym ι' fresh ι') with fresh.
-           2: {
-             renamePIDPID_sym_case_match.
-           }
-           2: {
-             renamePIDPID_sym_case_match.
-           }
-           rewrite Hp.
-           setoid_rewrite (insert_insert_ne _ fresh ι0); auto.
-           setoid_rewrite HΠ2.
-           intro. apply HΠ. apply isUsedPool_insert_1 in H15 as [|].
-           setoid_rewrite delete_insert_ne in H15; auto.
-           apply isUsedPool_insert_1 in H15 as [|].
-           -- apply isUsedPool_insert_2. left.
-              setoid_rewrite (delete_id _ fresh) in H15.
-              assumption.
-              apply not_elem_of_dom.
-              apply not_isUsedPool_insert_1 in H6 as [HD _].
-              clear -HD. set_solver.
-           -- destruct H15. congruence.
-              simpl in H15.
-              right. exists ι0, p. split. by setoid_rewrite lookup_insert_eq.
-              inv H5; simpl in *;
-              destruct (Nat.eqb) in H4; inv H4.
-              2,4: set_solver.
-              ++ repeat rewrite union_empty_r_L in H15.
-                 rewrite union_empty_l_L in H15.
-                 simpl in H15. apply subst_usedPIDs in H15; simpl in *.
-                 destruct H15; destruct_hyps. clear-H4; set_solver.
-                 apply list_subst_idsubst_inl in H4.
-                 apply elem_of_app in H4 as [|].
-                 *** apply elem_of_map_iff in H4; destruct_hyps. destruct x1, p. subst.
-                     simpl in H5. apply elem_of_union in H5 as [|]. 2: clear-H4; set_solver.
-                     assert (ι ∈ flat_union (λ x : nat * nat * Exp, usedPIDsExp x.2) ext). {
-                       apply elem_of_flat_union. eexists; split; try eassumption.
-                     }
-                     clear -H5. set_solver.
-                 *** eapply mk_list_usedPIDs in H0.
-                     assert (ι ∈ flat_union usedPIDsVal l). {
-                       apply elem_of_flat_union. eexists; split; eassumption.
-                     }
-                     clear -H0 H15. set_solver.
-              ++ repeat rewrite union_empty_r_L in H15.
-                 rewrite union_empty_l_L in H15.
-                 simpl in H15. apply elem_of_union in H15 as [H15 | H15].
-                 2: {
-                   clear -H15 H14. set_solver.
-                 }
-                 apply subst_usedPIDs in H15; simpl in *.
-                 destruct H15; destruct_hyps. clear-H5; set_solver.
-                 apply list_subst_idsubst_inl in H5.
-                 apply elem_of_app in H5 as [|].
-                 *** apply elem_of_map_iff in H5; destruct_hyps. destruct x1, p. subst.
-                     simpl in H15. apply elem_of_union in H15 as [|]. 2: clear-H5; set_solver.
-                     assert (ι ∈ flat_union (λ x : nat * nat * Exp, usedPIDsExp x.2) ext). {
-                       apply elem_of_flat_union. eexists; split; try eassumption.
-                     }
-                     clear -H15. set_solver.
-                 *** eapply mk_list_usedPIDs in H0.
-                     assert (ι ∈ flat_union usedPIDsVal l). {
-                       apply elem_of_flat_union. eexists; split; eassumption.
-                     }
-                     clear -H0 H16. set_solver.
-           -- destruct H15. congruence.
-              right. exists ι0. eexists. split. by setoid_rewrite lookup_insert_eq.
-              assert (fresh ∉ usedPIDsProc p). {
-                intro. apply H6. right. do 2 eexists. split.
-                by setoid_rewrite lookup_insert_eq. assumption.
-              }
-              apply renamePID_is_preserved_local with (from := ι') (to := fresh) in H5.
-              2-3: assumption.
-              simpl in H5.
-              rewrite isNotUsed_renamePID_val, isNotUsed_renamePID_val in H5.
-              2-3: clear -H13;set_solver.
-              rewrite renamePIDPID_1 in H5.
-              rewrite isNotUsed_renamePID_proc in H5. 2-3: try assumption; set_solver.
-              eapply not_isUsedProc_step in H5. eassumption. assumption.
-              simpl.
-              intro. apply HΠ. right. do 2 eexists. split. by setoid_rewrite lookup_insert_eq. inv H5; simpl in *; set_solver.
-  * destruct (decide (ι0 = ι)).
-    {
-      subst. destruct A as [Aeth AΠ]. destruct B' as [Beth BΠ]. inv H.
-      * put (lookup ι : ProcessPool -> _) on H2 as D.
-        setoid_rewrite lookup_insert_eq in D. inv D. inv H4.
-      * put (lookup ι : ProcessPool -> _) on H1 as D.
-        setoid_rewrite lookup_insert_eq in D.
-        unfold etherPop in H5. repeat case_match; try congruence. inv D.
-        simpl in Heth. destruct Heth as [? _].
-        exfalso. apply H0. exists ι1. eexists. eassumption.
-      * put (lookup ι : ProcessPool -> _) on H1 as D.
-        setoid_rewrite lookup_insert_eq in D. inv D.
-        destruct_or! H7; subst; inv H5. inv H7.
-        rewrite gset_to_gmap_empty. do 2 eexists. split. apply n_refl.
-        replace (ι ↦ inr ∅ ∥ Π) with (ι ↦ inr ∅ ∥ AΠ). 2: {
-          apply map_eq. intros.
-          put (lookup i : ProcessPool -> _) on H1 as D.
-          destruct (decide (ι = i)).
-          subst. by setoid_rewrite lookup_insert_eq.
-          setoid_rewrite lookup_insert_ne in D; auto.
-          by setoid_rewrite lookup_insert_ne.
-        }
-        apply terminated_process_bisim. assumption.
-        intro.
-        apply HΠ. left. intro. by apply not_elem_of_dom in H0.
-      * put (lookup ι : ProcessPool -> _) on H1 as D.
-        setoid_rewrite lookup_insert_eq in D. inv D. inv H11.
-    }
-    {
-      destruct A. simpl in *. destruct B'.
-      inv H.
-      - assert (p = ι0 ↦ p1 ∥ p) as Eq1. {
-          apply map_eq.
-          intro. put (lookup i : ProcessPool -> _) on H2 as HD.
-          destruct (decide (i = ι0)).
-          * subst. setoid_rewrite lookup_insert_eq.
-            setoid_rewrite lookup_insert_eq in HD.
-            setoid_rewrite lookup_insert_ne in HD; auto.
-          * by setoid_rewrite lookup_insert_ne.
-        }
-        rewrite Eq1.
-        do 2 eexists. split.
-        + eapply n_trans. 2: apply n_refl. by apply n_send.
-        + replace (ι0 ↦ p' ∥ prs) with
-            (ι ↦ inl ([], RValSeq vs, mb, ∅, flag) ∥ ι0 ↦ p' ∥ p). 2: {
-            apply map_eq. intros.
-            put (lookup i : ProcessPool -> _) on H2 as HD.
-            destruct (decide (i = ι)).
-            * subst. setoid_rewrite lookup_insert_eq.
-              setoid_rewrite lookup_insert_ne; auto.
-              setoid_rewrite lookup_insert_eq in HD.
-              setoid_rewrite lookup_insert_ne in HD; auto.
-            * destruct (decide (i = ι0)).
-              - subst. setoid_rewrite lookup_insert_eq.
-                setoid_rewrite lookup_insert_ne; auto.
-                by setoid_rewrite lookup_insert_eq.
-              - setoid_rewrite lookup_insert_ne in HD; auto.
-                repeat setoid_rewrite lookup_insert_ne; auto.
-          }
-          apply IH; try assumption. simpl.
-          ** destruct Heth, H0.
-             assert (ι <> ι'). {
-               intro. apply HΠ. rewrite Eq1.
-               right. do 2 eexists. split. by setoid_rewrite lookup_insert_eq.
-               inv H4; simpl. 1-4: set_solver.
-               apply elem_of_union_list. exists ({[ι']} ∪ usedPIDsVal reason).
-               split. 2: set_solver.
-               apply elem_of_elements, elem_of_map_to_set.
-               do 2 eexists. split. eassumption. reflexivity.
-             }
-             assert (ι ∉ usedPIDsSignal t). {
-               intro. apply HΠ. rewrite Eq1.
-               right. do 2 eexists. split. by setoid_rewrite lookup_insert_eq.
-               inv H4; simpl. 1-2: set_solver.
-               apply elem_of_union_list. exists ({[ι']} ∪ usedPIDsVal reason).
-               split. 2: set_solver.
-               apply elem_of_elements, elem_of_map_to_set.
-               do 2 eexists. split. eassumption. reflexivity.
-             }
-             split. 2: split.
-             -- intro. apply isTargetedEther_etherAdd_rev in H6. congruence.
-                by auto.
-             -- intros. destruct (decide ((ι0, ι') = (ιs, ιd))).
-                ++ inv e0. unfold etherAdd in H6.
-                   case_match; setoid_rewrite lookup_insert_eq in H6; inv H6.
-                   2: set_solver.
-                   rewrite flat_union_app. apply H0 in H7. set_solver.
-                ++ unfold etherAdd in H6.
-                   case_match; setoid_rewrite lookup_insert_ne in H6; auto; inv H6.
-                   all: by apply H0 in H9.
-             -- intros. unfold etherAdd in H6.
-                case_match; setoid_rewrite lookup_insert_ne in H6.
-                2,4: intro X; inv X; lia.
-                all: by apply H1 in H6.
-          ** simpl.
-             rewrite Eq1 in HΠ.
-             eapply not_isUsedPool_step. exact HΠ.
-             2: apply n_send; eassumption. simpl. intro.
-             apply HΠ. right. do 2 eexists. split. by setoid_rewrite lookup_insert_eq.
-             inv H4; simpl in H. 1-4: set_solver. simpl.
-             apply elem_of_union_list. exists ({[ι']} ∪ usedPIDsVal reason). split.
-             2: set_solver.
-             apply elem_of_elements, elem_of_map_to_set. do 2 eexists; split.
-             eassumption. reflexivity.
-         Unshelve.
-          all: exact ∅.
-      - assert (p = ι0 ↦ p1 ∥ p) as Eq1. {
-          apply map_eq.
-          intro. put (lookup i : ProcessPool -> _) on H1 as HD.
-          destruct (decide (i = ι0)).
-          * subst. setoid_rewrite lookup_insert_eq.
-            setoid_rewrite lookup_insert_eq in HD.
-            setoid_rewrite lookup_insert_ne in HD; auto.
-          * by setoid_rewrite lookup_insert_ne.
-        }
-        rewrite Eq1.
-        do 2 eexists. split.
-        + eapply n_trans. 2: apply n_refl. by apply n_arrive.
-        + replace (ι0 ↦ p' ∥ prs) with
-            (ι ↦ inl ([], RValSeq vs, mb, ∅, flag) ∥ ι0 ↦ p' ∥ p). 2: {
-            apply map_eq. intros.
-            put (lookup i : ProcessPool -> _) on H1 as HD.
-            destruct (decide (i = ι)).
-            * subst. setoid_rewrite lookup_insert_eq.
-              setoid_rewrite lookup_insert_ne; auto.
-              setoid_rewrite lookup_insert_eq in HD.
-              setoid_rewrite lookup_insert_ne in HD; auto.
-            * destruct (decide (i = ι0)).
-              - subst. setoid_rewrite lookup_insert_eq.
-                setoid_rewrite lookup_insert_ne; auto.
-                by setoid_rewrite lookup_insert_eq.
-              - setoid_rewrite lookup_insert_ne in HD; auto.
-                repeat setoid_rewrite lookup_insert_ne; auto.
-          }
-          apply IH; try assumption.
-          ** simpl. destruct Heth, H0.
-             split. 2: split.
-             -- intro. eapply isTargetedEther_etherPop_rev in H3. 2: eassumption.
-                congruence.
-             -- intros. unfold etherPop in H5; repeat case_match; try congruence.
-                inv H5. destruct (decide ((ι2, ι0) = (ιs, ιd))).
-                ++ inv e0. setoid_rewrite lookup_insert_eq in H3. inv H3.
-                   apply H0 in H4. set_solver.
-                ++ setoid_rewrite lookup_insert_ne in H3; auto.
-                   by apply H0 in H3.
-             -- intros. unfold etherPop in H5; repeat case_match; try congruence.
-                inv H5. destruct (decide ((ι2, ι0) = (ι, ιd))).
-                ++ inv e0. setoid_rewrite lookup_insert_eq in H3. inv H3.
-                   apply H2 in H4. set_solver.
-                ++ setoid_rewrite lookup_insert_ne in H3; auto.
-                   by apply H2 in H3.
-          ** simpl.
-             intro. rewrite Eq1 in HΠ.
-             unfold etherPop in H5. repeat case_match; try congruence. inv H5.
-             destruct Heth, H3.
-             assert (ι0 <> ι). {
-               intro. subst. apply HΠ...
-             }
-             assert (ι ∉ usedPIDsSignal t). {
-               intro. apply H3 in H0. set_solver.
-             }
-             apply H3 in H0 as P.
-             inv H7.
-             -- apply HΠ.
-                clear -H6 H H5. unfold mailboxPush in H. destruct mb0 ; simpl in *.
-                apply isUsedPool_insert_1 in H as [|[|]]. 2: congruence.
-                all: apply isUsedPool_insert_2.
-                1: by left.
-                do 2 right. simpl in H. rewrite flat_union_app in H. set_solver.
-             -- apply HΠ.
-                clear -H6 H H5 H13.
-                apply isUsedPool_insert_1 in H as [|[|]]. 2: congruence.
-                all: apply isUsedPool_insert_2.
-                1: by left.
-                do 2 right. simpl in H.
-                apply elem_of_union_list in H. destruct_hyps.
-                apply elem_of_elements, elem_of_map_to_set in H. destruct_hyps.
-                subst. apply lookup_gset_to_gmap_Some in H as [? ?]. subst.
-                destruct_or!; destruct_and!; subst; simpl in *; set_solver.
-             -- apply HΠ. assert (ι <> ι2) as X. {
-                  intro. subst. apply H4 in H0 as [_ ?]. clear -H0. set_solver.
-                }
-                clear -H6 H H5 X.
-                apply isUsedPool_insert_1 in H as [|[|]]. 2: congruence.
-                all: apply isUsedPool_insert_2.
-                1: by left.
-                do 2 right. simpl in H. rewrite flat_union_app in H.
-                simpl in H. set_solver.
-             -- apply HΠ. assert (ι <> ι2) as X. {
-                  intro. subst. apply H4 in H0 as [? _]. clear -H0. set_solver.
-                }
-                clear -H6 H H5 X.
-                apply isUsedPool_insert_1 in H as [|[|]]. 2: congruence.
-                all: apply isUsedPool_insert_2.
-                1: by left.
-                do 2 right. simpl in H. set_solver.
-             -- apply HΠ.
-                apply isUsedPool_insert_1 in H as [|[|]]. 2: congruence.
-                all: apply isUsedPool_insert_2.
-                1: by left.
-                do 2 right. simpl in H. set_solver.
-      - assert (p = ι0 ↦ p1 ∥ p) as Eq1. {
-          apply map_eq.
-          intro. put (lookup i : ProcessPool -> _) on H1 as HD.
-          destruct (decide (i = ι0)).
-          * subst. setoid_rewrite lookup_insert_eq.
-            setoid_rewrite lookup_insert_eq in HD.
-            setoid_rewrite lookup_insert_ne in HD; auto.
-          * by setoid_rewrite lookup_insert_ne.
-        }
-        rewrite Eq1.
-        do 2 eexists. split.
-        + eapply n_trans. 2: apply n_refl. by apply n_other.
-        + replace (ι0 ↦ p' ∥ Π) with
-            (ι ↦ inl ([], RValSeq vs, mb, ∅, flag) ∥ ι0 ↦ p' ∥ p). 2: {
-            apply map_eq. intros.
-            put (lookup i : ProcessPool -> _) on H1 as HD.
-            destruct (decide (i = ι)).
-            * subst. setoid_rewrite lookup_insert_eq.
-              setoid_rewrite lookup_insert_ne; auto.
-              setoid_rewrite lookup_insert_eq in HD.
-              setoid_rewrite lookup_insert_ne in HD; auto.
-            * destruct (decide (i = ι0)).
-              - subst. setoid_rewrite lookup_insert_eq.
-                setoid_rewrite lookup_insert_ne; auto.
-                by setoid_rewrite lookup_insert_eq.
-              - setoid_rewrite lookup_insert_ne in HD; auto.
-                repeat setoid_rewrite lookup_insert_ne; auto.
-          }
-          apply IH; try assumption.
-          ** simpl.
-             rewrite Eq1 in HΠ.
-             eapply not_isUsedPool_step. exact HΠ.
-             2: apply n_other; eassumption.
-             destruct_or! H7; subst; set_solver.
-         Unshelve.
-          all: exact ∅.
-      - assert (p = ι0 ↦ p1 ∥ p) as Eq1. {
-          apply map_eq.
-          intro. put (lookup i : ProcessPool -> _) on H1 as HD.
-          destruct (decide (i = ι0)).
-          * subst. setoid_rewrite lookup_insert_eq.
-            setoid_rewrite lookup_insert_eq in HD.
-            setoid_rewrite lookup_insert_ne in HD; auto.
-          * by setoid_rewrite lookup_insert_ne.
-        }
-        rewrite Eq1.
-        assert (ι' <> ι0) as Hneq1. {
-          intro. subst. apply H6...
-        }
-        assert (ι' <> ι) as Hneq2. {
-          intro. subst. rewrite H1 in H6. apply H6...
-        }
-        do 2 eexists. split.
-        + eapply n_trans. 2: apply n_refl. eapply n_spawn; try eassumption.
-          rewrite H1, Eq1 in H6.
-          intro. apply H6.
-          apply isUsedPool_insert_2. left.
-          setoid_rewrite delete_id. assumption.
-          apply not_elem_of_dom. setoid_rewrite dom_insert_L.
-          assert (ι ∉ dom p). {
-            intro. apply HΠ. left. intro. by apply not_elem_of_dom in H2.
-          }
-          set_solver.
-        + replace (ι0 ↦ p' ∥ Π) with
-            (ι ↦ inl ([], RValSeq vs, mb, ∅, flag) ∥ ι0 ↦ p' ∥ p). 2: {
-            apply map_eq. intros.
-            put (lookup i : ProcessPool -> _) on H1 as HD.
-            destruct (decide (i = ι)).
-            * subst. setoid_rewrite lookup_insert_eq.
-              setoid_rewrite lookup_insert_ne; auto.
-              setoid_rewrite lookup_insert_eq in HD.
-              setoid_rewrite lookup_insert_ne in HD; auto.
-            * destruct (decide (i = ι0)).
-              - subst. setoid_rewrite lookup_insert_eq.
-                setoid_rewrite lookup_insert_ne; auto.
-                by setoid_rewrite lookup_insert_eq.
-              - setoid_rewrite lookup_insert_ne in HD; auto.
-                repeat setoid_rewrite lookup_insert_ne; auto.
-          }
-          setoid_rewrite (insert_insert_ne _ ι' ι); auto.
-          assert (ι0 <> ι) as XX. {
-            intro. subst. apply HΠ. rewrite Eq1...
-          }
-          apply IH; try assumption.
-          ** simpl in *.
-             intro. apply HΠ.
-             rewrite H1 in *.
-             apply isUsedPool_insert_1 in H as [|[|]].
-             2: congruence.
-             setoid_rewrite delete_insert_ne in H; auto.
-             apply isUsedPool_insert_1 in H as [|[|]].
-             2: congruence.
-             -- apply not_isUsedPool_insert_1 in H6 as DOM.
-                destruct DOM.
-                setoid_rewrite (delete_id _ ι') in H. 2: by apply not_elem_of_dom.
-                rewrite Eq1. apply isUsedPool_insert_2. by left.
-             -- rewrite Eq1. right. exists ι0, p1. split. by setoid_rewrite lookup_insert_eq.
-                inv H11; simpl in *; set_solver.
-             -- rewrite Eq1. right. exists ι0, p1. split. by setoid_rewrite lookup_insert_eq.
-                inv H11; simpl in *; case_match; inv H10.
-                2,4: set_solver.
-                ++ repeat rewrite union_empty_r_L in H.
-                   rewrite union_empty_l_L in H.
-                   simpl in H. apply subst_usedPIDs in H; simpl in *.
-                   destruct H; destruct_hyps. clear-H; set_solver.
-                   apply list_subst_idsubst_inl in H.
-                   apply elem_of_app in H as [|].
-                   *** apply elem_of_map_iff in H; destruct_hyps. destruct x1, p0. subst.
-                       simpl in H2. apply elem_of_union in H2 as [|]. 2: clear-H; set_solver.
-                       assert (ι ∈ flat_union (λ x : nat * nat * Exp, usedPIDsExp x.2) ext). {
-                         apply elem_of_flat_union. eexists; split; try eassumption.
-                       }
-                       clear -H2. set_solver.
-                   *** eapply mk_list_usedPIDs in H4.
-                       assert (ι ∈ flat_union usedPIDsVal l). {
-                         apply elem_of_flat_union. eexists; split; eassumption.
-                       }
-                       clear -H3 H4. set_solver.
-                ++ repeat rewrite union_empty_r_L in H.
-                   rewrite union_empty_l_L in H.
-                   simpl in H. apply elem_of_union in H as [H | H].
-                   2: {
-                     clear -H XX. set_solver.
-                   }
-                   apply subst_usedPIDs in H; simpl in *.
-                   destruct H; destruct_hyps. clear-H; set_solver.
-                   apply list_subst_idsubst_inl in H.
-                   apply elem_of_app in H as [|].
-                   *** apply elem_of_map_iff in H; destruct_hyps. destruct x1, p0. subst.
-                       simpl in H2. apply elem_of_union in H2 as [|]. 2: clear-H; set_solver.
-                       assert (ι ∈ flat_union (λ x : nat * nat * Exp, usedPIDsExp x.2) ext). {
-                         apply elem_of_flat_union. eexists; split; try eassumption.
-                       }
-                       clear -H2. set_solver.
-                   *** eapply mk_list_usedPIDs in H4.
-                       assert (ι ∈ flat_union usedPIDsVal l). {
-                         apply elem_of_flat_union. eexists; split; eassumption.
-                       }
-                       clear -H4 H3. set_solver.
-    }
-Qed.
-Set Guard Checking.
-
-(** The correctness of list splitting (`lists:split`) *)
-(* TODO: this theorem depends on stdpp, thus cannot be simply moved to Auxiliaries.v *)
-Lemma eval_split_correct :
-  forall l l' idx,
-  mk_list l = Some l' ->
-  idx < length l' ->
-  eval_split (VLit (Z.of_nat idx)) l = RValSeq [VTuple [meta_to_cons (take idx l'); meta_to_cons (drop idx l')]].
-Proof.
-  intros. simpl.
-  case_match.
-  * apply Z.ltb_lt in H1. lia.
-  * rewrite Nat2Z.id.
-    clear H1. revert l l' H0 H. induction idx; intros.
-    - simpl. rewrite drop_0. by erewrite mk_list_meta_to_cons.
-    - simpl. destruct l; inv H. simpl in H0. lia.
-      case_match. 2: congruence. inv H2. simpl in H0.
-      specialize (IHidx l2 l ltac:(lia) H). case_match. 2: congruence.
-      destruct p. simpl.
-      by inv IHidx.
-Qed.
-
-Section seq_map_eval.
-
-Context {l : Val}
-        {l' : list Val}
-        {ident : nat}
-        {f : Val -> Val}
-        {f_clos : Val}
-        {f_clos_closed : VALCLOSED f_clos}.
-
-Hypothesis f_simulates :
-  forall v : Val,
-    v ∈ l' ->
-    exists e_body eff,
-    create_result (IApp f_clos) [v] = Some (e_body, eff) /\
-    ⟨[], e_body⟩ -->* RValSeq [f v].
-Hypothesis l_is_proper : mk_list l = Some l'.
-Hypothesis f_closed : forall v, VALCLOSED v -> VALCLOSED (f v).
-Hypothesis l_closed : VALCLOSED l.
-
-Definition map_body : Exp :=
-  ECase (˝VVar 2) [
-      ([PNil], ˝ttrue, ˝VNil);
-      ([PCons PVar PVar], ˝ttrue, °ECons (EApp (˝VVar 3) [˝VVar 0])
-                                        (EApp (˝VVar 2) [˝VVar 3;˝VVar 1])
-      )
-    ].
-
-Definition map_clos : Val :=
-  VClos [(ident, 2, map_body)] ident 2 map_body.
-
-Lemma map_clos_closed :
-  VALCLOSED map_clos.
-Proof.
-  scope_solver.
-Qed.
+Import Notations.
 
 Hint Resolve map_clos_closed : examples.
-
-Open Scope string_scope.
-
-Ltac do_step := econstructor; [constructor;auto with examples| simpl].
-
-Theorem map_clos_eval :
-  ⟨[], EApp (˝map_clos) [˝f_clos; ˝l]⟩ -->* RValSeq [meta_to_cons (map f l')].
-Proof.
-  generalize dependent l'. clear l_is_proper.
-  induction l; intros; simpl in *; inv l_is_proper.
-  * simpl.
-    eexists. split. repeat constructor.
-    do 7 do_step.
-    econstructor. econstructor; auto. cbn.
-    do 6 do_step.
-    constructor.
-  * case_match. 2: congruence. destruct l'0; inv H0. clear IHv1.
-    inv l_closed.
-    epose proof (IHv2 H4 _ _ eq_refl) as IHD.
-  Unshelve.
-  2: {
-    intros. apply f_simulates0. set_solver.
-  }
-    clear IHv2.
-    destruct IHD as [clock [IHv2 IHD]].
-    epose proof (f_simulates0 v) as [e_v [eff_v [HRes [k_v [HRv HD]]]]].
-    1: by set_solver.
-    eexists. split.
-    {
-      simpl. constructor.
-    }
-    do 7 do_step.
-    econstructor. econstructor; auto. cbn.
-    do 2 do_step.
-    econstructor. apply eval_step_case_not_match. reflexivity.
-    do 4 do_step.
-    eapply transitive_eval.
-    rewrite <- app_nil_l at 1. apply frame_indep_nil.
-    {
-      repeat rewrite vclosed_ignores_ren; auto.
-      rewrite vclosed_ignores_sub; auto.
-      exact IHD.
-    }
-    repeat rewrite vclosed_ignores_ren; auto.
-    rewrite vclosed_ignores_sub; auto.
-    do 6 do_step.
-    econstructor. econstructor; auto. simpl. symmetry. exact HRes.
-    eapply transitive_eval.
-    rewrite <- app_nil_r at 1. eapply frame_indep_core in HD.
-    exact HD.
-    econstructor. constructor; auto. simpl.
-    constructor.
-Qed.
-
-End seq_map_eval.
-
-Goal forall ident,
-  ⟨[], °EApp (˝@map_clos ident) [°EFun 1 (ECall (˝erlang) (˝VLit "+"%string) [˝VVar 0; ˝VLit 1%Z]);˝VCons (VLit 1%Z) (VCons (VLit 2%Z) VNil)]⟩
-    -->* RValSeq [VCons (VLit 2%Z) (VCons (VLit 3%Z) VNil)]
-.
-Proof.
-  intros.
-  epose proof (@map_clos_eval (VCons (VLit 1%Z) (VCons (VLit 2%Z) VNil))
-                      [VLit 1%Z; VLit 2%Z] ident
-                      (fun v : Val =>
-                         match eval_arith "erlang" "+" [v; VLit 1%Z] with
-                         | RValSeq [v] => v
-                         | _ => VLit 0%Z
-                         end)
-                      (VClos [] 0 1 (ECall (˝erlang) (˝VLit "+"%string) [˝VVar 0; ˝VLit 1%Z])) ltac:(scope_solver) _ eq_refl _ ltac:(scope_solver)).
-  simpl in H. destruct H as [k [Hr Hd]].
-  (* We have to take the hypothesis and the goal to the same state -> where
-     EFun becomes a VClos *)
-  inv Hd. inv H. inv H0. inv H. inv H1. inv H. inv H0. inv H. inv H1. inv H.
-  (* We reached this state in the hypothesis *)
-  eexists. split. assumption.
-  do 5 do_step. (* We need 5 steps in the goal to reach the same state *)
-  eassumption.
-  (* Side conditions: *)
-Unshelve.
-  (* f_simulates *)
-  * intros. simpl. eexists. exists None. split. reflexivity.
-    destruct v; simpl. 2: destruct l; simpl.
-    all: try set_solver.
-    assert (x = 1%Z \/ x = 2%Z) as [H0 | H0] by set_solver; subst.
-    all: eexists; split; [constructor | do 9 do_step].
-    all: econstructor; [econstructor|].
-    1,3: reflexivity.
-    all: cbn; constructor.
-  (* f_closed *)
-  * intros. destruct v; simpl. 2: destruct l; simpl.
-    all: try set_solver.
-Qed.
-
-
-Hint Resolve map_clos_closed : examples.
-
-
 
 Section map_pmap.
 
+(** The mapped list `l` (and its meta-level representation `l'`), the mapped
+    function `f`, simulated by the closure `f_clos`, and the observed PID
+    `ι`. *)
 Context {l : Val}
         {l' : list Val}
         {ident : nat}
         {f : Val -> Val}
         {f_clos : Val}
         {f_clos_closed : VALCLOSED f_clos}
-        {ι : PID} (* This PID will be observed *).
+        {ι : PID}.
 
+(** The closure `f_clos` computes `f` on the elements of the list. *)
 Hypothesis f_simulates :
   forall v : Val,
     v ∈ l' ->
     exists e_body eff,
     create_result (IApp f_clos) [v] = Some (e_body, eff) /\
     ⟨[], e_body⟩ -->* RValSeq [f v].
+(** `l` is a proper list. *)
 Hypothesis l_is_proper : mk_list l = Some l'.
+(** `f` maps closed values to closed values. *)
 Hypothesis f_closed : forall v, VALCLOSED v -> VALCLOSED (f v).
+(** `l` is closed. *)
 Hypothesis l_closed : VALCLOSED l.
+(** No PIDs appear in the list. *)
 Hypothesis (l_is_free_of_PIDs : usedPIDsVal (meta_to_cons l') = ∅).
-(* These should be rephrased as properties of `f` + l_is_free_of_PIDs *)
+(** No PIDs appear in the mapped parts of the list. These two hypotheses
+    should be rephrased as properties of `f` (together with
+    `l_is_free_of_PIDs`). *)
 Hypothesis (Hfmeta1 : forall idx, usedPIDsVal (meta_to_cons (map f (take idx l'))) = ∅).
 Hypothesis (Hfmeta2 : forall idx, usedPIDsVal (meta_to_cons (map f (drop idx l'))) = ∅).
 
 Open Scope string_scope.
 
+(** The list is split at the valid index `idx`. *)
 Context (idx : nat)
         (Hidx : idx < length l').
 
-(*
+(** The parallel implementation corresponds to the following Erlang code:
+
+```
 pmap(F, L) ->
   {L1, L2} = lists:split(Idx, L),
-  spawn(fun(L, Addr) -> Addr ! map(F, L), [L1, self()]),
+  Self = self(),
+  spawn(fun(Addr, L0) -> Addr ! map(F, L0) end, [Self, L1]),
   Mapped = map(F, L2),
   receive
-    L1 -> L1 ++ L2
-  end
-*)
+    MappedL1 -> ι ! MappedL1 ++ Mapped
+  end.
+```
+
+    `receive` is the final `receive` expression of this function. *)
 Definition receive : Exp :=
 (EReceive [
                ([PVar], ˝ttrue, 
                  °ECall (˝erlang) (˝send)
                    [
                     ˝VPid ι;
-                    (* NOTE: the nameless approach makes it harder to guess
-                       the variable used outside the given clauses in a receive
-                                                               |
-                                                               v
-                    *)
-                    °ECall (˝erlang) (˝VLit "++") [˝VVar 0; ˝VVar 4]
+                    (* VVar 0 is the variable of the clause (MappedL1),
+                       VVar 1 is the first variable outside the receive
+                       (Mapped) *)
+                    °ECall (˝erlang) (˝VLit "++") [˝VVar 0; ˝VVar 1]
                    ])
              ] (˝infinity) (˝VNil)).
 
+(** The sequential part of the parent process in `par_map`: mapping the
+    second part of the list (`VVar 2`), then receiving the first part. *)
 Definition seq_sec : Exp :=
   ELet 1 (°EApp (˝@map_clos ident) [˝f_clos; ˝VVar 2])
              receive.
 
+(** `receive` is scoped in an environment of one variable (`Mapped`). *)
 Lemma receive_closed :
   EXP 1 ⊢ receive.
 Proof.
@@ -1009,9 +118,12 @@ Qed.
 
 Hint Resolve receive_closed : examples.
 
+(** The body of the spawned function: it maps its second parameter (`L0`),
+    and sends the result to its first parameter (`Addr`). *)
 Definition send_body : Exp :=
   (°ECall (˝erlang) (˝send) [˝VVar 0; °EApp (˝@map_clos ident) [˝f_clos; ˝VVar 1]]).
 
+(** The parallel implementation of `map` (see the Erlang code above). *)
 Definition par_map : Redex :=
   ECase (ECall (˝VLit "lists") (˝VLit "split") [˝VLit (Z.of_nat idx); ˝l])
     [
@@ -1028,6 +140,7 @@ Definition par_map : Redex :=
       )
     ].
 
+(** The first part of the list is closed. *)
 Lemma take_helper1 :
   VALCLOSED (meta_to_cons (take idx l')).
 Proof.
@@ -1036,18 +149,20 @@ Proof.
   by apply Forall_take.
 Qed.
 
+(** The mapped first part of the list is closed. *)
 Lemma take_helper2 :
   VALCLOSED (meta_to_cons (map f (take idx l'))).
 Proof.
   apply meta_to_cons_closed.
   apply mk_list_closed with (Γ := 0) in l_is_proper. 2: assumption.
-  apply list.Forall_forall. intros. apply elem_of_map_iff in H.
+  apply list.Forall_forall. intros. apply list_elem_of_fmap in H.
   destruct_hyps. subst.
   apply f_closed. rewrite list.Forall_forall in l_is_proper.
   apply l_is_proper. clear-H0.
   pose proof subseteq_take idx l'. set_solver.
 Qed.
 
+(** The second part of the list is closed. *)
 Lemma drop_helper1 :
   VALCLOSED (meta_to_cons (drop idx l')).
 Proof.
@@ -1056,12 +171,13 @@ Proof.
   by apply Forall_drop.
 Qed.
 
+(** The mapped second part of the list is closed. *)
 Lemma drop_helper2 :
   VALCLOSED (meta_to_cons (map f (drop idx l'))).
 Proof.
   apply meta_to_cons_closed.
   apply mk_list_closed with (Γ := 0) in l_is_proper. 2: assumption.
-  apply list.Forall_forall. intros. apply elem_of_map_iff in H.
+  apply list.Forall_forall. intros. apply list_elem_of_fmap in H.
   destruct_hyps. subst.
   apply f_closed. rewrite list.Forall_forall in l_is_proper.
   apply l_is_proper. clear-H0.
@@ -1073,6 +189,9 @@ Hint Resolve take_helper2 : examples.
 Hint Resolve drop_helper1 : examples.
 Hint Resolve drop_helper2 : examples.
 
+(** The parent process, waiting for the mapped first part of the list with
+    this part already in its mailbox, receives the message, and evaluates the
+    concatenation of the two mapped parts, up to sending it to `ι`. *)
 Lemma eval_helper_peek_message :
   inl
   ([FParams (IPrimOp "recv_peek_message") [] [];
@@ -1262,8 +381,8 @@ Proof.
   eapply lsstep. apply p_local. constructor.
   eapply lsstep. apply p_local. apply eval_step_case_true. simpl.
   rewrite idsubst_is_id_val. simpl.
-  repeat rewrite vclosed_ignores_ren; auto with examples.
-  repeat rewrite vclosed_ignores_sub; auto with examples.
+  repeat rewrite closed_ignores_ren_val; auto with examples.
+  repeat rewrite closed_ignores_sub_val; auto with examples.
   eapply lsstep. apply p_local. constructor.
   eapply lsstep. apply p_local. constructor; auto with examples.
   eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
@@ -1274,7 +393,7 @@ Proof.
   eapply lsstep. apply p_local. constructor.
   eapply lsstep. apply p_remove_message. by cbn.
   eapply lsstep. apply p_local. constructor.
-  repeat rewrite vclosed_ignores_sub;  auto with examples.
+  repeat rewrite closed_ignores_sub_val;  auto with examples.
   (* Reading configurations is easier from here *)
   (* evaluate send *)
   eapply lsstep. apply p_local. constructor.
@@ -1294,7 +413,7 @@ Proof.
   eapply lsstep. apply p_local. constructor. congruence.
   eapply lsstep. apply p_local. constructor; auto with examples.
   eapply lsstep. apply p_local. constructor. simpl.
-  repeat rewrite vclosed_ignores_sub; auto with examples.
+  repeat rewrite closed_ignores_sub_val; auto with examples.
   eapply lsstep. apply p_local. constructor; auto with examples.
   eapply lsstep. apply p_local. econstructor.
   { (* evaluate the meta-theoretical simulated append *)
@@ -1305,6 +424,9 @@ Proof.
   apply lsrefl.
 Qed.
 
+(** The parent process waiting for the mapped first part of the list (with
+    this part already in its mailbox) is bisimilar to the process that is
+    about to send the result to `ι`. *)
 Lemma bisim_helper : forall ι_base, ι_base <> ι -> (∅,
  ι_base
  ↦ inl
@@ -1546,9 +668,9 @@ Proof.
       (* silent steps *)
       eapply normalisation_τ_many_bisim. shelve.
       apply sequential_to_node.
-      do 8 do_step.
-      all: repeat rewrite vclosed_ignores_sub; auto with examples.
-      do 5 do_step.
+      do 8 do_step_with_examples.
+      all: repeat rewrite closed_ignores_sub_val; auto with examples.
+      do 5 do_step_with_examples.
       constructor.
     }
     { (* removeMessage *)
@@ -1588,11 +710,11 @@ Proof.
         (* remove_message_ok *)
         simpl in H5. inv H5.
         do 2 eexists. split. apply n_refl.
-        rewrite vclosed_ignores_sub; auto with examples.
+        rewrite closed_ignores_sub_val; auto with examples.
         eapply normalisation_τ_many_bisim. shelve.
         apply sequential_to_node.
-        do 16 do_step; auto with examples.
-        do 2 do_step; auto with examples.
+        do 16 do_step_with_examples; auto with examples.
+        do 2 do_step_with_examples; auto with examples.
         econstructor 2. econstructor. cbn. rewrite eval_append_correct. reflexivity.
         rewrite <- map_app, take_drop.
         constructor.
@@ -1641,12 +763,12 @@ Proof.
           *)
           eapply n_trans. apply n_other. apply p_remove_message. reflexivity. set_solver.
           simpl.
-          rewrite vclosed_ignores_sub; auto with examples.
+          rewrite closed_ignores_sub_val; auto with examples.
           eapply closureNodeSem_trans.
           {
             apply sequential_to_node.
-            do 16 do_step; auto with examples.
-            do 2 do_step; auto with examples.
+            do 16 do_step_with_examples; auto with examples.
+            do 2 do_step_with_examples; auto with examples.
             econstructor 2. econstructor. cbn. rewrite eval_append_correct. reflexivity.
             rewrite <- map_app, take_drop.
             constructor.
@@ -1728,18 +850,21 @@ Unshelve.
 Qed.
 
 
-(* Implicit assumptions with this definition:
-   - Only the child communicates, there are no other messages awaiting to
-     be processed by the parent process!!!
-   - If the equivalence is based on the empty ether, errors are rules out!!!
-*)
-
+(** The PID of the process evaluating the implementations, which is not the
+    observed PID. The equivalence is stated for a node that contains only
+    this process, with an empty ether. This has implicit consequences:
+    - only the spawned child process communicates with the parent, there are
+      no other messages waiting to be processed by the parent;
+    - since the ether is empty, errors (e.g., exit signals from other
+      processes) are ruled out. *)
 Context (ι_base : PID)
         (Hbase : ι_base <> ι).
 
 Opaque eval_split.
 Opaque seq_sec.
 Opaque map_clos.
+(** The parallel implementation evaluates to the point of spawning the
+    child process with silent and `self` steps. *)
 Theorem split_eval O :
   exists l,
     (∅, ι_base ↦ inl ([], par_map, emptyBox, ∅, false) ∥ ∅) -[l]ₙ->* 
@@ -1752,25 +877,25 @@ Proof.
   {
     eapply closureNodeSem_trans.
     * apply sequential_to_node.
-      do 10 do_step.
+      do 10 do_step_with_examples.
       econstructor 2. econstructor. reflexivity. simpl.
       unfold eval_transform_list. simpl.
       erewrite eval_split_correct. 2-3: eassumption.
-      do 9 do_step.
-      rewrite vclosed_ignores_sub; auto with examples.
-      rewrite vclosed_ignores_sub; auto with examples.
+      do 9 do_step_with_examples.
+      rewrite closed_ignores_sub_val; auto with examples.
+      rewrite closed_ignores_sub_val; auto with examples.
       constructor.
     * eapply n_trans. apply n_other with (ι := ι_base) (a := ASelf ι_base).
       2: set_solver.
       constructor.
       apply sequential_to_node.
-      do 11 do_step.
-      rewrite vclosed_ignores_sub; auto with examples.
-      rewrite vclosed_ignores_sub; auto with examples.
-      rewrite vclosed_ignores_ren; auto with examples.
-      do 4 do_step; auto with examples.
-      rewrite vclosed_ignores_sub; auto with examples.
-      do 4 do_step; auto with examples.
+      do 11 do_step_with_examples.
+      rewrite closed_ignores_sub_val; auto with examples.
+      rewrite closed_ignores_sub_val; auto with examples.
+      rewrite closed_ignores_ren_val; auto with examples.
+      do 4 do_step_with_examples; auto with examples.
+      rewrite closed_ignores_sub_val; auto with examples.
+      do 4 do_step_with_examples; auto with examples.
       constructor.
   }
   {
@@ -1783,6 +908,7 @@ Transparent eval_split.
 Transparent seq_sec.
 
 
+(** The sequential implementation: `ι ! map(F, L)`. *)
 Definition map_seq_send :Exp :=
   °ECall (˝erlang) (˝send)
        [
@@ -1791,6 +917,8 @@ Definition map_seq_send :Exp :=
        ].
 
 Opaque receive.
+(** The sequential and the parallel implementations of `map` are barbed
+    bisimilar, observing `ι`. *)
 (* NOTE: coercions start to tangle up here for parsing *)
 Theorem map_pmap_empty_context_bisim :
   (∅, ι_base ↦ inl ([], RExp (map_seq_send), emptyBox, ∅, false) ∥ ∅) ~ᵇ
@@ -1804,7 +932,7 @@ Proof.
   eapply normalisation_τ_many_bisim.
   2: {
     apply sequential_to_node.
-    do 8 do_step.
+    do 8 do_step_with_examples.
     eapply frame_indep_core in HD.
     exact HD.
   }
@@ -1887,15 +1015,15 @@ Proof.
             destruct H. set_solver. destruct_hyps. set_solver.
           * pose proof (infinite_is_fresh (ι :: ι_base :: elements (usedPIDsVal f_clos))). set_solver.
           * unfold usedPIDsProc in H. cbn in H.
-            rewrite vclosed_ignores_sub in H; auto with examples.
-            rewrite vclosed_ignores_sub in H; auto with examples.
+            rewrite closed_ignores_sub_val in H; auto with examples.
+            rewrite closed_ignores_sub_val in H; auto with examples.
 Transparent receive.
 Transparent map_clos.
             unfold map_clos, map_body in H. simpl in *.
-            rewrite vclosed_ignores_sub in H; auto with examples.
-            rewrite vclosed_ignores_sub in H; auto with examples.
-            rewrite vclosed_ignores_ren in H; auto with examples.
-            rewrite vclosed_ignores_sub in H; auto with examples.
+            rewrite closed_ignores_sub_val in H; auto with examples.
+            rewrite closed_ignores_sub_val in H; auto with examples.
+            rewrite closed_ignores_ren_val in H; auto with examples.
+            rewrite closed_ignores_sub_val in H; auto with examples.
             assert (usedPIDsVal (meta_to_cons (take idx l')) = ∅). {
               clear -l_is_free_of_PIDs. revert l' l_is_free_of_PIDs.
               induction idx; intros; destruct l'; simpl.
@@ -1932,20 +1060,20 @@ Opaque map_clos.
       1: {
         simpl. reflexivity.
       }
-      rewrite vclosed_ignores_sub; auto with examples.
-      rewrite vclosed_ignores_sub; auto with examples.
+      rewrite closed_ignores_sub_val; auto with examples.
+      rewrite closed_ignores_sub_val; auto with examples.
       (* map is evaluated in the spawned process *)
       eapply closureNodeSem_trans.
       {
         apply sequential_to_node.
-        do 8 do_step.
+        do 8 do_step_with_examples.
         eapply frame_indep_core in InitEval.
         exact InitEval.
       }
       simpl.
-      repeat rewrite (vclosed_ignores_sub map_clos); auto with examples.
-      repeat rewrite (vclosed_ignores_sub f_clos); auto with examples.
-      repeat rewrite vclosed_ignores_ren; auto with examples.
+      repeat rewrite (closed_ignores_sub_val map_clos); auto with examples.
+      repeat rewrite (closed_ignores_sub_val f_clos); auto with examples.
+      repeat rewrite closed_ignores_ren_val; auto with examples.
       (* map is sent back to the parent *)
       eapply n_trans. eapply n_send. constructor; auto with examples.
       (* map arrives to the parent *)
@@ -1970,11 +1098,11 @@ Opaque map_clos.
       eapply closureNodeSem_trans.
       {
         apply sequential_to_node.
-        do 2 do_step.
-        rewrite vclosed_ignores_sub; auto with examples.
+        do 2 do_step_with_examples.
+        rewrite closed_ignores_sub_val; auto with examples.
         eapply frame_indep_core in TailEval.
         eapply transitive_eval. exact TailEval.
-        simpl. do_step.
+        simpl. do_step_with_examples.
         constructor.
       }
       (* parent receives the first part of the map
@@ -1985,8 +1113,8 @@ Opaque map_clos.
         eapply process_local_to_node.
         {
   Transparent receive.
-          unfold receive, EReceive. simpl.
-          repeat rewrite vclosed_ignores_ren; auto with examples.
+          unfold receive, EReceive, rename_clauses. simpl.
+          repeat rewrite closed_ignores_ren_val; auto with examples.
           eapply lsstep. constructor. constructor. cbn. reflexivity.
           cbn.
           eapply lsstep. do 2 constructor.
@@ -1996,8 +1124,8 @@ Opaque map_clos.
           simpl.
           eapply lsstep. apply p_local. constructor.
           eapply lsstep. apply p_local. constructor.
-          repeat rewrite vclosed_ignores_ren; auto with examples.
-          repeat rewrite vclosed_ignores_sub; auto with examples.
+          repeat rewrite closed_ignores_ren_val; auto with examples.
+          repeat rewrite closed_ignores_sub_val; auto with examples.
           apply eval_helper_peek_message.
         }
         {
@@ -2104,43 +1232,43 @@ Opaque map_clos.
       eapply closureNodeSem_trans.
       { (* parent map *)
         eapply sequential_to_node.
-        repeat rewrite (vclosed_ignores_sub); auto with examples.
-        do 8 do_step.
+        repeat rewrite (closed_ignores_sub_val); auto with examples.
+        do 8 do_step_with_examples.
         eapply frame_indep_core in InitEval as InitEval'.
         simpl. apply InitEval'.
       }
       { (* child map *)
         setoid_rewrite insert_insert_ne; auto.
         eapply sequential_to_node.
-        repeat rewrite (vclosed_ignores_sub); auto with examples.
-        2: repeat rewrite vclosed_ignores_ren; auto with examples.
-        do 2 do_step.
-        repeat rewrite vclosed_ignores_ren; auto with examples.
+        repeat rewrite (closed_ignores_sub_val); auto with examples.
+        2: repeat rewrite closed_ignores_ren_val; auto with examples.
+        do 2 do_step_with_examples.
+        repeat rewrite closed_ignores_ren_val; auto with examples.
         eapply frame_indep_core in TailEval as TailEval'.
         eapply transitive_eval.
         apply TailEval'.
-        simpl. do 4 do_step.
-        do_step.
-        repeat rewrite (vclosed_ignores_sub); auto with examples.
+        simpl. do 4 do_step_with_examples.
+        do_step_with_examples.
+        repeat rewrite (closed_ignores_sub_val); auto with examples.
         econstructor 2. econstructor. congruence. reflexivity.
-        repeat rewrite (vclosed_ignores_sub); auto with examples.
-        repeat rewrite (vclosed_ignores_ren); auto with examples.
-        simpl. do_step.
-        repeat rewrite (vclosed_ignores_sub); auto with examples.
-        repeat rewrite (vclosed_ignores_ren); auto with examples.
-        do_step. constructor 1.
+        repeat rewrite (closed_ignores_sub_val); auto with examples.
+        repeat rewrite (closed_ignores_ren_val); auto with examples.
+        simpl. do_step_with_examples.
+        repeat rewrite (closed_ignores_sub_val); auto with examples.
+        repeat rewrite (closed_ignores_ren_val); auto with examples.
+        do_step_with_examples. constructor 1.
       }
     }
     (* child send - we have to reason about this with the definition of bisim.
        it would be simpler to use simulation equivalence, since again we have to
        prove both directions
      *)
-    rewrite (vclosed_ignores_sub) in H10; auto with examples.
-    rewrite (vclosed_ignores_sub) in H10; auto with examples.
-    rewrite (vclosed_ignores_sub) in H10; auto with examples.
-    rewrite (vclosed_ignores_sub) in H10; auto with examples.
-    rewrite (vclosed_ignores_ren) in H10; auto with examples.
-    rewrite (vclosed_ignores_sub) in H10; auto with examples.
+    rewrite (closed_ignores_sub_val) in H10; auto with examples.
+    rewrite (closed_ignores_sub_val) in H10; auto with examples.
+    rewrite (closed_ignores_sub_val) in H10; auto with examples.
+    rewrite (closed_ignores_sub_val) in H10; auto with examples.
+    rewrite (closed_ignores_ren_val) in H10; auto with examples.
+    rewrite (closed_ignores_sub_val) in H10; auto with examples.
     constructor.
     2,4: intros; exists source, []; eexists; simpl; split; try by constructor.
     * (* -> direction, we have already proved this *)
@@ -2910,13 +2038,13 @@ Opaque map_clos.
             apply process_local_to_node.
             2: shelve.
             eapply lsstep. eapply p_local. constructor. reflexivity. simpl.
-            repeat rewrite (vclosed_ignores_sub); auto with examples.
+            repeat rewrite (closed_ignores_sub_val); auto with examples.
             eapply lsstep. eapply p_local. constructor.
             eapply lsstep. eapply p_local. constructor.
             eapply lsstep. eapply p_local. apply eval_step_case_not_match. reflexivity.
             eapply lsstep. eapply p_local. apply eval_step_case_match. reflexivity.
             simpl.
-            repeat rewrite (vclosed_ignores_sub); auto with examples.
+            repeat rewrite (closed_ignores_sub_val); auto with examples.
             eapply lsstep. eapply p_local. constructor.
             eapply lsstep. eapply p_local. constructor.
             eapply lsstep. eapply p_local. constructor.
@@ -3007,19 +2135,19 @@ Opaque map_clos.
                   eapply lsstep. apply p_recv_wait_timeout_new_message.
                   eapply lsstep. apply p_local. constructor. reflexivity.
                   simpl. eapply lsstep. apply p_local. constructor.
-                  repeat rewrite (vclosed_ignores_sub); auto with examples.
+                  repeat rewrite (closed_ignores_sub_val); auto with examples.
                   simpl. eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                   eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
-                  simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
+                  simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
-                  simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
-                  repeat rewrite (vclosed_ignores_ren); auto with examples.
+                  simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
+                  repeat rewrite (closed_ignores_ren_val); auto with examples.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   (* message_peek *)
@@ -3211,19 +2339,19 @@ Opaque map_clos.
                         eapply lsstep. apply p_recv_wait_timeout_new_message.
                         eapply lsstep. apply p_local. constructor. reflexivity.
                         simpl. eapply lsstep. apply p_local. constructor.
-                        repeat rewrite (vclosed_ignores_sub); auto with examples.
+                        repeat rewrite (closed_ignores_sub_val); auto with examples.
                         simpl. eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                         eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
-                        simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
+                        simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
-                        simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
-                        repeat rewrite (vclosed_ignores_ren); auto with examples.
+                        simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
+                        repeat rewrite (closed_ignores_ren_val); auto with examples.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         (* message_peek *)
@@ -3273,12 +2401,12 @@ Opaque map_clos.
                     eapply normalisation_τ_many_bisim.
                     1: shelve.
                     apply sequential_to_node.
-                    do 9 do_step.
-                    repeat rewrite (vclosed_ignores_sub); auto with examples.
-                    do_step. econstructor 2. econstructor. congruence. simpl. reflexivity.
-                    repeat rewrite (vclosed_ignores_sub); auto with examples.
-                    repeat rewrite (vclosed_ignores_ren); auto with examples.
-                    do 2 do_step.
+                    do 9 do_step_with_examples.
+                    repeat rewrite (closed_ignores_sub_val); auto with examples.
+                    do_step_with_examples. econstructor 2. econstructor. congruence. simpl. reflexivity.
+                    repeat rewrite (closed_ignores_sub_val); auto with examples.
+                    repeat rewrite (closed_ignores_ren_val); auto with examples.
+                    do 2 do_step_with_examples.
                     constructor 1.
                   }
                   (* peek_message succeeds - this was done previously *)
@@ -3346,13 +2474,13 @@ Opaque map_clos.
           apply process_local_to_node.
           2: shelve.
           eapply lsstep. eapply p_local. constructor. reflexivity. simpl.
-          repeat rewrite (vclosed_ignores_sub); auto with examples.
+          repeat rewrite (closed_ignores_sub_val); auto with examples.
           eapply lsstep. eapply p_local. constructor.
           eapply lsstep. eapply p_local. constructor.
           eapply lsstep. eapply p_local. apply eval_step_case_not_match. reflexivity.
           eapply lsstep. eapply p_local. apply eval_step_case_match. reflexivity.
           simpl.
-          repeat rewrite (vclosed_ignores_sub); auto with examples.
+          repeat rewrite (closed_ignores_sub_val); auto with examples.
           eapply lsstep. eapply p_local. constructor.
           eapply lsstep. eapply p_local. constructor.
           eapply lsstep. eapply p_local. constructor.
@@ -3434,19 +2562,19 @@ Opaque map_clos.
                 eapply lsstep. apply p_recv_wait_timeout_new_message.
                 eapply lsstep. apply p_local. constructor. reflexivity.
                 simpl. eapply lsstep. apply p_local. constructor.
-                repeat rewrite (vclosed_ignores_sub); auto with examples.
+                repeat rewrite (closed_ignores_sub_val); auto with examples.
                 simpl. eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                 eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
                 eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. constructor.
-                simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
+                simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
                 eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
-                simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
-                repeat rewrite (vclosed_ignores_ren); auto with examples.
+                simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
+                repeat rewrite (closed_ignores_ren_val); auto with examples.
                 eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. constructor.
                 (* message_peek *)
@@ -3694,19 +2822,19 @@ Opaque map_clos.
                   eapply lsstep. apply p_recv_wait_timeout_new_message.
                   eapply lsstep. apply p_local. constructor. reflexivity.
                   simpl. eapply lsstep. apply p_local. constructor.
-                  repeat rewrite (vclosed_ignores_sub); auto with examples.
+                  repeat rewrite (closed_ignores_sub_val); auto with examples.
                   simpl. eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                   eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
-                  simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
+                  simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
-                  simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
-                  repeat rewrite (vclosed_ignores_ren); auto with examples.
+                  simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
+                  repeat rewrite (closed_ignores_ren_val); auto with examples.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   (* message_peek *)
@@ -3896,19 +3024,19 @@ Opaque map_clos.
                         eapply lsstep. apply p_recv_wait_timeout_new_message.
                         eapply lsstep. apply p_local. constructor. reflexivity.
                         simpl. eapply lsstep. apply p_local. constructor.
-                        repeat rewrite (vclosed_ignores_sub); auto with examples.
+                        repeat rewrite (closed_ignores_sub_val); auto with examples.
                         simpl. eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                         eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
-                        simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
+                        simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
-                        simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
-                        repeat rewrite (vclosed_ignores_ren); auto with examples.
+                        simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
+                        repeat rewrite (closed_ignores_ren_val); auto with examples.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         (* message_peek *)
@@ -3958,12 +3086,12 @@ Opaque map_clos.
                     eapply normalisation_τ_many_bisim.
                     1: shelve.
                     apply sequential_to_node.
-                    do 9 do_step.
-                    repeat rewrite (vclosed_ignores_sub); auto with examples.
-                    do_step. econstructor 2. econstructor. congruence. simpl. reflexivity.
-                    repeat rewrite (vclosed_ignores_sub); auto with examples.
-                    repeat rewrite (vclosed_ignores_ren); auto with examples.
-                    do 2 do_step.
+                    do 9 do_step_with_examples.
+                    repeat rewrite (closed_ignores_sub_val); auto with examples.
+                    do_step_with_examples. econstructor 2. econstructor. congruence. simpl. reflexivity.
+                    repeat rewrite (closed_ignores_sub_val); auto with examples.
+                    repeat rewrite (closed_ignores_ren_val); auto with examples.
+                    do 2 do_step_with_examples.
                     constructor 1.
                   }
                   (* peek_message succeeds - this was done previously *)
@@ -4021,5 +3149,6 @@ Unshelve.
   all: try by repeat constructor.
 Qed. (* This takes an awful lot time (obviously) ~ᵇ 2-3 minutes*)
 Transparent map_clos.
+Transparent receive.
 
 End map_pmap.

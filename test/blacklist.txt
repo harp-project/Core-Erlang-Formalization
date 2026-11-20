@@ -1,0 +1,290 @@
+hello_world % concurrency, references, ports
+state_test3 % concurrency
+test_close_echo_driver % ports, concurrency, system_info
+test_echo_driver % ports, concurrency
+test_regecho_driver % ports, concurrency
+test_send_nif_and_echo % ports, concurrency
+modb % multi-module
+modc % multi-module
+raise_badmatch % stacktrace
+raise_case_end % stacktrace
+raise_if_end % stacktrace
+reraise_raiser % stacktrace
+reraise_reraiser % stacktrace
+sexp_lexer % multi-module
+sexp_parser % multi-module
+state_test2_sender % concurrency
+state_test3_server % concurrency
+to_hrl % file I/O
+test_add_avm_pack_binary % AVM packs
+test_add_avm_pack_file % AVM packs, erlang:display
+test_close_avm_pack % AVM packs
+test_code_get_object_code % code server, system_info
+test_code_load_abs % code server, system_info
+test_code_load_binary % code server
+alisp % multi-module
+bs_get_binary_fixed_size % asm module
+moda % multi-module
+pingpong % concurrency
+state_test2 % concurrency
+test_bs_create_bin_accum % asm module, floats
+test_heap_growth % garbage collection, concurrency, system_info, erts_debug
+test_is_not_equal % asm module, floats
+test_op_bs_create_bin % asm module
+test_op_bs_start_match % asm module
+test_process_info % concurrency, ports, system_info, term_to_binary
+test_refc_binaries % garbage collection, concurrency, references, system_info
+test_reraise % stacktrace
+test_throw_call_ext_last % concurrency, references, binary module, system_info
+call_with_ref_test % concurrency, references
+complex_struct_size0 % erts_debug
+complex_struct_size1 % erts_debug
+complex_struct_size2 % erts_debug
+complex_struct_size3 % erts_debug
+complex_struct_size4 % erts_debug
+copy_terms0 % concurrency
+copy_terms1 % concurrency
+copy_terms10 % concurrency
+copy_terms11 % concurrency
+copy_terms12 % concurrency, references
+copy_terms13 % concurrency, references
+copy_terms14 % concurrency, references
+copy_terms15 % concurrency, references
+copy_terms16 % concurrency, references
+copy_terms17 % concurrency, references
+copy_terms18 % concurrency, references
+copy_terms2 % concurrency
+copy_terms3 % concurrency
+copy_terms4 % concurrency
+copy_terms5 % concurrency
+copy_terms6 % concurrency
+copy_terms7 % concurrency
+copy_terms8 % concurrency
+copy_terms9 % concurrency
+echo % concurrency, ports
+gen_server_like_test % concurrency, references
+guards3 % concurrency, ports
+just_receive_test % concurrency
+link_kill_parent % concurrency, references
+link_throw % concurrency, references
+memlimit % garbage collection, concurrency, erts_debug
+prime % concurrency
+prime_ext % concurrency
+prime_smp % concurrency, system_info, erlang:display, time
+register_and_whereis_badarg % concurrency
+register_unregister % concurrency
+send_receive % concurrency
+send_to_dead_process % concurrency
+sleep % concurrency, time
+spawn_fun1 % concurrency
+spawn_fun2 % concurrency
+spawn_fun3 % concurrency
+spawn_opt_demonitor_normal % concurrency, references
+spawn_opt_link_normal % concurrency, references
+spawn_opt_link_throw % concurrency, references, erlang:display
+spawn_opt_monitor_error % concurrency, references
+spawn_opt_monitor_normal % concurrency, references
+spawn_opt_monitor_throw % concurrency, references
+state_test % concurrency
+test_binary_split % binary module, concurrency, system_info
+test_binary_to_term % term_to_binary, concurrency, floats, references
+test_bs_init2_heap_allocation % concurrency
+test_close_console_driver % ports, concurrency, system_info
+test_ets % ets, concurrency, floats, references
+test_exit1 % concurrency
+test_exit2 % concurrency
+test_function_ordering % term ordering, concurrency, term_to_binary
+test_fun_to_list % fun info, concurrency, binary module, term_to_binary
+test_gc % garbage collection, concurrency, system_info
+test_is_process_alive % concurrency
+test_link_port % ports, concurrency, system_info
+test_list_processes % concurrency
+test_make_fun3 % fun info, concurrency, references, garbage collection
+test_min_heap_size % garbage collection, concurrency, system_info
+test_monitor % concurrency, references, ports, ets
+test_monotonic_time % time, concurrency
+test_node % concurrency, references, system_info, term_to_binary
+test_open_port_badargs % ports, concurrency
+test_pids_ordering % pids, concurrency
+test_port_to_list % ports, concurrency, binary module
+test_raise % stacktrace, concurrency
+test_selective_receive % concurrency
+test_send % concurrency
+test_stacktrace % stacktrace, concurrency, erlang:display
+test_sub_binaries % garbage collection, concurrency, references, binary module
+test_system_info % system_info, concurrency
+test_system_time % time, concurrency
+test_timeout_not_integer % concurrency, floats
+test_timestamp % time, concurrency
+trap_exit_flag % concurrency, system_info
+unique % concurrency, time
+unlink_error % concurrency, references
+whereis_dead_process % concurrency
+whereis_fail % concurrency
+is_type % references
+pid_to_list_test % pid_to_list
+test_crc32 % crc32, floats
+test_erlang_builtins % floats, rounding BIFs, references
+test_funs12 % fun refs
+test_list_gc % erlang:display
+test_unicode % unicode, code server, system_info
+bif_bin_arith_ops % floats
+bigint % floats, rounding BIFs, system_info, erlang:display
+boxed_is_not_float % floats
+bs_get_float_dynamic_size % floats
+bs_get_float_gc % floats
+bs_restore2_start_offset % floats
+ceilbadarg % rounding BIFs
+ceilfloat % rounding BIFs, floats
+ceilfloatovf % rounding BIFs, floats, system_info
+ceilint % rounding BIFs
+exactly_eq % floats
+fconv_fail_invalid % floats
+float2bin % floats, binary module
+float2bin2 % floats, binary module
+float2bin2decimals % floats, binary module
+float2bin2scientific % floats, binary module
+float2list % floats
+float2list2 % floats
+float2list2decimals % floats
+float2list2scientific % floats
+floatabs % floats, rounding BIFs
+floatadd % floats, rounding BIFs
+floataddovf % floats, system_info
+float_bif % floats
+float_decode % floats
+floatdiv % floats, rounding BIFs, system_info
+floatext % floats, system_info, term_to_binary
+float_is_float % floats
+float_is_number % floats
+floatmath % floats, rounding BIFs
+floatmul % floats, rounding BIFs
+floatmulovf % floats, system_info
+floatneg % floats, rounding BIFs
+floatsub % floats, rounding BIFs
+floatsubovf % floats, system_info
+float_to_short % floats, system_info
+floorbadarg % rounding BIFs
+floorfloat % rounding BIFs, floats
+floorfloatovf % rounding BIFs, floats, system_info
+floorint % rounding BIFs
+jsonish_encode % floats
+list2float % floats
+makefunref % fun refs
+map_comparisons % floats
+roundbadarg % rounding BIFs
+roundfloat % rounding BIFs, floats
+roundfloatovf % rounding BIFs, floats, system_info
+roundint % rounding BIFs
+selval % floats
+string2float % floats, system_info
+test_bs % erlang:display, floats, binary module, system_info
+test_cmp_term % floats
+test_code_server_nifs % code server, floats, system_info
+test_fp_allocate_heap_zero % math module, floats
+test_is_integer_3 % OTP 29, floats
+test_no_bs_create_bin % bit syntax, floats
+truncbadarg % rounding BIFs
+truncfloat % rounding BIFs, floats
+truncfloatovf % rounding BIFs, floats, system_info
+truncint % rounding BIFs
+tuple_comparisons % floats
+unary_plus % floats
+binary_at_test % binary module
+binary_first_test % binary module
+binary_last_test % binary module
+datetime % time, system_info
+erlang_module_loaded % module loading
+fun_call_bif % existing_atom
+function_reference_decode % term_to_binary
+is_record % is_record
+is_ref_test % references
+make_ref_test % references
+nested_list_size0 % erts_debug
+nested_list_size1 % erts_debug
+nested_list_size2 % erts_debug
+nested_list_size3 % erts_debug
+nested_list_size4 % erts_debug
+nested_tuple_size0 % erts_debug
+nested_tuple_size1 % erts_debug
+nested_tuple_size2 % erts_debug
+nested_tuple_size3 % erts_debug
+nested_tuple_size4 % erts_debug
+ref_to_list_test % references
+simple_list_size0 % erts_debug
+simple_list_size1 % erts_debug
+small_big_ext % term_to_binary, system_info
+stacktrace_function_args % stacktrace, system_info
+test_atom_to_binary % binary module
+test_atomvm_random % AtomVM-specific, crypto, system_info, random
+test_base64 % base64, crypto, binary module, system_info
+test_bigint_normalization % bit syntax, term_to_binary
+test_binary_copy % binary module
+test_binary_eq % binary module
+test_binary_longest_common_prefix % binary module
+test_binary_match % binary module, system_info
+test_binary_part % binary module
+test_binary_replace % binary module, system_info
+test_bs_int_unaligned % system_info, time, random
+test_bs_utf % unicode, system_info
+test_code_all_available_loaded % code server, system_info
+test_code_ensure_loaded % code server, system_info
+test_crypto % crypto, system_info
+test_crypto_aead % crypto
+test_crypto_crypto % crypto, references, system_info
+test_crypto_hash_update % crypto, system_info
+test_crypto_mac % crypto, system_info
+test_crypto_misc % crypto
+test_crypto_pbkdf2_hmac % crypto, system_info, fun info
+test_crypto_pk % crypto, binary module, system_info
+test_crypto_strong_rand_bytes % crypto
+test_display % erlang:display
+test_display_string % erlang:display
+test_erlang_loaded % module loading
+test_fun_info % fun info, erlang:display
+test_function_exported % fun info, erlang:display
+test_guards_do_not_raise % fun info, erlang:display
+test_integer_to_binary % binary module
+test_is_builtin % system_info, fun info
+test_is_not_type % references
+test_list_to_binary % binary module
+test_list_to_bitstring % binary module
+test_map % AtomVM-specific, crypto, system_info, erlang:display
+test_ordering_1 % references
+test_ref_eq % references
+test_refs_ordering % references
+test_system_flag % system_info
+test_utf8_atoms % erlang:display
+test_zlib_compress % zlib
+tuple_size0 % erts_debug, system_info
+tuple_size1 % erts_debug
+tuple_size2 % erts_debug
+tuple_size3 % erts_debug
+tuple_size4 % erts_debug
+tuple_size5 % erts_debug, system_info
+tuple_size6 % erts_debug, system_info
+tuples_and_list_size0 % erts_debug, system_info
+tuples_and_list_size1 % erts_debug
+tuples_and_list_size2 % erts_debug
+twentyone_param_fun % references
+twentyone_param_function % references
+fail_apply_last % dynamic apply, stacktrace
+test_raise_built_stacktrace % stacktrace
+test_raw_raise % stacktrace
+test_binary_to_existing_atom % existing_atom
+test_list_to_existing_atom % existing_atom
+test_dict % process dict
+fail_apply % dynamic apply
+test_apply % dynamic apply
+test_apply_last % dynamic apply
+test_exception_classes % stacktrace
+bigint_stress % timeout
+bs_context_to_binary_with_offset % alias
+test_binary_to_atom % utf8, atom length
+int64_build_binary % map patterns
+test_has_map_fields % map patterns
+test_catch % catch
+test_catch_return_atom % catch
+long_atoms % atom length
+test_list_to_atom % atom length, utf8
+test_module_info % module_info

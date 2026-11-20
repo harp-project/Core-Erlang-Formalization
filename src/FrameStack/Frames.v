@@ -4,6 +4,7 @@
 From CoreErlang Require Export ScopingLemmas Maps Matching Auxiliaries.
 
 Import ListNotations.
+Import Notations.
 
 (** FrameStack *)
 (** Based on [Pitts' work](https://www.cl.cam.ac.uk/~amp12/papers/opespe/opespe-lncs.pdf) *)
@@ -13,13 +14,16 @@ Import ListNotations.
   expressions as parameters, we use parameter list frames, with identifiers.
 *)
 Inductive FrameIdent :=
-| IValues
-| ITuple
-| IMap
-| ICall (m f : Val)
-| IPrimOp (f : string)
-| IApp (v : Val).
+| IValues               (* value sequence *)
+| ITuple                (* tuple *)
+| IMap                  (* map (keys and values flattened) *)
+| IBin                  (* binary construction *)
+| ICall (m f : Val)     (* call of m:f, after evaluating m and f *)
+| IPrimOp (f : string)  (* primitive operation f *)
+| IApp (v : Val).       (* application of v, after evaluating v *)
 
+(** Evaluation frames: expressions with a hole (□), in which the currently
+    evaluated subexpression's result is placed. *)
 Inductive Frame : Set :=
 | FCons1 (hd : Exp) (* [e1 | □] *)
 | FCons2 (tl : Val) (* [□ | v2] *)
@@ -27,51 +31,34 @@ Inductive Frame : Set :=
 | FApp1 (l : list Exp)  (* apply □(e₁, ..., eₙ) *)
 | FCallMod (f : Exp) (l : list Exp) (* call □:f(e₁, ..., eₙ) *)
 | FCallFun (m : Val) (l : list Exp) (* call v:□(e₁, ..., eₙ) *)
-| FCase1 (l : list ((list Pat) * Exp * Exp))
-(* | FCase2   (lv : list Val)
-           (lp : list Pat)
-           (ex : Exp)
-           (le : list ((list Pat) * Exp * Exp))
-           (lvp : list Val) *)
-           (* the result of the pattern matching, only needed in the reduction rules
-         ^---- Not a good solution, because if this frame is used outside
-               of a bigger context, lvp is not known to be the result of
-               the pattern matching *)
+| FCase1 (l : list ((list Pat) * Exp * Exp)) (* case □ of l *)
 | FCase2   (lv : list Val)
-           (* (lp : list Pat) *)
            (ex : Exp)
            (le : list ((list Pat) * Exp * Exp))
+  (* the guard of a clause is being evaluated (□): if it is true, the body
+     `ex` is evaluated, otherwise matching continues with the values `lv` and
+     the remaining clauses `le` (see `plug_f`) *)
 | FLet   (l : nat) (e : Exp) (* let <x₁, ..., xₙ> = □ in e *)
 | FSeq   (e : Exp)           (* do □ e *)
 | FTry (vl1 : nat) (e2 : Exp) (vl2 : nat) (e3 : Exp)
   (* try □ of <x₁, ..., xₙ> -> e₂ catch <xₙ₊₁, ..., xₙ₊ₘ> -> e₃ *)
-(* Concurrent frames for receive - this is not used in the sequential semantics
-   These are very similar to the frames for case, but we define them separately
-   for the separation of concerns.
-*)
-(* | FReceive1 (l1 l2 : list ((list Pat) * Exp * Exp)) (mb : list Val)
-(* receive p₁ when g₁ -> b₁;
-               ...
-           pᵢ when gᵢ -> bᵢ;
-           pᵢ₊₁ when gᵢ₊₁ -> bᵢ₊₁;
-               ...
-           pₙ when gₙ -> bₙ
-   end [v₁, ..., vₖ] <- this is the processed part of the mailbox
-*)
-| FReceive2 (l1 : list ((list Pat) * Exp * Exp))
-            (v : Val) (b :Exp) (* <- currently the mailbox value v is
-                                     matched against the ith clause, 
-                                     and the guard is evaluated *)
-            (l2 : list ((list Pat) * Exp * Exp)) (mb : list Val) *)
+| FSeg1 (size : Exp) (unit : nat) (type : BinType) (sign : BinSign) (endian : BinEnd)
+   (* #<□>{size, unit, type, [sign, endian]} *)
+| FSeg2 (val : Val) (unit : nat) (type : BinType) (sign : BinSign) (endian : BinEnd)
+   (* #<val>{□, unit, type, [sign, endian]} *)
 .
 
+(** Closedness of frame identifiers and frames: all of their subexpressions
+    and values are closed (except for the bodies of binders, which are scoped
+    in the number of variables bound). *)
 Inductive ICLOSED : FrameIdent -> Prop :=
 | iclosed_values : ICLOSED IValues
 | iclosed_tuple : ICLOSED ITuple
 | iclosed_map : ICLOSED IMap
 | iclosed_app v : VALCLOSED v -> ICLOSED (IApp v)
 | iclosed_call m f : VALCLOSED m -> VALCLOSED f -> ICLOSED (ICall m f)
-| iclosed_primop f : ICLOSED (IPrimOp f).
+| iclosed_primop f : ICLOSED (IPrimOp f)
+| iclosed_bin : ICLOSED IBin.
 
 Inductive FCLOSED : Frame -> Prop :=
 | fclosed_cons1 e : EXPCLOSED e -> FCLOSED (FCons1 e)
@@ -86,64 +73,33 @@ Inductive FCLOSED : Frame -> Prop :=
 | fclosed_callmod f l : EXPCLOSED f -> Forall (fun e => EXPCLOSED e) l -> FCLOSED (FCallMod f l)
 | fclosed_callfun m l : VALCLOSED m -> Forall (fun e => EXPCLOSED e) l -> FCLOSED (FCallFun m l)
 | fclosed_case1 l : 
-  Forall (fun '(pl, g, b) => EXP PatListScope pl ⊢ g /\ EXP PatListScope pl ⊢ b) l
+  Forall (fun '(pl, g, b) => Forall (PatScoped 0) pl /\ EXP PatListVars pl ⊢ g /\ EXP PatListVars pl ⊢ b) l
 ->
   FCLOSED (FCase1 l)
-| fclosed_case2 vl (* pl *) e rest :
+| fclosed_case2 vl e rest :
   Forall (fun v => VALCLOSED v) vl ->
   EXPCLOSED e ->
-  Forall (fun '(pl, g, b) => EXP PatListScope pl ⊢ g /\ EXP PatListScope pl ⊢ b) rest
+  Forall (fun '(pl, g, b) => Forall (PatScoped 0) pl /\ EXP PatListVars pl ⊢ g /\ EXP PatListVars pl ⊢ b) rest
 ->
-  FCLOSED (FCase2 vl (* pl *) e rest)
+  FCLOSED (FCase2 vl e rest)
 | fclosed_let vars e : EXP vars ⊢ e -> FCLOSED (FLet vars e)
 | fclosed_seq e : EXPCLOSED e -> FCLOSED (FSeq e)
 | fclosed_try vars1 vars2 e2 e3 :
   EXP vars1 ⊢ e2 -> EXP vars2 ⊢ e3
 ->
   FCLOSED (FTry vars1 e2 vars2 e3)
+| fclosed_seg1 size unit type sign endian :
+  EXPCLOSED size
+->
+  FCLOSED (FSeg1 size unit type sign endian)
+| fclosed_seg2 val unit type sign endian :
+  VALCLOSED val
+->
+  FCLOSED (FSeg2 val unit type sign endian)
 .
 
-Proposition clause_scope l :
-  (forall i : nat,
-  i < Datatypes.length l ->
-  EXP PatListScope (nth i (map (fst ∘ fst) l) [])
-  ⊢ nth i (map (snd ∘ fst) l) (˝ VNil)) ->
-  (forall i : nat,
-        i < Datatypes.length l ->
-        EXP PatListScope (nth i (map (fst ∘ fst) l) [])
-        ⊢ nth i (map snd l) (˝ VNil)) ->
-   Forall (fun '(pl, g, b) => EXP PatListScope pl ⊢ g /\ EXP PatListScope pl ⊢ b) l.
-Proof.
-  induction l; intros; auto.
-  constructor.
-  * destruct a, p. split.
-    - apply (H 0). slia.
-    - apply (H0 0). slia.
-  * apply IHl; intros; (apply (H (S i)) + apply (H0 (S i))); slia.
-Qed.
-
-Proposition clause_scope_rev l :
-  Forall (fun '(pl, g, b) => EXP PatListScope pl ⊢ g /\ EXP PatListScope pl ⊢ b) l
-  ->
-  (forall i : nat,
-  i < Datatypes.length l ->
-  EXP PatListScope (nth i (map (fst ∘ fst) l) [])
-  ⊢ nth i (map (snd ∘ fst) l) (˝ VNil)) /\
-  (forall i : nat,
-        i < Datatypes.length l ->
-        EXP PatListScope (nth i (map (fst ∘ fst) l) [])
-        ⊢ nth i (map snd l) (˝ VNil))
-   .
-Proof.
-  intros. induction H; simpl; split; intros; try lia; destruct_foralls.
-  * destruct i.
-    - now destruct x, p, H.
-    - apply IHForall. lia.
-  * destruct i.
-    - now destruct x, p, H0.
-    - apply IHForall. lia.
-Qed.
-
+(** The expression of a parameter list frame with the given identifier and
+    (sub)expressions. *)
 Definition to_Exp (ident : FrameIdent) (l : list Exp) : Exp :=
 match ident with
 | IValues => EValues l
@@ -152,13 +108,10 @@ match ident with
 | IApp v => EApp (˝v) l
 | ICall m f => ECall (˝m) (˝f) l
 | IPrimOp f => EPrimOp f l
+| IBin => EBin l
 end.
 
-(*
-  TODO: note to myself: after evaluating the base expression of case,
-        do the pattern matching + substitution in all subbranches
-*)
-
+(** Plugging an expression into the hole of a frame. *)
 Definition plug_f (F : Frame) (e : Exp) : Exp :=
 match F with
  | FCons1 hd   => °(ECons hd e)
@@ -168,19 +121,22 @@ match F with
  | FCallMod f l => °(ECall e f l)
  | FCallFun m l => °(ECall (˝m) e l)
  | FCase1 l     => °(ECase e l)
- | FCase2 lv (* lp *) ex le =>
+ | FCase2 lv ex le =>
    (** This is basically an if-then-else translation from Erlang: *)
    °(ECase (°EValues []) [([], e, ex);
                         ([], ˝ttrue, °ECase (°EValues (map VVal lv)) le)])
-   (** We chosed this approach, since frames have to satisfy an implicit
+   (** We chose this approach, since frames have to satisfy an implicit
        invariant: their □ has to be substituted by closed expressions.
        This way, ˝e˝ is handled as closed, since the corresponding pattern
        does not include variables. *)
  | FLet l ex            => °(ELet l e ex)
  | FSeq ex              => °(ESeq e ex)
  | FTry vl1 e2 vl2 e3   => °(ETry e vl1 e2 vl2 e3)
+ | FSeg1 size unit type sign endian => ESeg (Build_Segment e size unit type sign endian)
+ | FSeg2 val unit type sign endian  => ESeg (Build_Segment (˝val) e unit type sign endian)
 end.
 
+(** Frame stacks (the continuation of the evaluation), and their closedness. *)
 Definition FrameStack := list Frame.
 
 Definition FSCLOSED (fs : FrameStack) := Forall FCLOSED fs.
@@ -204,6 +160,9 @@ end.
 #[global]
 Hint Constructors ICLOSED : core.
 
+(** `destruct_frame_scope` inverts one closedness hypothesis of a frame (stack)
+    of a known shape; `destruct_scopes` deconstructs all frame and redex
+    scoping hypotheses. *)
 Ltac destruct_frame_scope :=
   match goal with
   | [H : FSCLOSED (_ :: _) |- _] => inversion H; subst; clear H
@@ -215,21 +174,26 @@ Ltac destruct_frame_scope :=
   | [H : FCLOSED (FCallFun _ _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FCallMod _ _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FCase1 _) |- _] => inversion H; subst; clear H
-  | [H : FCLOSED (FCase2 _ _ (* _ *) _) |- _] => inversion H; subst; clear H
+  | [H : FCLOSED (FCase2 _ _ _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FLet _ _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FSeq _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FTry _ _ _ _) |- _] => inversion H; subst; clear H
-(*   | [H : FCLOSED (FReceive1 _ _ _) |- _] => inversion H; subst; clear H
-  | [H : FCLOSED (FReceive2 _ _ _ _ _) |- _] => inversion H; subst; clear H *)
+  | [H : FCLOSED (FSeg1 _ _ _ _ _) |- _] => inversion H; subst; clear H
+  | [H : FCLOSED (FSeg2 _ _ _ _ _) |- _] => inversion H; subst; clear H
   end.
 
 Ltac destruct_scopes :=
   repeat destruct_frame_scope;
   repeat destruct_redex_scope.
 
+(** `scope_solver` tries to prove scoping and closedness goals (of
+    expressions, values, patterns, redexes and frames) by applying the
+    constructors, splitting index bounds, and loosening the scopes of
+    hypotheses. *)
 Ltac scope_solver_step :=
   match goal with 
   | |- EXP _ ⊢ _ => constructor; simpl; auto
+  | |- PAT _ ⊢ _ => constructor; simpl; auto
   | |- VAL _ ⊢ _ => constructor; simpl; auto
   | |- RED _ ⊢ _ => constructor; simpl; auto
   | |- NVAL _ ⊢ _ => constructor; simpl; auto
@@ -242,14 +206,26 @@ Ltac scope_solver_step :=
   | |- _ /\ _ => split
   | |- FSCLOSED _ => constructor; simpl
   | |- FCLOSED _ => constructor; simpl
-  | [H : ?i < _ |- _] => inv H; simpl in *; auto; try lia
-  | [H : ?i <= _ |- _] => inv H; simpl in *; auto; try lia
+  | [H : ?i < S _ |- _] => inv H; simpl in *; auto; try lia
+  | [H : ?i <= S _ |- _] => inv H; simpl in *; auto; try lia
   | [H : EXP ?n1 ⊢ ?e |- EXP ?n2 ⊢ ?e] => try now (eapply (loosen_scope_exp n2 n1 ltac:(lia)) in H)
+  | [H : PAT ?n1 ⊢ ?e |- PAT ?n2 ⊢ ?e] => try now (eapply (loosen_scope_pat n2 n1 ltac:(lia)) in H)
   | [H : VAL ?n1 ⊢ ?e |- VAL ?n2 ⊢ ?e] => try now (eapply (loosen_scope_val n2 n1 ltac:(lia)) in H)
   | [H : NVAL ?n1 ⊢ ?e |- NVAL ?n2 ⊢ ?e] => try now (eapply (loosen_scope_nonval n2 n1 ltac:(lia)) in H)
   end.
 Ltac scope_solver := repeat scope_solver_step; try lia.
 
+(** Simplifies scoping goals about lists built with `repeat` (length bounds,
+    indexing and mapping). *)
+Ltac repeat_scope :=
+  repeat
+  match goal with
+  | [H : _ < length (repeat _ _) |- _] => rewrite repeat_length in H
+  | |- context C [nth _ (repeat _ _) _] => rewrite nth_repeat_lt; try lia; scope_solver
+  | |- context C [map _ (repeat _ _)] => rewrite map_repeat
+  end.
+
+(** The diverging program `inf` is scoped in any context. *)
 Lemma inf_scope :
   forall Γ, NVAL Γ ⊢ inf.
 Proof.
@@ -260,6 +236,19 @@ Qed.
 Hint Resolve inf_scope : core.
 
 Opaque inf.
+
+(** Concatenates the evaluated segments of a binary construction (which are
+    bitstrings). Fails if an element is not a bitstring. *)
+Fixpoint construct_bitstring (l : list Val) : option bvn :=
+match l with
+| [] => Some bvn_empty
+| (VBitstring bits) :: rest =>
+    match construct_bitstring rest with
+    | Some restbits => Some (bvn_app bits restbits)
+    | None          => None
+    end
+| _ => None
+end.
 
 (**
   To avoid duplication of semantic rules for language elements using lists of
@@ -275,29 +264,35 @@ match ident with
 | ICall m f => match m, f with
                | VLit (Atom module), VLit (Atom func) =>
                   eval module func vl
-               | _, _ => Some (RExc (badfun (VTuple [m; f])), None)
+               (* Calls with non-atom module or function names raise
+                  `badarg` (as `erlang:apply/3` does) *)
+               | _, _ => Some (RExc (badarg (VTuple [VLit "apply"%string; m; f; meta_to_cons vl])), None)
                end
 | IPrimOp f => primop_eval f vl
 | IApp (VClos ext id vars e) =>
   if Nat.eqb vars (length vl)
   then Some (RExp (e.[list_subst (convert_to_closlist ext ++ vl) idsubst]), None)
-  else Some (RExc (badarity (VClos ext id vars e)), None)
+  else Some (RExc (badarity (VClos ext id vars e) (meta_to_cons vl)), None)
 | IApp v => Some (RExc (badfun v), None)
+| IBin => match construct_bitstring vl with
+          | Some val => Some (RValSeq [VBitstring val], None)
+          | None => Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple vl])), None) (* TODO: not faithful completely *)
+          end
 end.
 
+(** Decidable equality of frame identifiers. *)
 Proposition FrameIdent_eq_dec :
   forall id1 id2 : FrameIdent, {id1 = id2} + {id1 <> id2}.
 Proof.
   decide equality; try apply string_dec.
   all: apply Val_eq_dec.
-Qed.
+Defined.
 
-(** Receives are specially handled by Core Erlang in case of exceptions, thus
-    propagation is described in the process-local level *)
+(** Exceptions propagate through every frame, except `try` frames, which
+    catch them. *)
 Definition isPropagatable (f : Frame) : bool :=
 match f with
- | FTry _ _ _ _ (* | FReceive1 _ _ _ | FReceive2 _ _ _ _ _ *) => false
+ | FTry _ _ _ _ => false
  | _ => true
 end.
-
 

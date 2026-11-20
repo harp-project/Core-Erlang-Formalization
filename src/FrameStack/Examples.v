@@ -1,11 +1,23 @@
 (**
-  This file contains a number of program equivalence examples (by CIU).
+  This file contains a number of program equivalence examples (by CIU):
+  - a restricted version of `case` vs `if` (`case_if_equiv`);
+  - a `length(X) == 0` guard vs a `[]` pattern (`length_0`), with a few
+    evaluation tests;
+  - list building with `++` vs reversing an accumulator
+    (`list_app_reverse`, not proved yet);
+  - beta-reduction and delaying a `let`;
+  - `map` vs `foldr` (`map_foldr`).
 *)
 
 From CoreErlang.FrameStack Require Export CTX.
 
 Import ListNotations.
+Import Notations.
 
+(** Splits the termination hypothesis `H` of an expression evaluated in a
+    frame stack into the evaluation of the expression to a result `r` (in
+    `k` steps, hypothesis `Hd`), and the termination of the frame stack with
+    `r` (hypothesis `Hd'`). *)
 Ltac extract_meta_eval H :=
   let r := fresh "r" in
   let k := fresh "k" in
@@ -17,7 +29,9 @@ Ltac extract_meta_eval H :=
   eapply term_eval_both in H as H'; [destruct H' as [r [k [Hr [Hd [Hd' Hk]]]]];
   eapply term_step_term in Hd'; [|eassumption]; inv Hr].
 
-Ltac unfold_list := 
+(** Destructs a list whose length is known from a hypothesis into its
+    elements. *)
+Ltac unfold_list :=
   match goal with
   | [H : length ?l = 0 |- _] => destruct l; try inv H
   | [H : 0 = length ?l |- _] => destruct l; try inv H
@@ -53,6 +67,7 @@ end
              (He2 : EXP Γ ⊢ e2)
              (He3 : EXP Γ ⊢ e3).
 
+  (** The `case` version *)
   Local Definition nonidiomatic :=
     ELet 1 e1
       (ECase (˝VVar 0) 
@@ -60,6 +75,7 @@ end
               ([PVar], ˝VLit "true", e3.[ren (fun n => 2 + n) ]);
               ([PVar], ˝ttrue, °EPrimOp "match_fail" [°ETuple [˝VLit "case_clause";˝VVar 0]])]).
 
+  (** The `if` version *)
   Local Definition idiomatic :=
     ELet 1 e1
       (ECase (EValues [])
@@ -67,6 +83,7 @@ end
           ([], ˝VLit "true", e3.[ren (fun n => 1 + n) ]);
           ([PVar], ˝ttrue, °EPrimOp "match_fail" [˝VLit "if_clause"])]).
 
+  (** Scoping of the `case` version *)
   Local Proposition nonidiomatic_scope :
     EXP Γ ⊢ nonidiomatic.
   Proof.
@@ -76,6 +93,7 @@ end
     intro. intros. simpl. lia. 
   Qed.
 
+  (** Scoping of the `if` version *)
   Local Proposition idiomatic_scope :
     EXP Γ ⊢ idiomatic.
   Proof.
@@ -85,6 +103,7 @@ end
     intro. intros. simpl. lia. 
   Qed.
 
+  (** The `case` version is CIU-below the `if` version. *)
   Local Theorem equivalence_part1 :
     CIU_open Γ nonidiomatic idiomatic.
   Proof.
@@ -109,9 +128,9 @@ end
         deriv. unfold_list. simpl in H7.
         do 3 deriv.
         { (* v is true *)
-          simpl in H10. destruct v; try congruence. break_match_hyp; try congruence.
-          break_match_hyp; try congruence. destruct l; simpl in Heqb; try congruence.
-          break_match_hyp; try congruence. inv Heqo.
+          simpl in H10. unfold match_and in H10. destruct v; try congruence.
+          destruct (Lit_beq l "true") eqn:Heqb; try congruence.
+          apply Lit_eqb_eq in Heqb. subst. inv H10.
           simpl in H11. do 2 deriv.
           unfold idiomatic.
           exists (S (16 + k2 + k0)). simpl. econstructor.
@@ -131,9 +150,6 @@ end
         }
         { (* v is not true *)
           deriv.
-          2: { (* no more cases *)
-            inv H12.
-          }
 
           simpl in H12. do 2 deriv.
           unfold idiomatic.
@@ -157,7 +173,7 @@ end
             destruct string_dec; try reflexivity. subst. simpl in H9.
             inv H9.
           }
-          constructor. econstructor. reflexivity. constructor. auto. econstructor.
+          constructor. congruence. econstructor. reflexivity. constructor. auto. econstructor.
           simpl in H9. inv H9.
           do 2 rewrite subst_comp_exp in *.
           clear Hd. cbn in *.
@@ -172,6 +188,7 @@ end
     }
   Qed.
 
+  (** The `if` version is CIU-below the `case` version. *)
   Local Theorem equivalence_part2 :
     CIU_open Γ idiomatic nonidiomatic.
   Proof.
@@ -184,7 +201,7 @@ end
     split. 2: split.
     1-2: constructor; apply -> subst_preserves_scope_exp; eauto.
     clear H6 H3 H7. intros. simpl in H1.
-    do 4 deriv. simpl in H7. inv H7. deriv. 2: { inv H11. }
+    do 4 deriv. simpl in H7. inv H7. deriv.
     inv H11.
     simpl in H12. rewrite idsubst_is_id_val in H12. do 3 deriv.
     break_match_hyp.
@@ -203,8 +220,8 @@ end
       simpl. now rewrite idsubst_is_id_exp.
     }
     { (* e1 is false *)
-      do 2 deriv. 2: { inv H12. }
-      simpl in H13. do 2 deriv.
+      do 2 deriv.
+      simpl in H13. inv H13. simpl in H14. do 2 deriv.
       exists (6 + k0). simpl.
       econstructor. rewrite Heqs. constructor. auto. constructor.
       {
@@ -213,11 +230,10 @@ end
         break_match_hyp; subst; try congruence.
         cbn. destruct string_dec; auto. congruence.
       }
-      inv H12.
       econstructor. reflexivity. simpl. constructor. auto. econstructor.
       rewrite subst_comp_exp in *. simpl in *.
       rewrite subst_comp_exp in *. rewrite subst_extend.
-      rewrite (ren_scons _ S) in *. rewrite substcomp_id_l in H9.
+      rewrite (ren_scons _ S) in *. rewrite substcomp_id_l in H11.
       assumption.
     }
   Qed.
@@ -247,6 +263,8 @@ f(X)  -> E2.
              (He2 : EXP Γ ⊢ e2)
              (He3 : EXP Γ ⊢ e3).
 
+  (** The version with the `length(X) == 0` guard (evaluated in a `try`,
+      because `length` raises an exception on non-lists) *)
   Local Definition nonidiomatic2 :=
     ECase e1
     [([PVar], 
@@ -262,12 +280,14 @@ f(X)  -> E2.
     ;
     ([PVar], ˝ttrue, °EPrimOp "match_fail" [°ETuple [˝VLit "function_clause";˝VVar 0]])].
 
+  (** The version with the `[]` pattern *)
   Local Definition idiomatic2 :=
     ECase e1 [(
       [PNil], ˝ttrue, e2);
       ([PVar], ˝ttrue, e3.[ren (fun n => 1 + n)]);
       ([PVar], ˝ttrue, °EPrimOp "match_fail" [°ETuple [˝VLit "function_clause"; ˝VVar 0]])].
 
+  (** Scoping of the guard version *)
   Local Proposition nonidiomatic2_scope :
     EXP Γ ⊢ nonidiomatic2.
   Proof.
@@ -277,6 +297,7 @@ f(X)  -> E2.
     all: intro; intros; simpl; lia.
   Qed.
 
+  (** Scoping of the pattern version *)
   Local Proposition idiomatic2_scope :
     EXP Γ ⊢ idiomatic2.
   Proof.
@@ -286,6 +307,7 @@ f(X)  -> E2.
     all: intro; intros; simpl; lia.
   Qed.
 
+  (** The guard version is CIU-below the pattern version. *)
   Local Theorem equivalence2_part1 :
     CIU_open Γ nonidiomatic2 idiomatic2.
   Proof.
@@ -344,8 +366,8 @@ f(X)  -> E2.
               lia.
             }
             repeat deriv. simpl in H15.
-            repeat deriv. all: inv H15.
-            simpl in H16. repeat deriv.
+            repeat deriv. inv H16.
+            simpl in H17. repeat deriv.
             (* evaluation *)
             simpl. exists (5 + k + k2). simpl.
             econstructor. eapply step_term_term.
@@ -357,10 +379,9 @@ f(X)  -> E2.
         }
         { (* exception *)
           cbn in EQ, H7. rewrite EQ in H7. invSome. inv H10. inv H4.
-          simpl in H6. repeat deriv. 2: inv H10.
-          simpl in H10. repeat deriv. 2: { inv H10. }
-          2: { inv H11. }
-          inv H11. simpl in *. repeat deriv.
+          simpl in H6. repeat deriv.
+          simpl in H10. repeat deriv.
+          inv H12. simpl in *. repeat deriv.
           (* evaluation *)
           simpl. exists (5 + k + k2). simpl.
           econstructor. eapply step_term_term.
@@ -392,6 +413,7 @@ f(X)  -> E2.
     }
   Qed.
 
+  (** The pattern version is CIU-below the guard version. *)
   Local Theorem equivalence2_part2 :
     CIU_open Γ idiomatic2 nonidiomatic2.
   Proof.
@@ -469,7 +491,7 @@ f(X)  -> E2.
             econstructor. auto. econstructor. econstructor. auto.
             econstructor. reflexivity. cbn. break_match_goal. lia.
             econstructor. reflexivity. simpl.
-            econstructor. constructor. econstructor.
+            econstructor. constructor. congruence. econstructor.
             econstructor.
             econstructor. auto. econstructor. simpl. assumption.
           }
@@ -491,7 +513,7 @@ f(X)  -> E2.
           Transparent eval_length.
           econstructor. reflexivity.
           destruct e, p. apply cool_try_err.
-          econstructor. auto. econstructor. econstructor. reflexivity.
+          econstructor. auto. econstructor. congruence. econstructor. reflexivity.
           econstructor. auto. econstructor. cbn.
           assumption.
         }
@@ -500,7 +522,7 @@ f(X)  -> E2.
         }
       }
       { (* pattern matching fails due to the degree of ˝vs˝ - in the concrete Core Erlang implementation this cannot happen, because such programs are filtered out by the compiler *)
-        inv H12. inv H13. simpl.
+        inv H12. congruence. inv H13. simpl.
         (* evaluation *)
         exists (5 + k2 + k). simpl.
         econstructor. eapply step_term_term.
@@ -515,11 +537,6 @@ f(X)  -> E2.
   Qed.
 
 End length_0.
-
-(**
-  A simple, automatic evaluation tactic for the frame stack semantics.
-*)
-Ltac do_step := econstructor; [constructor;auto| simpl].
 
 (**
   Unit tests that the examples above work as expected.
@@ -575,6 +592,8 @@ Proof.
   do 2 do_step.
   do_step. constructor.
 Qed.
+
+Create HintDb examples.
 
 Section list_app_reverse.
 (* TODO
@@ -639,7 +658,7 @@ double2([], Buffer) ->
   Local Proposition idiomatic3_scope :
     EXP Γ ⊢ idiomatic3.
   Proof.
-    unfold idiomatic.
+    unfold idiomatic3.
     scope_solver.
   Qed.
 
@@ -729,7 +748,7 @@ Proof.
       eexists.
       do 3 do_step.
       simpl. do_step. do_step.
-      replace (map (fun x : Exp => x.[ξ]) (map VVal vals)) with
+      replace (map (subst ξ) (map VVal vals)) with
         (map VVal (map (substVal ξ) vals)).
       2: {
         clear. do 2 rewrite map_map. now f_equal.
@@ -806,6 +825,7 @@ Proof.
     now replace (vl + S x + Γ) with (S (vl + x + Γ)) in IHvl by lia.
 Qed.
 
+(** The variable list `[0, ..., vl - 1]` is scoped in `vl + Γ`. *)
 Corollary create_varlist_scope vl Γ :
   Forall (ExpScoped (vl + Γ)) (create_varlist vl).
 Proof.
@@ -876,11 +896,64 @@ Qed. *)
 Proof.
  *)
 
-(* Theorem let_delay : forall Γ e x e',
-  EXP Γ ⊢ e -> EXPCLOSED e' -> | [], e' | ↓ ->
-  e ≈[Γ]≈ ELet x e' (rename (fun n => S n) e).
- *)
+(** Substituting into an expression shifted by one variable gives back the
+    original expression. *)
+Lemma shift_then_subst_exp : forall e v,
+  (rename (fun n => S n) e).[v/] = e.
+Proof.
+  intros. destruct renaming_is_subst as [Hr _]. rewrite Hr.
+  destruct subst_ren as [Hs _].
+  rewrite Hs.
+  replace ((v .: idsubst) ∘ (fun n => S n)) with idsubst.
+  * now apply idsubst_is_id.
+  * extensionality n. reflexivity.
+Qed.
 
+(** Delaying a let: binding an unused variable to a closed expression, which
+    evaluates to a single value, does not change the meaning of the body.
+    NOTE: it is not enough to require that [e'] terminates: if it evaluates to
+    an exception or to a value sequence of a different length, the [let]
+    raises (or propagates) it, while [e] does not. *)
+Theorem let_delay : forall Γ e e' v,
+  EXP Γ ⊢ e -> EXPCLOSED e' -> ⟨ [], e' ⟩ -->* RValSeq [v] ->
+  CIU_open Γ e (ELet 1 e' (rename (fun n => S n) e)) /\
+  CIU_open Γ (ELet 1 e' (rename (fun n => S n) e)) e.
+Proof.
+  intros Γ e e' v He He' Hev.
+  pose proof Hev as [k [Hres Hk]].
+  pose proof (step_any_closedness _ _ _ _ _ Hk ltac:(constructor) ltac:(auto)) as [Hv _].
+  assert (Hvc : VALCLOSED v)
+    by (inversion Hv as [| | | ? ? Hf]; subst; inversion Hf; assumption).
+  assert (Hvs : VAL Γ ⊢ v) by (eapply loosen_scope_val; [|exact Hvc]; lia).
+  assert (Hshift : EXP S Γ ⊢ rename (fun n => S n) e).
+  { apply -> ren_preserves_scope_exp; [exact He|]. unfold renscoped. intros x Hx. lia. }
+  pose proof (@CIU_beta_value Γ _ v Hshift Hvs) as [Hb1 Hb2].
+  rewrite shift_then_subst_exp in Hb1, Hb2.
+  (* e' is equivalent to the value it evaluates to *)
+  assert (Hce : CIU e' (˝v) /\ CIU (˝v) e').
+  { pose proof (CIU_eval (RExp e') (RValSeq [v]) ltac:(constructor; exact He') Hev) as [H1 H2].
+    pose proof (CIU_eval (˝v) (RValSeq [v]) ltac:(auto) ltac:(exists 1; split; [constructor | econstructor; [constructor | constructor]])) as [H3 H4].
+    split; eauto using CIU_transitive_closed. }
+  destruct (CIU_IsPreCtxRel) as (Rscope & Radequate & Rrefl & Rtrans & RFun & RValues & RCons & RTuple & RMap & RCall & RPrimOp & RApp & RCase & RLet & _).
+  assert (Hce' : CIU_open Γ e' (˝v) /\ CIU_open Γ (˝v) e').
+  { split; intros ξ Hξ; simpl;
+      rewrite (closed_ignores_sub e' ξ He'), (closed_ignores_sub_val v ξ Hvc);
+      apply Hce. }
+  destruct Hce' as [Hc1 Hc2].
+  assert (He'Γ : EXP Γ ⊢ e').
+  { eapply loosen_scope_exp; [|exact He']. lia. }
+  assert (Hvexp : EXP Γ ⊢ ˝v) by (constructor; exact Hvs).
+  split.
+  * eapply CIU_transitive; [exact Hb1|].
+    apply RLet; auto.
+  * eapply CIU_transitive; [|exact Hb2].
+    apply RLet; auto.
+Qed.
+
+
+(** `do_step`, which also uses the hints of the `examples` database. It is
+    defined outside of the sections to be usable in other files. *)
+Ltac do_step_with_examples := econstructor; [constructor;auto with examples; try congruence| simpl].
 
 Section map_foldr.
 (**
@@ -905,7 +978,7 @@ letrec 'foldr'/3 = fun(F, A, L) ->
     <[]>    when 'true' -> A
   end
 in
-  apply 'foldr'/2(fun(X, A) -> [F(X)|A], [], L)
+  apply 'foldr'/3(fun(X, A) -> [F(X)|A], [], L)
 ```
 
 *)
@@ -915,19 +988,20 @@ Context {l : Val}
         {i : nat}
         {f : Val -> Val}
         {f_clos : Val}
-        {f_clos_closed : VALCLOSED f_clos}
-        {ι : PID} (* This PID will be observed *).
+        {f_clos_closed : VALCLOSED f_clos}.
 
 Hypothesis f_simulates :
   forall v : Val,
-    In v l' ->
-    exists e_body,
-    create_result (IApp f_clos) [v] = Some (e_body, None) /\
+    v ∈ l' ->
+    exists e_body eff,
+    create_result (IApp f_clos) [v] = Some (e_body, eff) /\
     ⟨[], e_body⟩ -->* RValSeq [f v].
+
 Hypothesis l_is_proper : mk_list l = Some l'.
-Hypothesis f_closed : forall v, VALCLOSED v -> VALCLOSED (f v).
 Hypothesis l_closed : VALCLOSED l.
 
+(** The body of `map` (parameters: `F = 1`, `L = 2`, the function itself is
+    `0`) *)
 Definition map_body : Exp :=
   ECase (˝VVar 2) [
       ([PNil], ˝ttrue, ˝VNil);
@@ -936,9 +1010,11 @@ Definition map_body : Exp :=
       )
     ].
 
+(** The recursive closure of `map` *)
 Definition map_clos : Val :=
   VClos [(i, 2, map_body)] i 2 map_body.
 
+(** The closure of `map` is closed. *)
 Lemma map_clos_closed :
   VALCLOSED map_clos.
 Proof.
@@ -949,8 +1025,8 @@ Hint Resolve map_clos_closed : examples.
 
 Open Scope string_scope.
 
-Ltac do_step_with_examples := econstructor; [constructor;auto with examples; try congruence| simpl].
-
+(** `map` applied to `f_clos` and `l` evaluates to the list of `f` applied
+    to the elements of `l`. *)
 Theorem map_clos_eval :
   ⟨[], EApp (˝map_clos) [˝f_clos; ˝l]⟩ -->* RValSeq [meta_to_cons (map f l')].
 Proof.
@@ -972,7 +1048,7 @@ Proof.
   }
     clear IHv2.
     destruct IHD as [clock [IHv2 IHD]].
-    epose proof (f_simulates0 v) as [e_v [HRes [k_v [HRv HD]]]].
+    epose proof (f_simulates0 v) as [e_v [eff' [HRes [k_v [HRv HD]]]]].
     1: now left.
     eexists. split.
     {
@@ -987,12 +1063,12 @@ Proof.
     eapply transitive_eval.
     rewrite <- app_nil_l at 1. apply frame_indep_nil.
     {
-      repeat rewrite vclosed_ignores_ren; auto.
-      rewrite vclosed_ignores_sub; auto.
+      repeat rewrite closed_ignores_ren_val; auto.
+      rewrite closed_ignores_sub_val; auto.
       exact IHD.
     }
-    repeat rewrite vclosed_ignores_ren; auto.
-    rewrite vclosed_ignores_sub; auto.
+    repeat rewrite closed_ignores_ren_val; auto.
+    rewrite closed_ignores_sub_val; auto.
     do 6 do_step_with_examples.
     econstructor. econstructor; auto. simpl. symmetry. exact HRes.
     eapply transitive_eval.
@@ -1002,14 +1078,18 @@ Proof.
     constructor.
 Qed.
 
+(** The body of `foldr` (parameters: `F = 1`, `A = 2`, `L = 3`, the
+    function itself is `0`) *)
 Definition foldr_body : Exp := °ECase (˝VVar 3)
       [([PCons PVar PVar], ˝ttrue,
          °EApp (˝VVar 3) [˝VVar 0; °EApp (˝VFunId (2, 3)) [˝VVar 3; ˝VVar 4; ˝VVar 1]]);
         ([PNil], ˝ttrue, ˝VVar 2)].
 
+(** The recursive closure of `foldr` *)
 Definition foldr_clos : Val :=
   VClos [(i, 3, foldr_body)] i 3 foldr_body.
 
+(** The closure of `foldr` is closed. *)
 Lemma foldr_clos_closed :
   VALCLOSED foldr_clos.
 Proof.
@@ -1018,6 +1098,8 @@ Qed.
 
 Hint Resolve foldr_clos_closed : examples.
 
+(** `foldr` with the cons-after-`f` function and `[]` evaluates to the same
+    list as `map`. *)
 Theorem foldr_clos_eval_as_map :
   ⟨[], EApp (˝foldr_clos) [˝VClos [] 0 2 (ECons (EApp (˝f_clos) [˝VVar 0]) (˝VVar 1)); ˝VNil; ˝l]⟩ -->* RValSeq [meta_to_cons (map f l')].
 Proof.
@@ -1041,7 +1123,7 @@ Proof.
       intros. apply f_simulates. now right.
     }
     destruct IHv2 as [clock [IHv2 IHD]].
-    specialize (f_simulates v ltac:(now left)) as [e_body [H_sim [k [Hr HD]]]].
+    specialize (f_simulates v ltac:(now left)) as [e_body [eff' [H_sim [k [Hr HD]]]]].
     eexists. split.
     {
       simpl. constructor.
@@ -1051,9 +1133,9 @@ Proof.
     econstructor. econstructor; auto. cbn.
     do 2 do_step_with_examples.
     econstructor. apply eval_step_case_match. reflexivity.
-    repeat rewrite vclosed_ignores_ren; auto.
+    repeat rewrite closed_ignores_ren_val; auto.
     simpl.
-    repeat rewrite vclosed_ignores_sub; auto.
+    repeat rewrite closed_ignores_sub_val; auto.
     do 4 do_step_with_examples. scope_solver.
     do 4 do_step_with_examples.
     eapply transitive_eval.
@@ -1061,7 +1143,7 @@ Proof.
     - econstructor. econstructor; auto. simpl.
       do 2 do_step_with_examples.
       do 2 do_step_with_examples.
-      repeat rewrite vclosed_ignores_sub; auto.
+      repeat rewrite closed_ignores_sub_val; auto.
       do 4 do_step_with_examples.
       econstructor. econstructor. simpl. now rewrite H_sim.
       eapply frame_indep_core in HD.
@@ -1070,6 +1152,7 @@ Proof.
       constructor.
 Qed.
 
+(** The `foldr` implementation is CIU-below the `map` implementation. *)
 Theorem CIU_foldr_map_closed_1 :
   CIU (EApp (˝foldr_clos) [˝VClos [] 0 2 (ECons (EApp (˝f_clos) [˝VVar 0]) (˝VVar 1)); ˝VNil; ˝l]) (EApp (˝map_clos) [˝f_clos; ˝l]).
 Proof.
@@ -1079,6 +1162,7 @@ Proof.
   eapply CIU_transitive_closed; eauto.
 Qed.
 
+(** The `map` implementation is CIU-below the `foldr` implementation. *)
 Theorem CIU_foldr_map_closed_2 :
   CIU (EApp (˝map_clos) [˝f_clos; ˝l]) (EApp (˝foldr_clos) [˝VClos [] 0 2 (ECons (EApp (˝f_clos) [˝VVar 0]) (˝VVar 1)); ˝VNil; ˝l]).
 Proof.

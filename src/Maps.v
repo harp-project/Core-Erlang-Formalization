@@ -17,6 +17,7 @@
 *)
 
 From CoreErlang Require Export Equalities.
+From CoreErlang Require Import Scoping.
 Import ListNotations.
 
 
@@ -168,6 +169,17 @@ Section flattening.
     intros. now destruct a.
   Qed.
 
+  (** The previous property expressed with `PBoth` *)
+  Lemma deflatten_PBoth :
+    forall P (l : list A), Forall P l ->
+      Forall (PBoth P) (deflatten_list l).
+  Proof.
+    induction l using list_length_ind; intros.
+    destruct l; auto. inv H0. inv H4. auto.
+    simpl. constructor. 2: apply H; auto; slia.
+    now constructor.
+  Qed.
+
   (** Flattening lists also do not affect propositions that were satsified by
       the list elements *)
   Lemma flatten_keeps_prop (P : A -> Prop) :
@@ -199,6 +211,18 @@ End flattening.
 Theorem deflatten_map :
   forall T1 T2 (f : T1 -> T2) l,
     map (fun '(x, y) => (f x, f y)) (deflatten_list l) =
+    deflatten_list (map f l).
+Proof.
+  induction l using list_length_ind; simpl; auto.
+  destruct l; simpl; auto.
+  destruct l; simpl; auto.
+  rewrite H. reflexivity. slia.
+Qed.
+
+(** Mapping and deflattening can be swapped *)
+Theorem deflatten_map_prod_map :
+  forall T1 T2 (f : T1 -> T2) l,
+    map (prod_map f f) (deflatten_list l) =
     deflatten_list (map f l).
 Proof.
   induction l using list_length_ind; simpl; auto.
@@ -248,4 +272,63 @@ Theorem map_repeat {T Q : Type} :
   forall n (f : T -> Q) (x : T), map f (repeat x n) = repeat (f x) n.
 Proof.
   induction n; intros; cbn; auto; now rewrite IHn.
+Qed.
+
+Lemma flatten_list_concat_map :
+  forall {A B} (l : list (A * A)) (f : A -> list B),
+    flat_map f (flatten_list l) =
+    concat (flatten_list (map (prod_map f f) l)).
+Proof.
+  induction l; auto; intros; simpl.
+  destruct a; simpl. do 2 f_equal.
+  apply IHl.
+Qed.
+
+Lemma in_flatten_list :
+  forall {A} (l : list (A * A)) x, In x (flatten_list l) ->
+    exists y, In (x, y) l \/ In (y, x) l.
+Proof.
+  induction l; intros; simpl in H. destruct H.
+  destruct a. inv H. 2: inv H0.
+  * exists a0. left. by left.
+  * exists a. right. by left.
+  * apply IHl in H. firstorder.
+Qed.
+
+(** Putting a closed key-value pair into a closed map results in a closed
+    map. *)
+Lemma map_put_is_closed (v v0 : Val)
+(l2 : list (Val * Val)) :
+  VALCLOSED v -> VALCLOSED v0 ->
+  (forall i : nat,
+  i < Datatypes.length l2 -> VALCLOSED (nth i (map fst l2) VNil)) ->
+  (forall i : nat,
+  i < Datatypes.length l2 -> VALCLOSED (nth i (map snd l2) VNil))
+  ->
+VALCLOSED (VMap (map_put v v0 l2)).
+Proof.
+  intros. induction l2; simpl.
+  * constructor; simpl; destruct i; try lia; now intros.
+  * destruct a as [k' v']. simpl in *.
+    break_match_goal. 2: break_match_goal.
+    - constructor; intros.
+      all: destruct i; [|destruct i]; simpl; try assumption.
+      1: apply (H1 0); lia.
+      1: apply (H1 (S i)); simpl in H3; lia.
+      1: apply (H2 0); lia.
+      1: apply (H2 (S i)); simpl in H3; lia.
+    - constructor; intros.
+      all: destruct i; simpl; try assumption.
+      1: apply (H1 (S i)); simpl in H3; lia.
+      1: apply (H2 (S i)); simpl in H3; lia.
+    - unshelve (epose proof (IHl2 _ _)).
+      1: intros. apply (H1 (S i)); simpl in H3; lia.
+      1: intros. apply (H2 (S i)); simpl in H3; lia.
+      inv H3.
+      constructor; intros.
+      all: destruct i; simpl; try assumption.
+      1: apply (H1 0); lia.
+      2: apply (H2 0); lia.
+      1: apply H5; simpl in H3; lia.
+      1: apply H7; simpl in H3; lia.
 Qed.

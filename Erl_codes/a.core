@@ -13,8 +13,7 @@ module 'a' ['black_knight'/1,
 	    'f'/0,
 	    'g'/0,
 	    'm'/0,
-	    'c'/1,
-	    'x'/0]
+	    'c'/1]
     attributes [%% Line 1
 		'file' =
 		    %% Line 1
@@ -24,13 +23,10 @@ module 'a' ['black_knight'/1,
 		    %% Line 2
 		    ['export_all']]
 
-'f'/0 = fun() -> apply 'g'/0()
-'x'/0 = fun() -> let S = call 'erlang':'self'() in
-                   %%do 
-                     call 'erlang':'spawn'(fun() -> let <X, Y> = call 'erlang':'!'(S, <1,2>) in 'ok')
-                      %%receive
-                      %%  <X, Y> when 'true' -> {X, Y}
-                      %% end
+'f'/0 = fun() -> case 5 of
+                   <X> when 'alma' -> 'ok'
+                   <X> when 'true' -> 'nok'
+                 end
 
 'g'/0 = fun() -> case 5 of
                    <X> when call 'erlang':'element'(X, {}) -> 'true'
