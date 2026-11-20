@@ -7,7 +7,8 @@
   - the definition of (barbed) bisimulation, and the facts that it is an
     equivalence relation which is coarser than weak bisimulation;
   - barbed expansion, and its properties;
-  - bisimulation up to expansion;
+  - bisimulation up to expansion, and its soundness
+    (`barbedBisimUpTo_barbedBisim`);
   - the characterisation of bisimilarity as the largest bisimulation
     (`is_barbed_bisim_alt`);
   - the preservation of the barbs by reductions that do not send signals to
@@ -195,8 +196,9 @@ Qed.
 
 (** * Barbed expansion *)
 
-(** `A ⪯ B observing O`: `A` is expanded by `B`, i.e., `B` is a bisimilar,
-    but more efficient version of `A`. Every step of `A` has to be matched by
+(** `A ⪰ B observing O` (Definition 7 of the paper): `A` expands `B`, i.e.,
+    `B` is a bisimilar, but more efficient version of `A` (`B ⪯ A` is the
+    converse notation). Every step of `A` has to be matched by
     at most one step of `B`, and every step of `B` by at least one step of
     `A`. The barbs of `A` have to be present in `B` directly (with possibly
     different sources), while the barbs of `B` have to be reachable from
@@ -220,11 +222,12 @@ CoInductive barbedExpansion (O : gset PID) : Node -> Node -> Prop :=
     option_list_biforall Signal_eq (B.1 !! (source, dest)) (A'.1 !! (source', dest)))
 ->
   barbedExpansion O A B.
-Notation "A ⪯ B 'observing' O" := (barbedExpansion O A B) (at level 70).
+Notation "A ⪰ B 'observing' O" := (barbedExpansion O A B) (at level 70).
+Notation "A ⪯ B 'observing' O" := (barbedExpansion O B A) (at level 70).
 
 (** Expansion implies bisimilarity. *)
 Theorem barbedExpansion_implies_bisim :
-  forall O A B, A ⪯ B observing O -> A ~ᵇ B observing O.
+  forall O A B, A ⪰ B observing O -> A ~ᵇ B observing O.
 Proof.
   cofix IH. intros. inv H. constructor; auto.
   * intros. apply H0 in H. destruct H as [B' [l H]]. destruct_hyps.
@@ -237,16 +240,20 @@ Qed.
 
 (** * Bisimulation up to expansion *)
 
-(** `A ~⪯~ B observing O`: `A` and `B` are bisimilar up to expansion: the
-    derivatives of matched steps only have to be related up to expansion on
-    both sides. *)
+(** `A ~⪯~ B observing O` (Definition 8 of "Playing with bisimulation in Erlang"):
+    `A` and `B` are bisimilar up to expansion: the derivatives of matched steps
+    only have to be related up to expansion on both sides. The derivative of the
+    stepping node expands the node which continues in the relation (`A' ⪰ A''`),
+    while on the responding side, the node which continues in the relation
+    expands the reached node (`B'' ⪰ B'`). Soundness is proved in
+    `barbedBisimUpTo_barbedBisim`. *)
 CoInductive barbedBisimUpTo (O : gset PID) : Node -> Node -> Prop :=
 | is_bisim_up_to (A B : Node) :
   (forall A' a ι,
       A -[a | ι]ₙ-> A' with O ->
         exists B' A'' B'' l,
           B -[l]ₙ->* B' with O /\
-          A'' ⪯ A' observing O /\ B' ⪯ B'' observing O /\ barbedBisimUpTo O A'' B'') ->
+          A' ⪰ A'' observing O /\ B'' ⪰ B' observing O /\ barbedBisimUpTo O A'' B'') ->
   (forall source dest,
       dest ∈ O ->
       exists source' l B',
@@ -256,7 +263,7 @@ CoInductive barbedBisimUpTo (O : gset PID) : Node -> Node -> Prop :=
       B -[a | ι]ₙ-> B' with O ->
         exists A' B'' A'' l,
           A -[l]ₙ->* A' with O /\
-          A' ⪯ A'' observing O /\ B'' ⪯ B' observing O /\ barbedBisimUpTo O A'' B'') ->
+          A'' ⪰ A' observing O /\ B' ⪰ B'' observing O /\ barbedBisimUpTo O A'' B'') ->
   (forall source dest,
       dest ∈ O ->
       exists source' l A',
@@ -280,7 +287,7 @@ Qed.
 
 (** Expansion is reflexive. *)
 Lemma barbedExpansion_refl :
-  forall O A, A ⪯ A observing O.
+  forall O A, A ⪰ A observing O.
 Proof.
   cofix H. intros.
   constructor.
@@ -302,7 +309,7 @@ Qed.
 (** Expansion implies bisimilarity up to expansion. *)
 Lemma barbedExpansion_is_expansion_up_to :
   forall O A B,
-    A ⪯ B observing O -> A ~⪯~ B observing O.
+    A ⪰ B observing O -> A ~⪯~ B observing O.
 Proof.
   cofix IH.
   intros. inv H. constructor; auto.
@@ -320,12 +327,12 @@ Proof.
 Qed.
 
 (** Reduction sequences of `A` can be matched by at most as long reduction
-    sequences of a node `B` expanding `A`. *)
+    sequences of a node `B` expanded by `A`. *)
 Lemma barbedExpansion_many :
   forall O A A' l, A -[l]ₙ->* A' with O ->
-    forall B, A ⪯ B observing O ->
+    forall B, A ⪰ B observing O ->
       exists B' l',
-        B -[ l' ]ₙ->* B' with O /\ A' ⪯ B' observing O /\ length l' <= length l.
+        B -[ l' ]ₙ->* B' with O /\ A' ⪰ B' observing O /\ length l' <= length l.
 Proof.
   intros O A A' l. revert A A'. induction l; intros; inv H.
   * exists B, []. split. 2: split.
@@ -343,12 +350,12 @@ Proof.
 Qed.
 
 (** Reduction sequences of `B` can be matched by at least as long reduction
-    sequences of a node `A` expanded by `B`. *)
+    sequences of a node `A` expanding `B`. *)
 Lemma barbedExpansion_many_sym :
   forall O B B' l', B -[l']ₙ->* B' with O ->
-    forall A, A ⪯ B observing O ->
+    forall A, A ⪰ B observing O ->
       exists A' l,
-        A -[ l ]ₙ->* A' with O /\ A' ⪯ B' observing O /\ length l' <= length l.
+        A -[ l ]ₙ->* A' with O /\ A' ⪰ B' observing O /\ length l' <= length l.
 Proof.
   intros O A A' l. revert A A'. induction l; intros; inv H.
   * exists A0, []. split. 2: split.
@@ -368,8 +375,8 @@ Qed.
 (** Expansion is transitive. *)
 Lemma barbedExpansion_trans :
   forall O A B C,
-    A ⪯ B observing O -> B ⪯ C observing O
-    -> A ⪯ C observing O.
+    A ⪰ B observing O -> B ⪰ C observing O
+    -> A ⪰ C observing O.
 Proof.
   cofix IH. intros.
   constructor; auto.
@@ -468,30 +475,174 @@ Proof.
   apply barbed_alt_barbed_2.
 Qed.
 
-(** Soundness of bisimulation up to expansion. *)
+(** * Soundness of bisimulation up to expansion *)
+
+(** Bisimilarity up to expansion is symmetric. *)
+Lemma barbedBisimUpTo_sym :
+  forall O A B, A ~⪯~ B observing O -> B ~⪯~ A observing O.
+Proof.
+  cofix IH. intros O A B H.
+  inversion H as [? ? H1 H2 H3 H4]; subst.
+  constructor.
+  * intros B' a ι HB.
+    destruct (H3 _ _ _ HB) as [A' [B'' [A'' [l [HA [HA''A' [HB'B'' HU]]]]]]].
+    exists A', B'', A'', l. split_and!; try assumption. by apply IH.
+  * exact H4.
+  * intros A' a ι HA.
+    destruct (H1 _ _ _ HA) as [B' [A'' [B'' [l [HB [HA'A'' [HB''B' HU]]]]]]].
+    exists B', A'', B'', l. split_and!; try assumption. by apply IH.
+  * exact H2.
+Qed.
+
+(** The auxiliary relation of the soundness proof: `X` expands `Z`, `Z` is
+    bisimilar to `W` up to expansion, and `W` expands `Y`. *)
+Local Definition upToExpRel (O : gset PID) (X Y : Node) : Prop :=
+  exists Z W, X ⪰ Z observing O /\ Z ~⪯~ W observing O /\ W ⪰ Y observing O.
+
+(** Reduction sequences of the left node of `upToExpRel` can be matched by
+    reduction sequences of the right node (by strong induction on the length
+    of the sequence; the expansions ensure that the sequence to be matched
+    does not become longer). Since `~⪯~` is symmetric, this lemma also
+    handles the converse direction (see `upToExp_bisim`). *)
+Local Lemma upToExpRel_many :
+  forall O (* n *) l, (* length l <= n -> *)
+    forall X X', X -[l]ₙ->* X' with O ->
+    forall Y, upToExpRel O X Y ->
+      exists Y' l', Y -[l']ₙ->* Y' with O /\ upToExpRel O X' Y'.
+Proof.
+  intros O. induction l; intros X X' HX Y [Z [W [HXZ [HZW HWY]]]].
+  * inv HX. exists Y, []. split. constructor. by exists Z, W.
+  * inversion HX as [|? X1 ? l0 a' ι HXstep HXrest]; subst.
+    inversion HXZ as [? ? HXZ1 HXZ2 HXZ3 HXZ4]; subst.
+    destruct (HXZ1 _ _ _ HXstep) as [Z1 [lz [Hlz [HZ HX1Z1]]]].
+    destruct lz as [|[b κ] [|]]; [| |simpl in Hlz; lia].
+    - inv HZ. eapply IHl. exact HXrest.
+      by exists Z1, W.
+    - inversion HZ as [|? Zm ? ? ? ? HZstep HZrest]; subst. inv HZrest.
+      inversion HZW as [? ? HZW1 HZW2 HZW3 HZW4]; subst.
+      destruct (HZW1 _ _ _ HZstep) as [W1 [Z2 [W2 [lw [HW [HZ1Z2 [HW2W1 HZ2W2]]]]]]].
+      destruct (barbedExpansion_many _ _ _ _ HW _ HWY) as [Y1 [ly [HY [HW1Y1 _]]]].
+      destruct (IHl _ _ HXrest Y1) as [Y' [ly' [HY' HU]]].
+      {
+        exists Z2, W2. split; [|split].
+        - eapply barbedExpansion_trans; eassumption.
+        - assumption.
+        - eapply barbedExpansion_trans; eassumption.
+      }
+      exists Y', (ly ++ ly'). split. 2: assumption.
+      eapply closureNodeSem_trans; eassumption.
+Qed.
+
+(** The barbs of the left node of `upToExpRel` are reachable from the right
+    node. *)
+Local Lemma upToExpRel_barbs :
+  forall O X Y, upToExpRel O X Y ->
+    forall source dest, dest ∈ O ->
+      exists source' l Y', Y -[l]ₙ->* Y' with O /\
+        option_list_biforall Signal_eq (X.1 !! (source, dest)) (Y'.1 !! (source', dest)).
+Proof.
+  intros O X Y [Z [W [HXZ [HZW HWY]]]] source dest Hdest.
+  inversion HXZ as [? ? _ HXZ2 _ _]; subst.
+  destruct (HXZ2 source dest Hdest) as [s1 HXZb].
+  inversion HZW as [? ? _ HZW2 _ _]; subst.
+  destruct (HZW2 s1 dest Hdest) as [s2 [lw [W1 [HW HZWb]]]].
+  destruct (barbedExpansion_many _ _ _ _ HW _ HWY) as [Y1 [ly [HY [HW1Y1 _]]]].
+  inversion HW1Y1 as [? ? _ HW1Y12 _ _]; subst.
+  destruct (HW1Y12 s2 dest Hdest) as [s3 HWYb].
+  exists s3, ly, Y1. split. 1: assumption.
+  eapply option_biforall_trans. 1: intros; eapply Signal_eq_trans; eassumption.
+  1: exact HXZb.
+  eapply option_biforall_trans. 1: intros; eapply Signal_eq_trans; eassumption.
+  1: exact HZWb.
+  exact HWYb.
+Qed.
+
+(** Bisimilarity composed with bisimilarity up to expansion on both sides is
+    a bisimulation. The steps of both sides are matched with
+    `upToExpRel_many`, using the symmetry of `~⪯~` for the right side. *)
+Local Lemma upToExp_bisim :
+  forall O, is_barbed_bisim_alt
+    (fun A B => exists X Y, A ~ᵇ X observing O /\ X ~⪯~ Y observing O /\
+                            Y ~ᵇ B observing O) O.
+Proof.
+  intros O A B [X [Y [HAX [HXY HYB]]]].
+  assert (upToExpRel O X Y) as HU.
+  { exists X, Y. split_and!; auto using barbedExpansion_refl. }
+  assert (upToExpRel O Y X) as HU'.
+  { exists Y, X. split_and!; auto using barbedExpansion_refl, barbedBisimUpTo_sym. }
+  clear HXY.
+  inversion HAX as [? ? HAX1 HAX2 HAX3 HAX4]; subst.
+  inversion HYB as [? ? HYB1 HYB2 HYB3 HYB4]; subst.
+  split; [|split; [|split]].
+  * intros A' a ι HA.
+    destruct (HAX1 _ _ _ HA) as [X' [lx [HX HA'X']]].
+    destruct (upToExpRel_many O lx _ _ HX _ HU)
+      as [Y' [ly [HY [Z' [W' [HX'Z' [HZ'W' HW'Y']]]]]]].
+    destruct (barbedBisim_many _ _ _ _ HY _ HYB) as [B' [lb [HB HY'B']]].
+    exists B', lb. split. 1: assumption.
+    exists Z', W'. split; [|split].
+    - eapply barbedBisim_trans. 1: exact HA'X'.
+      by apply barbedExpansion_implies_bisim.
+    - assumption.
+    - eapply barbedBisim_trans. 2: exact HY'B'.
+      by apply barbedExpansion_implies_bisim.
+  * intros source dest Hdest.
+    destruct (HAX2 source dest Hdest) as [s1 [lx [X1 [HX HAXb]]]].
+    destruct (upToExpRel_many O lx _ _ HX _ HU)
+      as [Y1 [ly [HY HU1]]].
+    destruct (upToExpRel_barbs _ _ _ HU1 s1 dest Hdest)
+      as [s2 [ly' [Y2 [HY' HXYb]]]].
+    destruct (barbedBisim_many _ _ _ _ (closureNodeSem_trans _ _ _ _ HY _ _ HY') _ HYB)
+      as [B2 [lb [HB HY2B2]]].
+    inversion HY2B2 as [? ? _ HY2B22 _ _]; subst.
+    destruct (HY2B22 s2 dest Hdest) as [s3 [lb' [B3 [HB' HYBb]]]].
+    exists s3, (lb ++ lb'), B3. split.
+    - eapply closureNodeSem_trans; eassumption.
+    - eapply option_biforall_trans. 1: intros; eapply Signal_eq_trans; eassumption.
+      1: exact HAXb.
+      eapply option_biforall_trans. 1: intros; eapply Signal_eq_trans; eassumption.
+      1: exact HXYb.
+      exact HYBb.
+  * intros B' a ι HB.
+    destruct (HYB3 _ _ _ HB) as [Y' [ly [HY HY'B']]].
+    destruct (upToExpRel_many O ly _ _ HY _ HU')
+      as [X' [lx [HX [Z' [W' [HY'Z' [HZ'W' HW'X']]]]]]].
+    destruct (barbedBisim_many_sym _ _ _ _ HX _ HAX) as [A' [la [HA HA'X']]].
+    exists A', la. split. 1: assumption.
+    exists W', Z'. split; [|split].
+    - eapply barbedBisim_trans. 1: exact HA'X'.
+      by apply barbedBisim_sym, barbedExpansion_implies_bisim.
+    - by apply barbedBisimUpTo_sym.
+    - eapply barbedBisim_trans. 2: exact HY'B'.
+      by apply barbedBisim_sym, barbedExpansion_implies_bisim.
+  * intros source dest Hdest.
+    destruct (HYB4 source dest Hdest) as [s1 [ly [Y1 [HY HBYb]]]].
+    destruct (upToExpRel_many O ly _ _ HY _ HU')
+      as [X1 [lx [HX HU1]]].
+    destruct (upToExpRel_barbs _ _ _ HU1 s1 dest Hdest)
+      as [s2 [lx' [X2 [HX' HYXb]]]].
+    destruct (barbedBisim_many_sym _ _ _ _ (closureNodeSem_trans _ _ _ _ HX _ _ HX') _ HAX)
+      as [A2 [la [HA HA2X2]]].
+    inversion HA2X2 as [? ? _ _ _ HA2X24]; subst.
+    destruct (HA2X24 s2 dest Hdest) as [s3 [la' [A3 [HA' HXAb]]]].
+    exists s3, (la ++ la'), A3. split.
+    - eapply closureNodeSem_trans; eassumption.
+    - eapply option_biforall_trans. 1: intros; eapply Signal_eq_trans; eassumption.
+      1: exact HBYb.
+      eapply option_biforall_trans. 1: intros; eapply Signal_eq_trans; eassumption.
+      1: exact HYXb.
+      exact HXAb.
+Qed.
+
+(** Soundness of bisimulation up to expansion: nodes bisimilar up to
+    expansion are bisimilar. *)
 Theorem barbedBisimUpTo_barbedBisim :
   forall O A B, A ~⪯~ B observing O -> A ~ᵇ B observing O.
 Proof.
-(*   cofix IH. intros. inv H. constructor; auto.
-  * clear H4 H6 H5. intros. apply H3 in H as H'.
-    destruct H' as [B' [A'' [B'' [l H']]]]. destruct_hyps.
-    apply barbedExpansion_implies_bisim in H5, H6.
-    (* apply IH in H9.
-    exists B', l. do 3 (split; auto).
-    eapply barbedBisim_trans. exact H7.
-    eapply barbedBisim_trans. exact H9.
-    now apply barbedBisim_sym. *)
-    exists B', l. do 3 (split; auto). admit.
-    (* eapply barbedBisimUpTo_barbedBisim_helper in H9. 2: eassumption.
-    apply barbedBisim_sym in H8.
-    eapply barbedBisimUpTo_barbedBisim_helper2 in H9. 2: eassumption.
-    now apply IH. *)
-    (* tricks needed to fix guardedness *)
-    (* eapply diamond_trans; try eassumption.
-    now apply IH. Guarded. *)
-    (* inv H9. *)
-  * admit. *)
-Abort.
+  intros O A B H.
+  eapply barbed_alt_barbed_1. 1: apply upToExp_bisim.
+  exists A, B. split_and!; auto using barbedBisim_refl.
+Qed.
 
 (** * Barbs under reduction *)
 
